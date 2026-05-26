@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Autoclicker.vcxproj" Id="7522ffe8-7ef5-4a58-8cd4-083ee54c4f14" />
+</Solution>
