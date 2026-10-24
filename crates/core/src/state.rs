@@ -33,6 +33,12 @@ pub struct Metrics {
     pub failures: u64,
     pub skipped: u64,
     pub max_lateness: Duration,
+    /// Upper-bound nearest-rank estimates of pre-injection deadline lateness.
+    /// Resolution is 100 us through 100 ms; the overflow bucket uses the
+    /// observed maximum. These are not target-application delivery timestamps.
+    pub lateness_p50: Duration,
+    pub lateness_p95: Duration,
+    pub lateness_p99: Duration,
 }
 
 /// Latest authoritative state. Terminal state is retained until the next run.

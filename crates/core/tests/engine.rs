@@ -45,6 +45,10 @@ fn completes_exact_count_and_preserves_terminal_snapshot() {
     assert_eq!(count.load(Ordering::Relaxed), 10);
     assert_eq!(engine.snapshot().state, RunState::Idle);
     assert_eq!(engine.snapshot().metrics.sent, 10);
+    let metrics = engine.snapshot().metrics;
+    assert!(metrics.lateness_p50 <= metrics.lateness_p95);
+    assert!(metrics.lateness_p95 <= metrics.lateness_p99);
+    assert!(metrics.lateness_p99 <= metrics.max_lateness);
 }
 
 #[test]
@@ -168,6 +172,9 @@ fn unexpected_backend_panic_is_reported_and_worker_can_retry() {
         engine.start(ClickConfig::default()).unwrap();
         wait_until(|| engine.snapshot().state == RunState::Faulted);
         assert!(engine.snapshot().error.unwrap().contains("unexpectedly"));
+        let metrics = engine.snapshot().metrics;
+        assert_eq!(metrics.attempts, 1);
+        assert_eq!(metrics.lateness_p99, metrics.max_lateness);
     }
 }
 

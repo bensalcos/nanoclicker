@@ -8,6 +8,11 @@ use std::{
     time::{Duration, Instant},
 };
 
+struct RunMeasurements {
+    metrics: Metrics,
+    histogram: crate::histogram::LatenessHistogram,
+}
+
 struct Control {
     snapshot: Snapshot,
     pending: Option<(ClickConfig, Duration)>,
@@ -168,7 +173,10 @@ fn worker_loop<S: InputSink>(
             };
             (plan, delay, control.cancellation.clone())
         };
-        let mut metrics = Metrics::default();
+        let mut measurements = RunMeasurements {
+            metrics: Metrics::default(),
+            histogram: crate::histogram::LatenessHistogram::new(),
+        };
         // Isolate panics from external adapters. Their RAII cleanup runs while
         // unwinding; a failed run must not leave the UI stuck in Running.
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -181,7 +189,7 @@ fn worker_loop<S: InputSink>(
                 Err(error) => return Err(error),
                 Ok(sink) => sink,
             };
-            let result = execute(&shared, &token, plan, delay, &mut sink, &mut metrics, &mut waiter);
+            let result = execute(&shared, &token, plan, delay, &mut sink, &mut measurements, &mut waiter);
             match (result, sink.finish()) {
                 (Err(first), Err(cleanup)) => Err(BackendError::new(format!("{first} Cleanup: {cleanup}"))),
                 (_, Err(cleanup)) => Err(cleanup),
@@ -191,6 +199,8 @@ fn worker_loop<S: InputSink>(
         .unwrap_or_else(|_| {
             Err(BackendError::new("The native input backend ended unexpectedly. Restart the session or the application."))
         });
+        measurements.histogram.publish(&mut measurements.metrics);
+        let metrics = measurements.metrics;
         let cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| waiter.finish()))
             .unwrap_or_else(|_| Err(BackendError::new("The native timer failed during cleanup.")));
         token.clear_waiter_wake();
@@ -233,7 +243,7 @@ fn execute(
     plan: ClickConfig,
     delay: Duration,
     sink: &mut impl InputSink,
-    metrics: &mut Metrics,
+    measurements: &mut RunMeasurements,
     waiter: &mut impl Waiter,
 ) -> Result<StopReason, BackendError> {
     if token.is_cancelled() || !prepare_delay(shared, token, delay, waiter)? {
@@ -251,6 +261,8 @@ fn execute(
     let epoch = Instant::now();
     let mut publish = epoch;
     let mut scheduler = Scheduler::new(plan.interval());
+    let metrics = &mut measurements.metrics;
+    let histogram = &mut measurements.histogram;
     loop {
         loop {
             if token.is_cancelled() {
@@ -265,11 +277,12 @@ fn execute(
             waiter.wait_until(deadline, token)?;
         }
         let lateness = epoch.elapsed().saturating_sub(scheduler.deadline());
-        metrics.max_lateness = metrics.max_lateness.max(lateness);
         metrics.attempts = metrics
             .attempts
             .checked_add(1)
             .ok_or_else(|| BackendError::new("Attempt counter overflow."))?;
+        histogram.record(lateness);
+        metrics.max_lateness = metrics.max_lateness.max(lateness);
         if let Err(error) = sink.click(plan.button()) {
             metrics.failures += 1;
             return Err(error);
@@ -288,6 +301,7 @@ fn execute(
             )
             .ok_or_else(|| BackendError::new("Skipped-period counter overflow."))?;
         if metrics.sent == 1 || publish.elapsed() >= Duration::from_millis(500) {
+            histogram.publish(metrics);
             lock(&shared.control).snapshot.metrics = *metrics;
             (shared.wake)();
             publish = Instant::now();
