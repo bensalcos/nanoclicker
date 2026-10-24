@@ -61,3 +61,9 @@ Local output `dist/preview-x11-checked-pairs/`, packaging checkout `e71fc32`. It
 - Symbols archive: 19,338,857 bytes, SHA256 `6fdce44ac6f7d21eb4ebea4b3b875a64778f750e757899cece19b92f58908e74`.
 
 The packaging metadata retains its conservative dirty-tree marker because an unrelated untracked entry exists in the shared workspace. Only the explicit executable, license, icon and dependency-notice/source inventory inputs are packaged. This remains a preview; native desktop and resource-budget acceptance is incomplete.
+
+## Hosted Windows preview verification
+
+The desktop CI job now packages its MSVC release executable and PDB with the existing packager, checks both archive hashes, verifies the packaged PE architecture and input hash, and requires a matching packaging commit with no unresolved dependency notices. It checks the separate PDB signature and retains the ZIPs/checksum manifest for 14 days. This is a preview artifact, not a GitHub release.
+
+Seven local Python tests pass, including corruption, missing-symbol-checksum and wrong-provenance failures. The initial hosted packaging result is pending. Archive verification does not execute the application or prove native GUI, input, DPI or screen-reader acceptance.
