@@ -20,6 +20,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             "Use scripts/verify-x11.sh; desktop injection is disabled outside isolation.".into(),
         );
     }
+    let arguments: Vec<_> = std::env::args().skip(1).collect();
+    let timing = match arguments.as_slice() {
+        [] => None,
+        [seconds, workers] => {
+            let seconds = seconds.parse::<u64>()?;
+            let workers = workers.parse::<usize>()?;
+            if !(1..=3600).contains(&seconds) || workers > 2 {
+                return Err("Timing requires 1..3600 seconds and 0..2 load threads.".into());
+            }
+            Some((seconds, workers))
+        }
+        _ => return Err("Usage: x11_acceptance [timing_seconds load_threads]".into()),
+    };
     let (capture, screen_number) = x11rb::connect(None)?;
     let screen = &capture.setup().roots[screen_number];
     let window = capture.generate_id()?;
@@ -153,6 +166,113 @@ fn main() -> Result<(), Box<dyn Error>> {
             "PASS X11 shortcut: outside-focus activation, held-key suppression and conflict preserves binding"
         );
     }
+    if let Some((seconds, workers)) = timing {
+        measure_deadlines(&capture, &engine, seconds, workers)?;
+    }
     capture.destroy_window(window)?.check()?;
+    Ok(())
+}
+
+// RAII also stops load threads if input, capture or timeout validation fails.
+struct Load {
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    threads: Vec<thread::JoinHandle<()>>,
+}
+impl Load {
+    fn start(workers: usize) -> Self {
+        let mut load = Self {
+            stop: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            threads: Vec::with_capacity(workers),
+        };
+        for _ in 0..workers {
+            let stop = load.stop.clone();
+            load.threads.push(thread::spawn(move || {
+                let mut value = 1u64;
+                while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                    value = std::hint::black_box(
+                        value.wrapping_mul(6364136223846793005).wrapping_add(1),
+                    );
+                }
+            }));
+        }
+        load
+    }
+}
+impl Drop for Load {
+    fn drop(&mut self) {
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        for worker in self.threads.drain(..) {
+            let _ = worker.join();
+        }
+    }
+}
+
+fn measure_deadlines(
+    capture: &x11rb::rust_connection::RustConnection,
+    engine: &Engine,
+    seconds: u64,
+    workers: usize,
+) -> Result<(), Box<dyn Error>> {
+    let _load = Load::start(workers);
+    let began = Instant::now();
+    let id = engine.start(ClickConfig::new(10, MouseButton::Left, None)?)?;
+    let stop_at = began + Duration::from_secs(seconds);
+    let timeout = stop_at + Duration::from_secs(3);
+    let mut stopping = false;
+    let mut pressed = false;
+    let mut pairs = 0u64;
+    let snapshot = loop {
+        while let Some(event) = capture.poll_for_event()? {
+            let (down, detail) = match event {
+                Event::ButtonPress(event) => (true, event.detail),
+                Event::ButtonRelease(event) => (false, event.detail),
+                _ => continue,
+            };
+            if detail != 1 || down == pressed {
+                return Err("Timing capture received a wrong button or unordered pair.".into());
+            }
+            pressed = down;
+            if !down {
+                pairs += 1;
+            }
+        }
+        let snapshot = engine.snapshot();
+        if snapshot.run_id != id || snapshot.state == RunState::Faulted {
+            return Err(format!("Timing session changed or failed: {:?}", snapshot.error).into());
+        }
+        if stopping
+            && snapshot.state == RunState::Idle
+            && pairs == snapshot.metrics.sent
+            && !pressed
+        {
+            break snapshot;
+        }
+        if Instant::now() > timeout {
+            return Err("Timing session did not stop with matching captured pairs.".into());
+        }
+        if !stopping && Instant::now() >= stop_at {
+            engine.stop();
+            stopping = true;
+        }
+        thread::sleep(Duration::from_millis(1));
+    };
+    if snapshot.reason != Some(StopReason::Stopped) || pairs == 0 {
+        return Err("Timing run did not preserve a successful Stop acknowledgement.".into());
+    }
+    let metrics = snapshot.metrics;
+    println!(
+        "scope,load_threads,elapsed_s,attempts,sent,captured_pairs,skipped,p50_upper_us,p95_upper_us,p99_upper_us,max_us"
+    );
+    println!(
+        "x11_native_input,{workers},{:.6},{},{},{pairs},{},{:.3},{:.3},{:.3},{:.3}",
+        began.elapsed().as_secs_f64(),
+        metrics.attempts,
+        metrics.sent,
+        metrics.skipped,
+        metrics.lateness_p50.as_secs_f64() * 1e6,
+        metrics.lateness_p95.as_secs_f64() * 1e6,
+        metrics.lateness_p99.as_secs_f64() * 1e6,
+        metrics.max_lateness.as_secs_f64() * 1e6
+    );
     Ok(())
 }
