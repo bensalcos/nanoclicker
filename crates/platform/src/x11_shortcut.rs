@@ -12,7 +12,7 @@ use x11rb::{
     connection::Connection,
     protocol::{
         Event, xkb,
-        xproto::{ConnectionExt, GrabMode, ModMask},
+        xproto::{ConnectionExt, GrabMode, Mapping, ModMask},
     },
 };
 
@@ -22,6 +22,33 @@ pub struct X11Shortcut {
 }
 fn error(error: impl std::fmt::Display) -> BackendError {
     BackendError::new(format!("X11 shortcut: {error}"))
+}
+#[derive(PartialEq, Eq)]
+struct KeyboardMapping {
+    keysyms_per_keycode: u8,
+    keysyms: Vec<u32>,
+    modifiers: Vec<u8>,
+}
+fn keyboard_mapping(
+    conn: &x11rb::rust_connection::RustConnection,
+) -> Result<KeyboardMapping, BackendError> {
+    let first = conn.setup().min_keycode;
+    let count = conn.setup().max_keycode - first + 1;
+    let symbols = conn
+        .get_keyboard_mapping(first, count)
+        .map_err(error)?
+        .reply()
+        .map_err(error)?;
+    let modifiers = conn
+        .get_modifier_mapping()
+        .map_err(error)?
+        .reply()
+        .map_err(error)?;
+    Ok(KeyboardMapping {
+        keysyms_per_keycode: symbols.keysyms_per_keycode,
+        keysyms: symbols.keysyms,
+        modifiers: modifiers.keycodes,
+    })
 }
 impl X11Shortcut {
     /// Registration is completed before returning, preserving the previous grab
@@ -40,27 +67,32 @@ impl X11Shortcut {
                     let (conn, screen) = x11rb::connect(None).map_err(error)?;
                     let root = conn.setup().roots[screen].root;
                     let symbol = keysym(hotkey)?;
-                    let first = conn.setup().min_keycode;
-                    let count = conn.setup().max_keycode - first + 1;
-                    let map = conn
-                        .get_keyboard_mapping(first, count)
-                        .map_err(error)?
-                        .reply()
-                        .map_err(error)?;
-                    let code = map
-                        .keysyms
-                        .chunks(usize::from(map.keysyms_per_keycode))
-                        .position(|symbols| symbols.contains(&symbol))
-                        .and_then(|offset| u8::try_from(usize::from(first) + offset).ok())
-                        .ok_or_else(|| {
-                            BackendError::new(
-                                "The requested key is not present in the current keyboard layout.",
-                            )
-                        })?;
                     xkb::ConnectionExt::xkb_use_extension(&conn, 1, 0)
                         .map_err(error)?
                         .reply()
                         .map_err(error)?;
+                    // XKB-aware clients need explicit map/device subscriptions;
+                    // core keyboard MappingNotify alone does not cover them.
+                    let parts = xkb::MapPart::KEY_TYPES
+                        | xkb::MapPart::KEY_SYMS
+                        | xkb::MapPart::MODIFIER_MAP
+                        | xkb::MapPart::EXPLICIT_COMPONENTS
+                        | xkb::MapPart::KEY_ACTIONS
+                        | xkb::MapPart::KEY_BEHAVIORS
+                        | xkb::MapPart::VIRTUAL_MODS
+                        | xkb::MapPart::VIRTUAL_MOD_MAP;
+                    xkb::ConnectionExt::xkb_select_events(
+                        &conn,
+                        xkb::ID::USE_CORE_KBD.into(),
+                        Default::default(),
+                        xkb::EventType::MAP_NOTIFY | xkb::EventType::NEW_KEYBOARD_NOTIFY,
+                        parts,
+                        parts,
+                        &Default::default(),
+                    )
+                    .map_err(error)?
+                    .check()
+                    .map_err(error)?;
                     let repeat = xkb::ConnectionExt::xkb_per_client_flags(
                         &conn,
                         xkb::ID::USE_CORE_KBD.into(),
@@ -81,6 +113,18 @@ impl X11Shortcut {
                             "The X11 server cannot suppress shortcut key repeat.",
                         ));
                     }
+                    let first = conn.setup().min_keycode;
+                    let map = keyboard_mapping(&conn)?;
+                    let code = map
+                        .keysyms
+                        .chunks(usize::from(map.keysyms_per_keycode))
+                        .position(|symbols| symbols.contains(&symbol))
+                        .and_then(|offset| u8::try_from(usize::from(first) + offset).ok())
+                        .ok_or_else(|| {
+                            BackendError::new(
+                                "The requested key is not present in the current keyboard layout.",
+                            )
+                        })?;
                     let mut modifiers = ModMask::default();
                     for (flag, mask) in [
                         (Modifiers::CONTROL, ModMask::CONTROL),
@@ -113,9 +157,9 @@ impl X11Shortcut {
                         .map_err(error)?;
                     }
                     conn.flush().map_err(error)?;
-                    Ok((conn, code))
+                    Ok((conn, code, map))
                 })();
-                let (conn, keycode) = match setup {
+                let (conn, keycode, original_mapping) = match setup {
                     Ok(ready_state) => {
                         let _ = ready.send(Ok(()));
                         ready_state
@@ -135,7 +179,27 @@ impl X11Shortcut {
                                     activated();
                                 }
                                 Event::KeyRelease(event) if event.detail == keycode => held = false,
-                                Event::MappingNotify(_) => {
+                                Event::XkbMapNotify(_) => {
+                                    return Err(BackendError::new(
+                                        "Keyboard mapping changed. Apply the shortcut again.",
+                                    ));
+                                }
+                                Event::XkbNewKeyboardNotify(event) => {
+                                    // XTEST may switch the master device without changing
+                                    // its map. Preserve the binding only when both symbol
+                                    // and modifier maps and keycode bounds are unchanged.
+                                    if event.min_key_code != event.old_min_key_code
+                                        || event.max_key_code != event.old_max_key_code
+                                        || keyboard_mapping(&conn)? != original_mapping
+                                    {
+                                        return Err(BackendError::new(
+                                            "Keyboard mapping changed. Apply the shortcut again.",
+                                        ));
+                                    }
+                                }
+                                Event::MappingNotify(event)
+                                    if event.request != Mapping::POINTER =>
+                                {
                                     return Err(BackendError::new(
                                         "Keyboard mapping changed. Apply the shortcut again.",
                                     ));

@@ -162,12 +162,60 @@ fn main() -> Result<(), Box<dyn Error>> {
         if activations.load(Ordering::Relaxed) != 2 {
             return Err("The original shortcut was lost after a conflicting registration.".into());
         }
+        let pointer_map = capture.get_pointer_mapping()?.reply()?.map;
+        if pointer_map.len() < 2 {
+            return Err("Pointer mapping fixture is too small".into());
+        }
+        let mut changed = pointer_map.clone();
+        let last = changed.len() - 1;
+        changed.swap(last - 1, last);
+        for mapping in [&changed, &pointer_map] {
+            if capture.set_pointer_mapping(mapping)?.reply()?.status
+                != x11rb::protocol::xproto::MappingStatus::SUCCESS
+            {
+                return Err("Isolated pointer mapping could not be changed/restored".into());
+            }
+        }
+        capture
+            .xtest_fake_input(2, key, 0, x11rb::NONE, 0, 0, 0)?
+            .check()?;
+        capture
+            .xtest_fake_input(3, key, 0, x11rb::NONE, 0, 0, 0)?
+            .check()?;
+        let timeout = Instant::now() + Duration::from_secs(2);
+        while activations.load(Ordering::Relaxed) < 3 && Instant::now() < timeout {
+            if let Ok(error) = failure.try_recv() {
+                return Err(
+                    format!("Pointer mapping invalidated keyboard shortcut: {error}").into(),
+                );
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+        if activations.load(Ordering::Relaxed) != 3 {
+            return Err("Shortcut stopped working after pointer mapping".into());
+        }
         if let Ok(error) = failure.try_recv() {
             return Err(error.into());
         }
         println!(
-            "PASS X11 shortcut: outside-focus activation, held-key suppression and conflict preserves binding"
+            "PASS X11 shortcut: outside-focus activation, held-key suppression, conflict and pointer-map changes preserve binding"
         );
+        let width = usize::from(map.keysyms_per_keycode);
+        let original = &map.keysyms[offset * width..(offset + 1) * width];
+        let changed: Vec<_> = original
+            .iter()
+            .map(|symbol| if *symbol == 0xffc3 { 0xffc4 } else { *symbol })
+            .collect();
+        for symbols in [&changed[..], original] {
+            capture
+                .change_keyboard_mapping(1, key, map.keysyms_per_keycode, symbols)?
+                .check()?;
+        }
+        let error = failure.recv_timeout(Duration::from_secs(2))?;
+        if !error.contains("Keyboard mapping changed") {
+            return Err(format!("Keyboard mapping invalidation was not reported: {error}").into());
+        }
+        println!("PASS X11 shortcut: keyboard mapping changes invalidate the binding explicitly");
     }
     if let Some((seconds, workers)) = timing {
         measure_deadlines(&capture, &engine, seconds, workers)?;
