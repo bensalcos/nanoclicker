@@ -32,8 +32,18 @@ pub fn wait(mut ready: impl FnMut() -> Result<bool>, duration: Duration) -> Resu
         thread::sleep(Duration::from_millis(5));
     }
 }
+pub fn action_position(conn: &RustConnection, window: u32) -> Result<(i16, i16)> {
+    let geometry = conn.get_geometry(window)?.reply()?;
+    Ok((
+        i16::try_from(geometry.width / 2)?,
+        i16::try_from(geometry.height.saturating_sub(50))?,
+    ))
+}
 pub fn ready_button(conn: &RustConnection, window: u32) -> bool {
-    let Ok(cookie) = conn.get_image(ImageFormat::Z_PIXMAP, window, 260, 550, 1, 1, u32::MAX) else {
+    let Ok((x, y)) = action_position(conn, window) else {
+        return false;
+    };
+    let Ok(cookie) = conn.get_image(ImageFormat::Z_PIXMAP, window, x, y, 1, 1, u32::MAX) else {
         return false;
     };
     let Ok(image) = cookie.reply() else {

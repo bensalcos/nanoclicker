@@ -25,7 +25,17 @@ pub struct Shortcut {
 }
 impl Shortcut {
     pub fn new(desktop: Desktop, ctx: &egui::Context, requested: String) -> Self {
-        let mut shortcut = Self {
+        let mut shortcut = Self::unregistered(desktop, ctx, requested);
+        if desktop == Desktop::Wayland {
+            shortcut.status = "Not configured · use the desktop portal".into();
+        } else {
+            shortcut.apply();
+        }
+        shortcut
+    }
+    /// Creates state without claiming any native registration or opening dialogs.
+    pub(crate) fn unregistered(desktop: Desktop, ctx: &egui::Context, requested: String) -> Self {
+        Self {
             desktop,
             ctx: ctx.clone(),
             #[cfg(target_os = "linux")]
@@ -40,13 +50,7 @@ impl Shortcut {
             status: "Not registered".into(),
             error: None,
             events: Arc::new(AtomicUsize::new(0)),
-        };
-        if desktop == Desktop::Wayland {
-            shortcut.status = "Not configured · use the desktop portal".into();
-        } else {
-            shortcut.apply();
         }
-        shortcut
     }
     fn activation(&self) -> impl Fn() + Send + Sync + 'static + use<> {
         let events = self.events.clone();

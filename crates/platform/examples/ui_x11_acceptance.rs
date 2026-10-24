@@ -7,13 +7,15 @@ use x11rb::{
     connection::Connection,
     protocol::{
         Event,
-        xproto::{ConnectionExt, CreateWindowAux, EventMask, InputFocus, WindowClass},
+        xproto::{
+            ConfigureWindowAux, ConnectionExt, CreateWindowAux, EventMask, InputFocus, WindowClass,
+        },
         xtest::ConnectionExt as _,
     },
     rust_connection::RustConnection,
 };
 mod support;
-use support::{Result, close, launch, pair, ready_button, wait};
+use support::{Result, action_position, close, launch, pair, ready_button, wait};
 fn drain(conn: &RustConnection, events: &mut Vec<bool>) -> Result<()> {
     while let Some(event) = conn.poll_for_event()? {
         match event {
@@ -96,12 +98,41 @@ fn main() -> Result<()> {
         "PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input"
     );
 
+    // The main action must remain usable at the documented minimum size,
+    // while secondary content may scroll. No input is active during resize.
+    conn.configure_window(window, &ConfigureWindowAux::new().width(420).height(520))?
+        .check()?;
+    wait(
+        || {
+            let size = conn.get_geometry(window)?.reply()?;
+            Ok(size.width == 420 && size.height == 520 && ready_button(&conn, window))
+        },
+        Duration::from_secs(3),
+    )?;
+    capture(window, "NANOCLICK_LAYOUT_CAPTURE")?;
+    if std::env::var_os("NANOCLICK_SCROLL_CAPTURE").is_some() {
+        conn.warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, 200, 300)?
+            .check()?;
+        for _ in 0..5 {
+            conn.xtest_fake_input(4, 5, 0, x11rb::NONE, 0, 0, 0)?
+                .check()?;
+            conn.xtest_fake_input(5, 5, 0, x11rb::NONE, 0, 0, 0)?
+                .check()?;
+        }
+        capture(window, "NANOCLICK_SCROLL_CAPTURE")?;
+        if !ready_button(&conn, window) {
+            return Err("Scrolling displaced Start".into());
+        }
+    }
+    println!("PASS GUI: Start remains visible at 420x520");
+
     // Exercise the actual Start button, then move to the target during its
     // cancelable three-second preparation instead of bypassing the controller.
     events.clear();
     conn.set_input_focus(InputFocus::PARENT, window, x11rb::CURRENT_TIME)?
         .check()?;
-    conn.warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, 260, 550)?
+    let (action_x, action_y) = action_position(&conn, window)?;
+    conn.warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, action_x, action_y)?
         .check()?;
     conn.xtest_fake_input(4, 1, 0, x11rb::NONE, 0, 0, 0)?
         .check()?;
@@ -131,5 +162,20 @@ fn main() -> Result<()> {
     );
     close(&conn, window, &mut app)?;
     println!("PASS GUI: clean window shutdown");
+    Ok(())
+}
+
+fn capture(window: u32, variable: &str) -> Result<()> {
+    if let Some(path) = std::env::var_os(variable) {
+        // Optional test-only capture; production has no screenshot flag.
+        thread::sleep(Duration::from_millis(100));
+        let status = std::process::Command::new("import")
+            .args(["-silent", "-window", &window.to_string()])
+            .arg(path)
+            .status()?;
+        if !status.success() {
+            return Err("Minimum-size screenshot failed".into());
+        }
+    }
     Ok(())
 }

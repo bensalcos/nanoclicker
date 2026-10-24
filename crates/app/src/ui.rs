@@ -1,3 +1,4 @@
+mod controls;
 use crate::{
     controller::Controller,
     hotkey::Shortcut,
@@ -5,7 +6,7 @@ use crate::{
     theme,
 };
 use eframe::egui::{self, Color32, RichText};
-use nanoclick_core::{Engine, MouseButton, RunState, StopReason};
+use nanoclick_core::{Engine, MouseButton, RunState, Snapshot, StopReason};
 use nanoclick_platform::{Desktop, NativeInput};
 use std::{
     sync::mpsc::{self, Receiver},
@@ -82,54 +83,7 @@ impl NanoClick {
     }
     fn controls(&mut self, ui: &mut egui::Ui, active: bool) {
         ui.add_enabled_ui(!active, |ui| {
-            section(ui, "01", "Timing", |ui| {
-                ui.horizontal(|ui| {
-                    let label = ui.label("Interval");
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.control.draft.interval)
-                            .desired_width(104.0)
-                            .char_limit(6),
-                    )
-                    .labelled_by(label.id);
-                    ui.label("ms");
-                    if let Ok(config) = self.control.draft.validate() {
-                        ui.weak(format!(
-                            "≈ {:.1} clicks/s",
-                            1.0 / config.interval().as_secs_f64()
-                        ));
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Mouse button");
-                    egui::ComboBox::from_id_salt("mouse-button")
-                        .selected_text(button_name(self.control.draft.button))
-                        .show_ui(ui, |ui| {
-                            for button in
-                                [MouseButton::Left, MouseButton::Right, MouseButton::Middle]
-                            {
-                                ui.selectable_value(
-                                    &mut self.control.draft.button,
-                                    button,
-                                    button_name(button),
-                                );
-                            }
-                        });
-                });
-            });
-            section(ui, "02", "Repeat", |ui| {
-                ui.radio_value(&mut self.control.draft.finite, false, "Until stopped");
-                ui.horizontal(|ui| {
-                    ui.radio_value(&mut self.control.draft.finite, true, "Count");
-                    ui.add_enabled(
-                        self.control.draft.finite,
-                        egui::TextEdit::singleline(&mut self.control.draft.count)
-                            .desired_width(104.0)
-                            .hint_text("Clicks")
-                            .char_limit(6),
-                    );
-                    ui.weak("clicks");
-                });
-            });
+            controls::plan(ui, &mut self.control.draft);
             section(ui, "03", "Global shortcut", |ui| {
                 if self.desktop == Desktop::Wayland {
                     if ui.button("Configure in desktop…").clicked() {
@@ -137,16 +91,9 @@ impl NanoClick {
                     }
                     ui.weak("The desktop assigns the shortcut. Manual control is also available.");
                 } else {
-                    ui.horizontal(|ui| {
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.shortcut.requested)
-                                .desired_width(160.0)
-                                .hint_text("Ctrl+Shift+F6"),
-                        );
-                        if ui.button("Apply").clicked() {
-                            self.shortcut.apply();
-                        }
-                    });
+                    if controls::shortcut(ui, &mut self.shortcut.requested) {
+                        self.shortcut.apply();
+                    }
                 }
                 ui.small(&self.shortcut.status);
                 if let Some(error) = &self.shortcut.error {
@@ -176,57 +123,172 @@ impl eframe::App for NanoClick {
         }
     }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
-        let snapshot = self.control.engine.snapshot();
-        let active = snapshot.state.is_active();
-        egui::CentralPanel::default().frame(egui::Frame::central_panel(ui.style()).inner_margin(24)).show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("NanoClick");
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Save").on_hover_text("Save preferences for the next launch").clicked() { self.save_preferences(); }
-                    egui::ComboBox::from_id_salt("theme").selected_text(match self.theme { egui::ThemePreference::Dark => "Dark", egui::ThemePreference::Light => "Light", _ => "System" }).show_ui(ui, |ui| {
-                        for (value, label) in [(egui::ThemePreference::System, "System"), (egui::ThemePreference::Light, "Light"), (egui::ThemePreference::Dark, "Dark")] {
-                            if ui.selectable_value(&mut self.theme, value, label).changed() { ui.ctx().set_theme(self.theme); }
+        self.show(ui);
+    }
+}
+impl NanoClick {
+    fn show(&mut self, ui: &mut egui::Ui) {
+        self.show_snapshot(ui, &self.control.engine.snapshot());
+    }
+    fn show_snapshot(&mut self, ui: &mut egui::Ui, snapshot: &Snapshot) {
+        let (label, status) = session_action(snapshot);
+        let progress = format!(
+            "{} pairs sent · {} periods skipped",
+            snapshot.metrics.sent, snapshot.metrics.skipped
+        );
+        egui::CentralPanel::default()
+            .frame(egui::Frame::central_panel(ui.style()).inner_margin(24))
+            .show(ui, |ui| {
+                self.header(ui);
+                ui.weak(self.desktop.name());
+                ui.add_space(4.0);
+                // Reserve the measured footer before drawing the scroll area,
+                // but create its interactive widgets last: Tab follows reading order.
+                let footer_height = action_height(ui, &status, &progress);
+                let body_height = (ui.available_height() - footer_height - ui.spacing().item_spacing.y).max(0.0);
+                egui::ScrollArea::vertical()
+                    .max_height(body_height)
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        match &self.available {
+                            None => { ui.weak("Checking desktop capabilities…"); }
+                            Some(Err(error)) => { ui.colored_label(error_color(ui), error); }
+                            _ => {}
                         }
+                        if let Some(message) = &self.preferences_message { ui.label(message); }
+                        if let Some(error) = self.control.error.as_ref().or(snapshot.error.as_ref()) {
+                            ui.colored_label(error_color(ui), error);
+                        }
+                        self.controls(ui, snapshot.state.is_active());
+                        ui.add_space(8.0);
+                        ui.small("Clicks are sent at the current pointer location. Escape stops while this window is focused.");
                     });
-                });
+                self.action(ui, snapshot, label, &status, &progress);
             });
-            ui.weak(self.desktop.name());
-            ui.add_space(4.0);
-            egui::Panel::bottom("action").frame(egui::Frame::NONE.inner_margin(egui::Margin { top: 12, bottom: 0, left: 0, right: 0 })).show(ui, |ui| {
-                let (label, status) = if let Some(deadline) = snapshot.ready_at && snapshot.state == RunState::Preparing {
-                    ("Cancel", format!("Starting in {} · move the pointer to your target", deadline.saturating_duration_since(std::time::Instant::now()).as_secs() + 1))
-                } else {
-                    match snapshot.state {
-                        RunState::Preparing => ("Cancel", "Preparing desktop input…".to_owned()),
-                        RunState::Running => ("Stop", "Running".to_owned()),
-                        RunState::Stopping => ("Stopping…", "Releasing input…".to_owned()),
-                        RunState::Faulted => ("Start", "Could not complete the session".to_owned()),
-                        RunState::Idle => ("Start", if snapshot.reason == Some(StopReason::Completed) { "Completed" } else { "Ready" }.to_owned()),
-                    }
-                };
-                ui.horizontal(|ui| { ui.label(RichText::new(status).strong()); });
-                ui.weak(format!("{} pairs sent · {} periods skipped", snapshot.metrics.sent, snapshot.metrics.skipped));
-                let enabled = snapshot.state != RunState::Stopping && (active || matches!(self.available, Some(Ok(()))));
-                let button = egui::Button::new(RichText::new(label).size(17.0).color(Color32::WHITE)).fill(if active { theme::RED } else { Color32::from_rgb(30, 100, 200) });
-                if ui.add_enabled(enabled, button.min_size(egui::vec2(ui.available_width(), 46.0))).clicked() { self.control.toggle(true); }
-            });
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                match &self.available {
-                    None => { ui.weak("Checking desktop capabilities…"); }
-                    Some(Err(error)) => { ui.colored_label(error_color(ui), error); }
-                    _ => {}
-                }
-                if let Some(message) = &self.preferences_message { ui.label(message); }
-                if let Some(error) = self.control.error.as_ref().or(snapshot.error.as_ref()) { ui.colored_label(error_color(ui), error); }
-                self.controls(ui, active);
-                ui.add_space(8.0);
-                ui.small("Clicks are sent at the current pointer location. Escape stops while this window is focused.");
+    }
+}
+impl NanoClick {
+    fn header(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.heading("NanoClick");
+            let save_width = egui::WidgetText::from("Save")
+                .into_galley(ui, None, f32::INFINITY, egui::TextStyle::Button)
+                .size()
+                .x
+                + 2.0 * ui.spacing().button_padding.x;
+            let actions_width = 100.0 + ui.spacing().item_spacing.x + save_width;
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.allocate_ui_with_layout(
+                    egui::vec2(actions_width, ui.spacing().interact_size.y),
+                    egui::Layout::left_to_right(egui::Align::Center),
+                    |ui| {
+                        controls::theme(ui, &mut self.theme);
+                        if ui
+                            .button("Save")
+                            .on_hover_text("Save preferences for the next launch")
+                            .clicked()
+                        {
+                            self.save_preferences();
+                        }
+                    },
+                );
             });
         });
     }
+    fn action(
+        &mut self,
+        ui: &mut egui::Ui,
+        snapshot: &Snapshot,
+        label: &str,
+        status: &str,
+        progress: &str,
+    ) {
+        ui.painter().hline(
+            ui.max_rect().x_range(),
+            ui.cursor().min.y,
+            ui.visuals().widgets.noninteractive.bg_stroke,
+        );
+        egui::Frame::NONE
+            .inner_margin(egui::Margin {
+                top: 12,
+                bottom: 0,
+                left: 0,
+                right: 0,
+            })
+            .show(ui, |ui| {
+                ui.add(egui::Label::new(RichText::new(status).strong()).wrap());
+                ui.add(egui::Label::new(RichText::new(progress).weak()).wrap());
+                let active = snapshot.state.is_active();
+                let enabled = snapshot.state != RunState::Stopping
+                    && (active || matches!(self.available, Some(Ok(()))));
+                let button = egui::Button::new(
+                    RichText::new(label).size(17.0).color(Color32::WHITE),
+                )
+                .fill(if active {
+                    theme::RED
+                } else {
+                    Color32::from_rgb(30, 100, 200)
+                });
+                if ui
+                    .add_enabled(
+                        enabled,
+                        button.min_size(egui::vec2(ui.available_width(), 46.0)),
+                    )
+                    .clicked()
+                {
+                    self.control.toggle(true);
+                }
+            });
+    }
 }
+fn session_action(snapshot: &Snapshot) -> (&'static str, String) {
+    if let Some(deadline) = snapshot.ready_at
+        && snapshot.state == RunState::Preparing
+    {
+        return (
+            "Cancel",
+            format!(
+                "Starting in {} · move the pointer to your target",
+                deadline
+                    .saturating_duration_since(std::time::Instant::now())
+                    .as_secs()
+                    + 1
+            ),
+        );
+    }
+    match snapshot.state {
+        RunState::Preparing => ("Cancel", "Preparing desktop input…".to_owned()),
+        RunState::Running => ("Stop", "Running".to_owned()),
+        RunState::Stopping => ("Stopping…", "Releasing input…".to_owned()),
+        RunState::Faulted => ("Start", "Could not complete the session".to_owned()),
+        RunState::Idle => (
+            "Start",
+            if snapshot.reason == Some(StopReason::Completed) {
+                "Completed"
+            } else {
+                "Ready"
+            }
+            .to_owned(),
+        ),
+    }
+}
+fn action_height(ui: &egui::Ui, status: &str, progress: &str) -> f32 {
+    let font = egui::TextStyle::Body.resolve(ui.style());
+    let height = |text: &str| {
+        ui.painter()
+            .layout(
+                text.to_owned(),
+                font.clone(),
+                ui.visuals().text_color(),
+                ui.available_width(),
+            )
+            .size()
+            .y
+    };
+    12.0 + height(status) + height(progress) + 2.0 * ui.spacing().item_spacing.y + 46.0
+}
+
 fn section(ui: &mut egui::Ui, number: &str, title: &str, contents: impl FnOnce(&mut egui::Ui)) {
-    ui.add_space(4.0);
     ui.label(
         RichText::new(format!("{number}   {title}"))
             .strong()
@@ -254,3 +316,6 @@ fn error_color(ui: &egui::Ui) -> Color32 {
         Color32::from_rgb(170, 25, 40)
     }
 }
+
+#[cfg(test)]
+mod tests;
