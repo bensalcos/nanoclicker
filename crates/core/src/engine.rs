@@ -1,6 +1,6 @@
 use crate::{
     BackendError, Cancellation, ClickConfig, InputSink, Metrics, RunState, Scheduler, Snapshot,
-    StopCondition, StopReason,
+    StdWaiter, StopCondition, StopReason, Waiter,
 };
 use std::{
     sync::{Arc, Condvar, Mutex, MutexGuard},
@@ -52,6 +52,19 @@ impl Engine {
         F: Fn(&Cancellation) -> Result<S, BackendError> + Send + 'static,
         W: Fn() + Send + Sync + 'static,
     {
+        Self::with_waiter(factory, StdWaiter::default(), wake)
+    }
+    /// Creates a worker with a platform-selected cancelable timer.
+    pub fn with_waiter<S, F, W>(
+        factory: F,
+        waiter: impl Waiter,
+        wake: W,
+    ) -> Result<Self, EngineError>
+    where
+        S: InputSink,
+        F: Fn(&Cancellation) -> Result<S, BackendError> + Send + 'static,
+        W: Fn() + Send + Sync + 'static,
+    {
         let shared = Arc::new(Shared {
             control: Mutex::new(Control {
                 snapshot: Snapshot::default(),
@@ -65,7 +78,7 @@ impl Engine {
         let worker_shared = shared.clone();
         let worker = thread::Builder::new()
             .name("nanoclick-worker".into())
-            .spawn(move || worker_loop(worker_shared, factory))?;
+            .spawn(move || worker_loop(worker_shared, factory, waiter))?;
         Ok(Self {
             shared,
             worker: Some(worker),
@@ -95,13 +108,7 @@ impl Engine {
             state: RunState::Preparing,
             ..Snapshot::default()
         };
-        let weak = Arc::downgrade(&self.shared);
-        control.cancellation = Cancellation::with_notify(move || {
-            if let Some(shared) = weak.upgrade() {
-                let _guard = lock(&shared.control);
-                shared.changed.notify_one();
-            }
-        });
+        control.cancellation = Cancellation::default();
         control.pending = Some((plan, delay));
         self.shared.changed.notify_one();
         drop(control);
@@ -142,6 +149,7 @@ impl Drop for Engine {
 fn worker_loop<S: InputSink>(
     shared: Arc<Shared>,
     factory: impl Fn(&Cancellation) -> Result<S, BackendError>,
+    mut waiter: impl Waiter,
 ) {
     loop {
         let (plan, delay, token) = {
@@ -163,27 +171,36 @@ fn worker_loop<S: InputSink>(
         let mut metrics = Metrics::default();
         // Isolate panics from external adapters. Their RAII cleanup runs while
         // unwinding; a failed run must not leave the UI stuck in Running.
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| if token.is_cancelled() {
-            Ok(StopReason::Stopped)
-        } else {
-            match factory(&token) {
-                Err(error) if token.is_cancelled() => {
-                    let _ = error;
-                    Ok(StopReason::Stopped)
-                }
-                Err(error) => Err(error),
-                Ok(mut sink) => {
-                    let result = execute(&shared, &token, plan, delay, &mut sink, &mut metrics);
-                    match (result, sink.finish()) {
-                        (Err(first), Err(cleanup)) => {
-                            Err(BackendError::new(format!("{first} Cleanup: {cleanup}")))
-                        }
-                        (_, Err(cleanup)) => Err(cleanup),
-                        (result, Ok(())) => result,
-                    }
-                }
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            waiter.bind(&token)?;
+            if token.is_cancelled() {
+                return Ok(StopReason::Stopped);
             }
-        })).unwrap_or_else(|_| Err(BackendError::new("The native input backend ended unexpectedly. Restart the session or the application.")));
+            let mut sink = match factory(&token) {
+                Err(_) if token.is_cancelled() => return Ok(StopReason::Stopped),
+                Err(error) => return Err(error),
+                Ok(sink) => sink,
+            };
+            let result = execute(&shared, &token, plan, delay, &mut sink, &mut metrics, &mut waiter);
+            match (result, sink.finish()) {
+                (Err(first), Err(cleanup)) => Err(BackendError::new(format!("{first} Cleanup: {cleanup}"))),
+                (_, Err(cleanup)) => Err(cleanup),
+                (result, Ok(())) => result,
+            }
+        }))
+        .unwrap_or_else(|_| {
+            Err(BackendError::new("The native input backend ended unexpectedly. Restart the session or the application."))
+        });
+        let cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| waiter.finish()))
+            .unwrap_or_else(|_| Err(BackendError::new("The native timer failed during cleanup.")));
+        token.clear_waiter_wake();
+        let result = match (result, cleanup) {
+            (Err(first), Err(cleanup)) => Err(BackendError::new(format!(
+                "{first} Timer cleanup: {cleanup}"
+            ))),
+            (_, Err(cleanup)) => Err(cleanup),
+            (result, Ok(())) => result,
+        };
         let result = match (token.take_failure(), result) {
             (Some(first), Err(cleanup)) => {
                 Err(BackendError::new(format!("{first} Session: {cleanup}")))
@@ -217,8 +234,9 @@ fn execute(
     delay: Duration,
     sink: &mut impl InputSink,
     metrics: &mut Metrics,
+    waiter: &mut impl Waiter,
 ) -> Result<StopReason, BackendError> {
-    if token.is_cancelled() || !prepare_delay(shared, token, delay)? {
+    if token.is_cancelled() || !prepare_delay(shared, token, delay, waiter)? {
         return Ok(StopReason::Stopped);
     }
     {
@@ -234,24 +252,18 @@ fn execute(
     let mut publish = epoch;
     let mut scheduler = Scheduler::new(plan.interval());
     loop {
-        // Predicate and notification use the same mutex: Stop cannot be lost
-        // between checking cancellation and parking in the condition variable.
-        let mut control = lock(&shared.control);
         loop {
             if token.is_cancelled() {
                 return Ok(StopReason::Stopped);
             }
-            let remaining = scheduler.deadline().saturating_sub(epoch.elapsed());
-            if remaining.is_zero() {
+            let deadline = epoch
+                .checked_add(scheduler.deadline())
+                .ok_or_else(|| BackendError::new("Execution deadline overflow."))?;
+            if Instant::now() >= deadline {
                 break;
             }
-            let (guard, _) = shared
-                .changed
-                .wait_timeout(control, remaining)
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            control = guard;
+            waiter.wait_until(deadline, token)?;
         }
-        drop(control);
         let lateness = epoch.elapsed().saturating_sub(scheduler.deadline());
         metrics.max_lateness = metrics.max_lateness.max(lateness);
         metrics.attempts = metrics
@@ -289,6 +301,7 @@ fn prepare_delay(
     shared: &Shared,
     token: &Cancellation,
     delay: Duration,
+    waiter: &mut impl Waiter,
 ) -> Result<bool, BackendError> {
     if delay.is_zero() {
         return Ok(!token.is_cancelled());
@@ -304,19 +317,13 @@ fn prepare_delay(
         control.snapshot.ready_at = Some(deadline);
     }
     (shared.wake)();
-    let mut control = lock(&shared.control);
     loop {
         if token.is_cancelled() {
             return Ok(false);
         }
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
+        if Instant::now() >= deadline {
             return Ok(true);
         }
-        let (guard, _) = shared
-            .changed
-            .wait_timeout(control, remaining)
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        control = guard;
+        waiter.wait_until(deadline, token)?;
     }
 }

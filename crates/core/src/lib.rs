@@ -7,6 +7,9 @@ pub use scheduler::{ScheduleOverflow, Scheduler};
 mod engine;
 mod ports;
 mod state;
+mod waiter;
 pub use engine::{Engine, EngineError};
-pub use ports::{BackendError, Cancellation, InputSink};
+pub use ports::{BackendError, Cancellation, InputSink, Waiter};
 pub use state::{Metrics, RunState, Snapshot, StopReason};
+
+pub use waiter::StdWaiter;

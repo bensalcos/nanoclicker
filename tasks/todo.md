@@ -17,6 +17,8 @@ Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/imple
 **Dependencias:** T01. **Verificación:** ejecución Windows/Linux y revisión de resultados contra UI.md/VALIDATION.md. **Archivos:** `experiments/ui/`, `docs/evidence/ui-spike.md`.
 
 ### T03 — Probar entrada y espera Windows/X11 [M]
+
+Implementation: Windows high-resolution timer and per-run cancellation event compile; Linux condition-variable and X11 tests pass. Native Windows timing remains pending. See `docs/evidence/native-waiter.md`.
 - [ ] Inyectar pares en capturador aislado, detectar errores y liberar botón ante fallo parcial; probar registro/conflicto de atajo.
 - [ ] Seleccionar espera nativa cancelable y comprobar Stop durante intervalo largo sin busy-wait.
 

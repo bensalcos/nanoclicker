@@ -36,7 +36,7 @@ flowchart LR
     UI[app: UI y controller] --> Core[core: estado y motor]
     UI --> Platform[platform: selección y capacidades]
     Platform --> Core
-    Core --> Ports[ports: Clock / Waiter / InputSink]
+    Core --> Ports[ports: Waiter / InputSink]
     Platform --> OS[Windows / X11 / portales Wayland]
 ```
 
@@ -48,7 +48,7 @@ flowchart LR
 | state | Estados Idle, Preparing, Running, Stopping, Faulted; transiciones y razones de fin |
 | scheduler | Deadlines monotónicos, decisión de omitir períodos vencidos, aritmética comprobada |
 | engine | Worker propietario de configuración activa y contador; inicio, cancelación y cierre |
-| ports | Contratos de reloj, espera cancelable e inyección; fakes para tests deterministas |
+| ports | Contratos de espera cancelable e inyección; scheduler con offsets Duration para aritmética determinista, ejecución con Instant monotónico |
 | metrics | Intentos, pares aceptados, fallos, períodos omitidos, retraso de deadline; muestras acotadas |
 | capabilities | Reporte separado de inyección, atajos, permisos y motivo de indisponibilidad |
 | windows/x11/wayland | Inyección, espera nativa y registro de atajos según backend |
@@ -100,3 +100,5 @@ Build release portable: comparar `opt-level=3`, thin LTO y codegen-units=1 frent
 - [XTEST](https://www.x.org/releases/current/doc/libXtst/xtestlib.html): extensión de entrada sintética. Verificar disponibilidad en ejecución.
 
 Las fuentes respaldan APIs; el rendimiento, soporte en escritorios concretos y cumplimiento del producto requieren pruebas propias.
+
+Worker wait implementation: `StdWaiter` on Linux, high-resolution one-shot timer plus per-run cancellation event on Windows. The scheduler rechecks monotonic deadlines after every wake. See [native wait evidence](../evidence/native-waiter.md) for ownership, lock ordering and pending native acceptance.

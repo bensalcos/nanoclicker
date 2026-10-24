@@ -11,6 +11,10 @@ mod windows;
 mod windows_key;
 #[cfg(target_os = "windows")]
 pub mod windows_shortcut;
+#[cfg(any(target_os = "windows", test))]
+mod windows_time;
+#[cfg(target_os = "windows")]
+mod windows_waiter;
 #[cfg(target_os = "linux")]
 mod x11;
 #[cfg(target_os = "linux")]
@@ -114,5 +118,17 @@ impl InputSink for NativeInput {
             #[cfg(target_os = "linux")]
             Self::Wayland(sink) => sink.finish(),
         }
+    }
+}
+
+/// Selects the worker's monotonic wait without changing the input transport.
+pub fn waiter() -> Result<impl nanoclick_core::Waiter, BackendError> {
+    #[cfg(target_os = "windows")]
+    {
+        windows_waiter::WindowsWaiter::new()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(nanoclick_core::StdWaiter::default())
     }
 }

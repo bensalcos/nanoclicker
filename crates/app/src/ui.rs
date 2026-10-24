@@ -40,8 +40,9 @@ impl NanoClick {
         ctx.set_theme(selected_theme);
         let desktop = Desktop::detect();
         let wake = ctx.clone();
-        let engine = Engine::new(
+        let engine = Engine::with_waiter(
             move |cancel| NativeInput::open(desktop, cancel),
+            nanoclick_platform::waiter()?,
             move || wake.request_repaint(),
         )?;
         let (sender, probe) = mpsc::sync_channel(1);
