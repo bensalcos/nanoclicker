@@ -90,14 +90,22 @@ pub fn pair(conn: &RustConnection, key: u8) -> Result<()> {
     Ok(())
 }
 
+pub fn move_pointer(conn: &RustConnection, window: u32, x: i16, y: i16) -> Result<()> {
+    let root = conn.get_geometry(window)?.reply()?.root;
+    let point = conn.translate_coordinates(window, root, x, y)?.reply()?;
+    // Send motion through the same synthetic device as button events, so XI2
+    // clients receive the updated position before a following click.
+    conn.xtest_fake_input(6, 0, x11rb::CURRENT_TIME, root, point.dst_x, point.dst_y, 0)?
+        .check()?;
+    Ok(())
+}
 pub fn focus_target(conn: &RustConnection, target: u32) -> Result<()> {
     conn.configure_window(
         target,
         &ConfigureWindowAux::new().stack_mode(StackMode::ABOVE),
     )?
     .check()?;
-    conn.warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
-        .check()?;
+    move_pointer(conn, target, 100, 100)?;
     conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
         .check()?;
     Ok(())

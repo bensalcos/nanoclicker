@@ -27,9 +27,7 @@ pub fn run(
                 .set_input_focus(InputFocus::PARENT, window, x11rb::CURRENT_TIME)?
                 .check()?;
             let (x, y) = action_position(connection, window)?;
-            connection
-                .warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, x, y)?
-                .check()?;
+            crate::support::move_pointer(connection, window, x, y)?;
             connection
                 .xtest_fake_input(4, 1, 0, x11rb::NONE, 0, 0, 0)?
                 .check()?;

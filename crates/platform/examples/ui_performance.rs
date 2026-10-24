@@ -1,4 +1,4 @@
-//! Measures the actual GUI executable on a private Xvfb display, Linux only.
+//! Measures the actual GUI executable on a private X11 test display, Linux only.
 mod support;
 use std::{
     collections::BTreeMap,
@@ -98,7 +98,10 @@ fn thread_ticks(pid: u32) -> Result<BTreeMap<String, (String, u64)>> {
 }
 fn main() -> Result<()> {
     if std::env::var("NANOCLICK_ISOLATED_X11").as_deref() != Ok("1") {
-        return Err("Use scripts/measure-ui-x11.sh; requires an isolated display.".into());
+        return Err(
+            "Use scripts/measure-ui-x11.sh or measure-ui-gpu.sh; requires an isolated display."
+                .into(),
+        );
     }
     let binary = std::env::args_os()
         .nth(1)

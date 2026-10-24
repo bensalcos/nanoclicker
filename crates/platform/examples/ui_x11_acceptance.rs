@@ -1,4 +1,4 @@
-//! End-to-end GUI acceptance on an isolated Xvfb display only.
+//! End-to-end GUI acceptance on a private X11 test display only.
 use std::{
     thread,
     time::{Duration, Instant},
@@ -187,23 +187,47 @@ fn main() -> Result<()> {
     conn.set_input_focus(InputFocus::PARENT, window, x11rb::CURRENT_TIME)?
         .check()?;
     let (action_x, action_y) = action_position(&conn, window)?;
-    conn.warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, action_x, action_y)?
-        .check()?;
+    support::move_pointer(&conn, window, action_x, action_y)?;
     conn.xtest_fake_input(4, 1, 0, x11rb::NONE, 0, 0, 0)?
         .check()?;
     conn.xtest_fake_input(5, 1, 0, x11rb::NONE, 0, 0, 0)?
         .check()?;
     let started = Instant::now();
-    wait(|| Ok(active_button(&conn, window)), Duration::from_secs(3))?;
+    let gpu_fixture = std::env::var_os("NANOCLICK_GPU_SESSION").is_some();
+    let mut cursor_reassertions = 0;
+    wait(|| Ok(active_button(&conn, window)), Duration::from_secs(3)).map_err(|error| {
+        let _ = capture(window, "NANOCLICK_FAILURE_CAPTURE");
+        format!("Manual Start was not acknowledged: {error}")
+    })?;
     support::focus_target(&conn, target)?;
     capture(window, "NANOCLICK_PREPARING_CAPTURE")?;
     wait(
         || {
             drain(&conn, &mut events)?;
+            // A headless compositor's fake seat can reset emulated coordinates
+            // on focus changes. Keep only that fixture's cursor on its target;
+            // the normal Xvfb/manual-pointer scenario remains unchanged.
+            if gpu_fixture {
+                let pointer = conn.query_pointer(target)?.reply()?;
+                if pointer.win_x != 100 || pointer.win_y != 100 {
+                    support::move_pointer(&conn, target, 100, 100)?;
+                    cursor_reassertions += 1;
+                }
+            }
             Ok(events.len() >= 2)
         },
         Duration::from_secs(6),
-    )?;
+    )
+    .map_err(|error| {
+        let _ = capture(window, "NANOCLICK_FAILURE_CAPTURE");
+        let pointer = conn.query_pointer(target).ok().and_then(|cookie| cookie.reply().ok()).map(|reply| (reply.root_x, reply.root_y, reply.win_x, reply.win_y, u16::from(reply.mask), reply.child));
+        let target_geometry = conn.get_geometry(target).ok().and_then(|cookie| cookie.reply().ok()).map(|reply| (reply.x, reply.y, reply.width, reply.height));
+        let root_geometry = conn.get_geometry(root).ok().and_then(|cookie| cookie.reply().ok()).map(|reply| (reply.width, reply.height));
+        format!("Manual Start did not reach its target: {error}; captured {} events; pointer={pointer:?}; target={target_geometry:?}; root={root_geometry:?}", events.len())
+    })?;
+    if gpu_fixture {
+        println!("gpu_fixture_cursor_reassertions,{cursor_reassertions}");
+    }
     if started.elapsed() < Duration::from_millis(2800) {
         return Err("Manual Start bypassed its preparation countdown.".into());
     }
