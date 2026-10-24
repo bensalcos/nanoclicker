@@ -27,3 +27,9 @@ Executable SHA256:
 - Candidate: `f8305be9ca7709151b6e43ba087f90f2a70feaa2a00b25354cd70a1b36af8e9d`.
 
 Verification after the change: 38 Rust tests and Linux Clippy pass; isolated X11 received ten ordered pairs for Left/Middle/Right and passed held-key/conflict checks. The actual release GUI passed shortcut outside focus, minimum-size Start, manual countdown, no input after Stop and clean close. The optimization is retained for its repeatable syscall reduction; CPU/RAM gates remain open.
+
+## Untraced whole-application check
+
+A full release run after the change ([data](ui-noflush.csv)) measured startup p95 128.262 ms, idle RSS 106.918 MiB, zero observed idle CPU ticks, and active CPU 5.4499% of one core over 60 seconds. It received 6001 complete pairs with 1 ms p99/max interarrival absolute error. The CPU and memory budgets still fail.
+
+Earlier UI-polish measurements were 73.712 ms startup p95 and 5.3499% active CPU. Startup before any clicking cannot be improved or regressed by this flush change; the shared host exhibits substantial run-to-run variation. These samples do not establish a total-CPU or startup gain. The retained benefit is the repeated native syscall reduction, not an assertion that the full application is now within budget.

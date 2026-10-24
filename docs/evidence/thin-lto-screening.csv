@@ -1,0 +1,3 @@
+profile,elf_text_bytes,elf_data_bytes,elf_bss_bytes,elf_total_bytes,idle_rss_mib,idle_executable_rss_kib,active_cpu_percent_one_core,observation_seconds
+release_default,15127228,440448,13320,15580996,107.832,11712,4.5993,10
+release_thin_lto,15262876,395520,12528,15670924,107.816,11660,4.6986,10
