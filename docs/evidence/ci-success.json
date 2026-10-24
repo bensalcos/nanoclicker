@@ -1,41 +1,55 @@
 {
   "repository": "bensalcos/nanoclicker",
-  "head_sha": "e71fc32d568fd2dd8a21010d6463097ed9214e2f",
-  "run_id": 40090868511,
-  "url": "https://github.com/bensalcos/nanoclicker/actions/runs/40090868511",
+  "head_sha": "acc817c9f11714d8a74576d1dedda4512e237963",
+  "run_id": 40092934864,
+  "url": "https://github.com/bensalcos/nanoclicker/actions/runs/40092934864",
   "conclusion": "success",
   "jobs": [
     {
       "name": "Desktop / ubuntu-24.04",
-      "id": 120863072678,
-      "conclusion": "success",
-      "rust_tests": 39
-    },
-    {
-      "name": "Desktop / windows-2025",
-      "id": 120863072627,
+      "id": 120869477355,
       "conclusion": "success",
       "rust_tests": 42
     },
     {
+      "name": "Desktop / windows-2025",
+      "id": 120869477299,
+      "conclusion": "success",
+      "rust_tests": 45
+    },
+    {
       "name": "Minimum Rust / 1.95",
-      "id": 120863072605,
+      "id": 120869477073,
       "conclusion": "success"
     },
     {
       "name": "Alternative renderer / Linux",
-      "id": 120863072416,
+      "id": 120869477265,
       "conclusion": "success"
     }
   ],
   "artifact": {
     "name": "x11-evidence",
-    "id": 12558943182,
-    "size_bytes": 1054,
+    "id": 12559950979,
+    "size_bytes": 1055,
     "files_verified": [
       "x11.log",
       "ui-x11.log"
     ]
   },
-  "scope": "Native Windows headless tests/release linking and isolated Linux X11; not Windows GUI/SendInput, screen-reader or Wayland acceptance."
+  "scope": "Native Windows headless tests/release linking and preview ZIP/PDB verification; isolated Linux X11; not Windows GUI/SendInput, screen-reader or Wayland acceptance.",
+  "windows_preview": {
+    "id": 12560216356,
+    "size_bytes": 11395118,
+    "verification": {
+      "packaging_commit": "acc817c9f11714d8a74576d1dedda4512e237963",
+      "files": {
+        "nanoclick-0.1.0-windows-x86_64-preview.zip": "7572265011ca1e17185a995631929f817bc35eaf66b20197bbadb1e06064f153",
+        "nanoclick-0.1.0-windows-x86_64-preview-symbols.zip": "2a29950a02a1bbe3f902e183ee74b766c8429df2f81bf1376630263ad066ea4b"
+      },
+      "scope": "Preview structure, checksums, PE architecture and PDB signature; no desktop acceptance."
+    },
+    "dependency_inventory_entries": 128,
+    "downloaded_and_verified": true
+  }
 }

@@ -2,18 +2,20 @@
 
 The user authorized pushing the migration branch and running hosted CI on 2026-10-24. Remote master remains the C++ reference; work is on `feature/rust-migration-preview`.
 
-[Run 40090868511](https://github.com/bensalcos/nanoclicker/actions/runs/40090868511) at `e71fc32d568fd2dd8a21010d6463097ed9214e2f` completed successfully in all four jobs:
+[Run 40092934864](https://github.com/bensalcos/nanoclicker/actions/runs/40092934864) at `acc817c9f11714d8a74576d1dedda4512e237963` completed successfully in all four jobs:
 
 | Job | Verified scope |
 |---|---|
-| Ubuntu 24.04 desktop | fmt, Clippy, 39 Rust tests, 3 packaging tests, release build, isolated adapter/GUI X11 flow |
-| Windows Server 2025 desktop | fmt, Clippy, 42 native Rust tests, 3 packaging tests, MSVC release build/link |
+| Ubuntu 24.04 desktop | fmt, Clippy, 42 Rust tests, 8 packaging tests, release build, isolated adapter/GUI X11 flow |
+| Windows Server 2025 desktop | fmt, Clippy, 45 native Rust tests, 8 packaging tests, MSVC release build/link, verified preview ZIP/PDB |
 | Minimum Rust 1.95 | Workspace compile check |
 | Alternative renderer | Wgpu feature Clippy and application tests on Linux |
 
 The Windows logs confirm both blocked-parent rejection and first-save creation of nested directories. The first run failed on the former; the loader was fixed without weakening that assertion. See [preferences diagnosis](windows-preferences.md).
 
-The `x11-evidence` artifact (id 12558943182, 1054 compressed bytes) was downloaded and both logs inspected. It records ten complete pairs for all three buttons, shortcut conflict/held-key behavior, and actual GUI countdown, minimum-size Start, no post-stop input and clean close. [Structured summary](ci-success.json); complete downloaded logs remain local under `artifacts/ci/`.
+The `x11-evidence` artifact (id 12559950979, 1055 compressed bytes) was downloaded and both logs inspected. It records ten complete pairs for all three buttons, shortcut conflict/held-key behavior, and actual GUI countdown, minimum-size Start, no post-stop input and clean close. [Structured summary](ci-success.json); complete downloaded logs remain local under `artifacts/ci/`.
+
+The Windows preview artifact (id 12560216356) was downloaded and independently verified on Linux: archive hashes, packaged executable input hash/PE architecture, matching provenance, PDB signature, required files and zero unresolved notices. Its dependency inventory contains 128 entries. This verifies bundle structure, not application execution.
 
 Windows headless tests include three native event/timer tests: per-run event isolation, cancellation of an armed long timer, and timer firing/rearming. That is not native SendInput into a target window, full Windows GUI/DPI/NVDA testing or timer latency acceptance. Xvfb does not establish Wayland/Orca support. Release binaries linking successfully do not certify installation or behavior on every machine.
 

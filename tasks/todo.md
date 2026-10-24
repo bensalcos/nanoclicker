@@ -68,7 +68,7 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 
 ### T09 — Automatizar checks por plataforma [S]
 
-Accepted CI evidence: run 40090868511 at e71fc32 passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
+Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
 - [x] CI Windows/Linux con fmt, clippy, tests, build release y features válidas.
 - [x] Artefactos de fallo e integración X11 aislada; separar estos checks de QA nativo.
 
@@ -124,7 +124,7 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 
 ### T16 — Medir y optimizar cuellos de botella [M]
 
-Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. See `docs/evidence/ui-performance.md` and `docs/evidence/x11-deadline-lateness.md`.
+Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
 - [ ] Medir tabla VALIDATION.md por renderer/backend, comparar C++ donde exista baseline y perfilar desviaciones.
 - [ ] Optimizar únicamente hallazgos reproducibles; comprobar que ninguna mejora empeora Stop, CPU o precisión sin decisión registrada.
 
@@ -132,7 +132,7 @@ Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers soft
 
 ### T17 — Empaquetar y comprobar instalación limpia [M]
 
-Partial evidence: Linux preview with notices, source archives, checksums and separate symbols passed isolated Ubuntu 24.04 execution. Three packaging tests pass; Windows and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
+Partial evidence: Linux preview with notices, source archives, checksums and separate symbols passed isolated Ubuntu 24.04 execution. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
 - [ ] ZIP Windows y tar.gz Linux con iconos, licencias, checksums, requisitos y símbolos separados.
 - [ ] Ejecutar en instalaciones limpias de referencia; revisar features, dependencias/licencias y baseline glibc.
 
