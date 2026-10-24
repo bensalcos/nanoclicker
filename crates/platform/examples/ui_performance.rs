@@ -1,4 +1,5 @@
 //! Measures the actual GUI executable on a private X11 test display, Linux only.
+mod cpu_load;
 mod support;
 use std::{
     collections::BTreeMap,
@@ -108,6 +109,14 @@ fn main() -> Result<()> {
         .ok_or("Pass the release executable path.")?;
     let quick = std::env::args().any(|argument| argument == "--quick-profile");
     let duration = Duration::from_secs(if quick { 10 } else { 60 });
+    let load_threads = match std::env::var("NANOCLICK_BENCH_LOAD_THREADS") {
+        Ok(value) => value.parse::<usize>()?,
+        Err(std::env::VarError::NotPresent) => 0,
+        Err(error) => return Err(error.into()),
+    };
+    if load_threads > 2 {
+        return Err("Benchmark load threads must be 0..2".into());
+    }
     let clock_hz = String::from_utf8(Command::new("getconf").arg("CLK_TCK").output()?.stdout)?
         .trim()
         .parse::<f64>()?;
@@ -175,6 +184,9 @@ fn main() -> Result<()> {
         .position(|symbols| symbols.contains(&0xffc3))
         .ok_or("F6 not mapped")?;
     let key = u8::try_from(usize::from(first) + offset)?;
+    // Keep startup/idle unmodified; deliberate load starts before active input.
+    let _load = cpu_load::Load::start(load_threads);
+    println!("load_threads,{load_threads}");
     pair(&conn, key)?;
     let before = ticks(pid)?;
     let began = Instant::now();
