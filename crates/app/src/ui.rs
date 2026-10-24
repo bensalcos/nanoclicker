@@ -216,7 +216,13 @@ impl NanoClick {
                 right: 0,
             })
             .show(ui, |ui| {
-                ui.add(egui::Label::new(RichText::new(status).strong()).wrap());
+                let status_response =
+                    ui.add(egui::Label::new(RichText::new(status).strong()).wrap());
+                ui.ctx().accesskit_node_builder(status_response.id, |node| {
+                    node.set_role(egui::Role::Status);
+                    node.set_live(egui::accesskit::Live::Polite);
+                    node.set_live_atomic();
+                });
                 ui.add(egui::Label::new(RichText::new(progress).weak()).wrap());
                 let active = snapshot.state.is_active();
                 let enabled = snapshot.state != RunState::Stopping

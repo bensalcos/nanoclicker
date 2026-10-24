@@ -176,6 +176,14 @@ fn primary_action_stays_inside_minimum_window_with_long_status_and_errors()
             .accesskit_update
             .as_ref()
             .ok_or("Missing accessibility tree")?;
+        let status = tree
+            .nodes
+            .iter()
+            .map(|(_, node)| node)
+            .find(|node| node.role() == egui::Role::Status)
+            .ok_or("Session status lacks a live region")?;
+        assert_eq!(status.live(), Some(egui::accesskit::Live::Polite));
+        assert!(status.is_live_atomic());
         let action = tree
             .nodes
             .iter()

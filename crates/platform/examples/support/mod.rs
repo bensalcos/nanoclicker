@@ -32,11 +32,24 @@ pub fn wait(mut ready: impl FnMut() -> Result<bool>, duration: Duration) -> Resu
         thread::sleep(Duration::from_millis(5));
     }
 }
+pub fn scale_factor() -> Result<f64> {
+    let factor = std::env::var("WINIT_X11_SCALE_FACTOR")
+        .unwrap_or_else(|_| "1".into())
+        .parse::<f64>()?;
+    if ![1.0, 1.5, 2.0].contains(&factor) {
+        return Err("Harness scale must be 1, 1.5 or 2".into());
+    }
+    Ok(factor)
+}
 pub fn action_position(conn: &RustConnection, window: u32) -> Result<(i16, i16)> {
     let geometry = conn.get_geometry(window)?.reply()?;
     Ok((
         i16::try_from(geometry.width / 2)?,
-        i16::try_from(geometry.height.saturating_sub(50))?,
+        i16::try_from(
+            geometry
+                .height
+                .saturating_sub((50.0 * scale_factor()?).round() as u16),
+        )?,
     ))
 }
 pub fn ready_button(conn: &RustConnection, window: u32) -> bool {

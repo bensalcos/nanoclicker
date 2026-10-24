@@ -15,7 +15,7 @@ use x11rb::{
     rust_connection::RustConnection,
 };
 mod support;
-use support::{Result, action_position, close, launch, pair, ready_button, wait};
+use support::{Result, action_position, close, launch, pair, ready_button, scale_factor, wait};
 fn drain(conn: &RustConnection, events: &mut Vec<bool>) -> Result<()> {
     while let Some(event) = conn.poll_for_event()? {
         match event {
@@ -49,7 +49,7 @@ fn main() -> Result<()> {
         x11rb::COPY_DEPTH_FROM_PARENT,
         target,
         root,
-        700,
+        1400,
         100,
         250,
         250,
@@ -84,6 +84,7 @@ fn main() -> Result<()> {
         },
         Duration::from_secs(3),
     )?;
+    capture(window, "NANOCLICK_RUNNING_CAPTURE")?;
     pair(&conn, key)?;
     wait(|| Ok(ready_button(&conn, window)), Duration::from_secs(3))?;
     drain(&conn, &mut events)?;
@@ -100,19 +101,36 @@ fn main() -> Result<()> {
 
     // The main action must remain usable at the documented minimum size,
     // while secondary content may scroll. No input is active during resize.
-    conn.configure_window(window, &ConfigureWindowAux::new().width(420).height(520))?
-        .check()?;
+    let factor = scale_factor()?;
+    let width = (420.0 * factor).round() as u32;
+    let height = (520.0 * factor).round() as u32;
+    conn.configure_window(
+        window,
+        &ConfigureWindowAux::new().width(width).height(height),
+    )?
+    .check()?;
     wait(
         || {
             let size = conn.get_geometry(window)?.reply()?;
-            Ok(size.width == 420 && size.height == 520 && ready_button(&conn, window))
+            Ok(u32::from(size.width) == width
+                && u32::from(size.height) == height
+                && ready_button(&conn, window))
         },
         Duration::from_secs(3),
     )?;
     capture(window, "NANOCLICK_LAYOUT_CAPTURE")?;
     if std::env::var_os("NANOCLICK_SCROLL_CAPTURE").is_some() {
-        conn.warp_pointer(x11rb::NONE, window, 0, 0, 0, 0, 200, 300)?
-            .check()?;
+        conn.warp_pointer(
+            x11rb::NONE,
+            window,
+            0,
+            0,
+            0,
+            0,
+            (200.0 * factor).round() as i16,
+            (300.0 * factor).round() as i16,
+        )?
+        .check()?;
         for _ in 0..5 {
             conn.xtest_fake_input(4, 5, 0, x11rb::NONE, 0, 0, 0)?
                 .check()?;
@@ -124,7 +142,7 @@ fn main() -> Result<()> {
             return Err("Scrolling displaced Start".into());
         }
     }
-    println!("PASS GUI: Start remains visible at 420x520");
+    println!("PASS GUI: Start remains visible at 420x520 logical units, scale {factor}");
 
     // Exercise the actual Start button, then move to the target during its
     // cancelable three-second preparation instead of bypassing the controller.
@@ -143,6 +161,7 @@ fn main() -> Result<()> {
         .check()?;
     conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
         .check()?;
+    capture(window, "NANOCLICK_PREPARING_CAPTURE")?;
     wait(
         || {
             drain(&conn, &mut events)?;

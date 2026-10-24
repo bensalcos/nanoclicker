@@ -12,5 +12,5 @@ docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-
         mkdir -p /tmp/runtime /tmp/config /tmp/cache
         chmod 700 /tmp/runtime
         export XDG_RUNTIME_DIR=/tmp/runtime XDG_CONFIG_HOME=/tmp/config XDG_CACHE_HOME=/tmp/cache
-        xvfb-run -a -s "-screen 0 1024x768x24 -nolisten tcp" env XDG_SESSION_TYPE=x11 NANOCLICK_ISOLATED_X11=1 /qa/probe /app/nanoclick
+        xvfb-run -a -s "-screen 0 2048x1536x24 -nolisten tcp" env XDG_SESSION_TYPE=x11 NANOCLICK_ISOLATED_X11=1 /qa/probe /app/nanoclick
     '
