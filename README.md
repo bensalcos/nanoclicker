@@ -12,7 +12,7 @@ Install Rust through [rustup](https://rustup.rs/), then run:
 cargo run --locked -p nanoclick
 ```
 
-The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; a separate check with that compiler is still pending. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer.
+The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; the workspace has also passed a local check with Rust 1.95.0. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer.
 
 ```sh
 cargo run --locked -p nanoclick -- --theme light

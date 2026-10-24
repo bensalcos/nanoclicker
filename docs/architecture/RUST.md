@@ -73,7 +73,7 @@ flowchart LR
 
 | Entorno | Clics | Atajo | Criterio de aceptación |
 |---|---|---|---|
-| Windows | `SendInput`, dos INPUT en una llamada; verificar cantidad devuelta | `RegisterHotKey`, sin repetición y loop de mensajes | Prueba real fuera de foco, conflicto y ejecución no elevada |
+| Windows | `SendInput`, dos INPUT en una llamada; verificar cantidad devuelta | `RegisterHotKey`, MOD_NOREPEAT y worker con MsgWaitForMultipleObjects/evento de apagado | Prueba real fuera de foco, conflicto y ejecución no elevada |
 | Linux X11 | XTEST, comprobar extensión/conexión y flush; mapear botones 1/3/2 | Grab de tecla con modificadores, gestionar conflictos/layout | Sesión X11 real y destino de prueba |
 | Linux Wayland | RemoteDesktop portal con permiso POINTER; primer candidato NotifyPointerButton | GlobalShortcuts portal, trigger realmente asignado | Sesión GNOME y KDE real, permisos aceptados/denegados/revocados |
 

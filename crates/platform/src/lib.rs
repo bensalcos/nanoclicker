@@ -7,6 +7,10 @@ pub mod portal_shortcut;
 pub mod wayland;
 #[cfg(target_os = "windows")]
 mod windows;
+#[cfg(any(target_os = "windows", test))]
+mod windows_key;
+#[cfg(target_os = "windows")]
+pub mod windows_shortcut;
 #[cfg(target_os = "linux")]
 mod x11;
 #[cfg(target_os = "linux")]
