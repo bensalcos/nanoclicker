@@ -1,0 +1,2 @@
+scope,elapsed_s,attempts,sent,skipped,p50_upper_us,p95_upper_us,p99_upper_us,max_us
+native_waiter_no_input,60.000192,6000,6000,0,100.000,500.000,600.000,868.669
