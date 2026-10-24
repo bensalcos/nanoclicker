@@ -1,4 +1,4 @@
-//! Minimal RemoteDesktop wire fixture; never connects to a compositor.
+//! Minimal RemoteDesktop and GlobalShortcuts wire fixture; never connects to a compositor.
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex, MutexGuard},
@@ -191,6 +191,65 @@ impl Portal {
         Ok(())
     }
 }
+
+struct Shortcuts(Shared, Mode);
+#[zbus::interface(name = "org.freedesktop.portal.GlobalShortcuts")]
+impl Shortcuts {
+    #[zbus(property, name = "version")]
+    fn version(&self) -> u32 {
+        1
+    }
+    async fn create_session(
+        &self,
+        options: Options,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(connection)] connection: &Connection,
+    ) -> fdo::Result<OwnedObjectPath> {
+        Portal {
+            state: self.0.clone(),
+            mode: Mode::Allow,
+        }
+        .create_session(options, header, connection)
+        .await
+    }
+    async fn bind_shortcuts(
+        &self,
+        session: ObjectPath<'_>,
+        _shortcuts: Vec<(String, Options)>,
+        _parent: &str,
+        options: Options,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(connection)] connection: &Connection,
+    ) -> fdo::Result<OwnedObjectPath> {
+        lock(&self.0).starts += 1;
+        if matches!(self.1, Mode::CloseDuringSelect) {
+            closed(connection, &session.into()).await.map_err(error)?;
+        }
+        if matches!(self.1, Mode::CloseDuringSelect | Mode::HoldStart) {
+            return path(&header, &options, "request", "handle_token");
+        }
+        let shortcuts = vec![(
+            "toggle",
+            HashMap::from([
+                (
+                    "description",
+                    OwnedValue::from(Str::from("Start or stop NanoClick")),
+                ),
+                ("trigger_description", OwnedValue::from(Str::from("F6"))),
+            ]),
+        )];
+        let value = OwnedValue::try_from(zbus::zvariant::Value::new(shortcuts)).map_err(error)?;
+        response(
+            connection,
+            &header,
+            &options,
+            0,
+            HashMap::from([("shortcuts".into(), value)]),
+        )
+        .await
+    }
+}
+
 pub async fn serve(mode: Mode) -> zbus::Result<(Connection, Shared)> {
     let state = Shared::default();
     let connection = Connection::session().await?;
@@ -202,6 +261,13 @@ pub async fn serve(mode: Mode) -> zbus::Result<(Connection, Shared)> {
                 state: state.clone(),
                 mode,
             },
+        )
+        .await?;
+    connection
+        .object_server()
+        .at(
+            "/org/freedesktop/portal/desktop",
+            Shortcuts(state.clone(), mode),
         )
         .await?;
     // Do not replace an existing service, even if the isolation guard is misused.

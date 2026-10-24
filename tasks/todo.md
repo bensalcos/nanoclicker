@@ -90,7 +90,7 @@ Additional X11 evidence: pointer-only map changes preserve the binding, actual k
 
 ### T12 — Integrar Wayland y capacidades [M]
 
-Partial protocol evidence: eight real-D-Bus mock scenarios pass on an activation-disabled private bus. This exercises the production adapter and engine without a compositor; real GNOME/KDE portal and input acceptance remains open. See `docs/evidence/portal-contract-tests.md`.
+Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activation-disabled private bus, including five GlobalShortcuts service-loss/closure cases before and after binding. This exercises the production adapter and engine without a compositor; real GNOME/KDE portal and input acceptance remains open. See `docs/evidence/portal-contract-tests.md`.
 - [ ] Adaptador de portal con preparación cancelable, sesiones y señales de revocación; UI distingue inyección y atajo.
 - [ ] Trigger efectivo del escritorio y modo manual explícito cuando no hay atajo; portal ausente impide iniciar si falta inyección.
 

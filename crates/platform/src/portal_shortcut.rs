@@ -86,11 +86,37 @@ async fn run(
         let mut pressed = operation(proxy.receive_activated(), &stopped).await?;
         let mut released = operation(proxy.receive_deactivated(), &stopped).await?;
         let mut closed = operation(session.receive_closed(), &stopped).await?;
+        // Subscribe before binding so a restart cannot leave a registered-looking
+        // shortcut attached to a session owned by the previous service.
+        let mut owners = operation(
+            async {
+                proxy
+                    .receive_owner_changed()
+                    .await
+                    .map_err(ashpd::Error::from)
+            },
+            &stopped,
+        )
+        .await?;
         let shortcuts =
             [NewShortcut::new("toggle", "Start or stop NanoClick").preferred_trigger("F6")];
-        let bound = operation(
-            proxy.bind_shortcuts(&session, &shortcuts, None, Default::default()),
-            &stopped,
+        let bound = race(
+            operation(
+                proxy.bind_shortcuts(&session, &shortcuts, None, Default::default()),
+                &stopped,
+            ),
+            async {
+                race(
+                    async {
+                        let _ = closed.next().await;
+                    },
+                    async {
+                        let _ = owners.next().await;
+                    },
+                )
+                .await;
+                Err(BackendError::new("The desktop shortcut session ended."))
+            },
         )
         .await?
         .response()
@@ -118,7 +144,15 @@ async fn run(
                 },
                 race(
                     async {
-                        let _ = closed.next().await;
+                        race(
+                            async {
+                                let _ = closed.next().await;
+                            },
+                            async {
+                                let _ = owners.next().await;
+                            },
+                        )
+                        .await;
                         Signal::Closed
                     },
                     race(

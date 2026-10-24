@@ -3,7 +3,10 @@
 mod portal_mock;
 use futures_lite::future::block_on;
 use nanoclick_core::{ClickConfig, Engine, MouseButton, RunState, Snapshot, StopReason};
-use nanoclick_platform::wayland::WaylandInput;
+use nanoclick_platform::{
+    portal_shortcut::{PortalShortcut, ShortcutUpdate},
+    wayland::WaylandInput,
+};
 use portal_mock::{Mode, NAME, lock};
 use std::{
     error::Error,
@@ -149,6 +152,86 @@ fn main() -> Result<()> {
         drop(engine);
         if let Some(connection) = replacement {
             block_on(connection.release_name(NAME))?;
+        }
+        let _ = block_on(service.release_name(NAME))?;
+        println!("PASS portal lifecycle: {scenario}");
+    }
+    shortcut_lifecycle()?;
+    Ok(())
+}
+fn shortcut_lifecycle() -> Result<()> {
+    for scenario in [
+        "shortcut-owner-lost",
+        "shortcut-owner-replaced",
+        "shortcut-closed",
+        "shortcut-closed-during-bind",
+        "shortcut-owner-lost-during-bind",
+    ] {
+        let during_bind = scenario.ends_with("during-bind");
+        let mode = match scenario {
+            "shortcut-closed-during-bind" => Mode::CloseDuringSelect,
+            "shortcut-owner-lost-during-bind" => Mode::HoldStart,
+            _ => Mode::Allow,
+        };
+        let (service, state) = block_on(portal_mock::serve(mode))?;
+        let (updates, received) = std::sync::mpsc::channel();
+        let shortcut = PortalShortcut::configure(
+            move |update| {
+                let _ = updates.send(update);
+            },
+            || {},
+        )?;
+        if !during_bind {
+            match received.recv_timeout(Duration::from_secs(4))? {
+                ShortcutUpdate::Registered(trigger) if trigger == "F6" => {}
+                update => {
+                    return Err(format!("Unexpected shortcut registration: {update:?}").into());
+                }
+            }
+        } else {
+            let deadline = Instant::now() + Duration::from_secs(4);
+            while lock(&state).starts == 0 {
+                if Instant::now() >= deadline {
+                    return Err("Shortcut did not reach BindShortcuts".into());
+                }
+                thread::sleep(Duration::from_millis(1));
+            }
+        }
+        let replacement = if scenario == "shortcut-owner-replaced" {
+            let replacement = block_on(zbus::Connection::session())?;
+            block_on(replacement.request_name_with_flags(
+                NAME,
+                zbus::fdo::RequestNameFlags::ReplaceExisting
+                    | zbus::fdo::RequestNameFlags::DoNotQueue,
+            ))?;
+            Some(replacement)
+        } else {
+            if matches!(
+                scenario,
+                "shortcut-owner-lost" | "shortcut-owner-lost-during-bind"
+            ) {
+                block_on(service.release_name(NAME))?;
+            } else if !during_bind {
+                let session = lock(&state)
+                    .session
+                    .clone()
+                    .ok_or("Missing shortcut session")?;
+                block_on(portal_mock::closed(&service, &session))?;
+            }
+            None
+        };
+        match received.recv_timeout(Duration::from_secs(4))? {
+            ShortcutUpdate::Unavailable(_) => {}
+            update => return Err(format!("Shortcut lifecycle not invalidated: {update:?}").into()),
+        }
+        drop(shortcut);
+        if matches!(scenario, "shortcut-closed" | "shortcut-closed-during-bind")
+            && lock(&state).closes != 1
+        {
+            return Err("Shortcut session was not closed exactly once".into());
+        }
+        if let Some(replacement) = replacement {
+            block_on(replacement.release_name(NAME))?;
         }
         let _ = block_on(service.release_name(NAME))?;
         println!("PASS portal lifecycle: {scenario}");
