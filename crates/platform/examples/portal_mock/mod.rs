@@ -1,0 +1,215 @@
+//! Minimal RemoteDesktop wire fixture; never connects to a compositor.
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex, MutexGuard},
+};
+use zbus::{
+    Connection, fdo,
+    message::Header,
+    zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Str},
+};
+
+pub const NAME: &str = "org.freedesktop.portal.Desktop";
+type Options = HashMap<String, OwnedValue>;
+#[derive(Clone, Copy)]
+pub enum Mode {
+    Allow,
+    Deny,
+    CloseDuringSelect,
+    HoldStart,
+    FailRelease,
+}
+#[derive(Default)]
+pub struct State {
+    pub session: Option<OwnedObjectPath>,
+    pub buttons: Vec<(i32, u32)>,
+    pub closes: usize,
+    pub starts: usize,
+    release_failed: bool,
+}
+pub type Shared = Arc<Mutex<State>>;
+pub fn lock(state: &Shared) -> MutexGuard<'_, State> {
+    state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+fn error(value: impl std::fmt::Display) -> fdo::Error {
+    fdo::Error::Failed(value.to_string())
+}
+fn path(
+    header: &Header<'_>,
+    options: &Options,
+    prefix: &str,
+    token: &str,
+) -> fdo::Result<OwnedObjectPath> {
+    let sender = header
+        .sender()
+        .ok_or_else(|| error("Missing sender"))?
+        .as_str()
+        .trim_start_matches(':')
+        .replace('.', "_");
+    let token = options
+        .get(token)
+        .and_then(|value| <&str>::try_from(value).ok())
+        .ok_or_else(|| error("Missing handle token"))?;
+    OwnedObjectPath::try_from(format!(
+        "/org/freedesktop/portal/desktop/{prefix}/{sender}/{token}"
+    ))
+    .map_err(error)
+}
+async fn response(
+    connection: &Connection,
+    header: &Header<'_>,
+    options: &Options,
+    code: u32,
+    results: Options,
+) -> fdo::Result<OwnedObjectPath> {
+    let request = path(header, options, "request", "handle_token")?;
+    connection
+        .emit_signal(
+            None::<&str>,
+            request.as_str(),
+            "org.freedesktop.portal.Request",
+            "Response",
+            &(code, results),
+        )
+        .await
+        .map_err(error)?;
+    Ok(request)
+}
+pub async fn closed(connection: &Connection, session: &OwnedObjectPath) -> zbus::Result<()> {
+    connection
+        .emit_signal(
+            None::<&str>,
+            session.as_str(),
+            "org.freedesktop.portal.Session",
+            "Closed",
+            &Options::new(),
+        )
+        .await
+}
+struct FakeSession(Shared);
+#[zbus::interface(name = "org.freedesktop.portal.Session")]
+impl FakeSession {
+    fn close(&self) {
+        lock(&self.0).closes += 1;
+    }
+    #[zbus(property, name = "version")]
+    fn version(&self) -> u32 {
+        1
+    }
+}
+pub struct Portal {
+    pub state: Shared,
+    pub mode: Mode,
+}
+#[zbus::interface(name = "org.freedesktop.portal.RemoteDesktop")]
+impl Portal {
+    #[zbus(property, name = "version")]
+    fn version(&self) -> u32 {
+        2
+    }
+    #[zbus(property)]
+    fn available_device_types(&self) -> u32 {
+        2
+    }
+    async fn create_session(
+        &self,
+        options: Options,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(connection)] connection: &Connection,
+    ) -> fdo::Result<OwnedObjectPath> {
+        let session = path(&header, &options, "session", "session_handle_token")?;
+        connection
+            .object_server()
+            .at(session.as_str(), FakeSession(self.state.clone()))
+            .await
+            .map_err(error)?;
+        lock(&self.state).session = Some(session.clone());
+        let results = HashMap::from([(
+            "session_handle".into(),
+            OwnedValue::from(Str::from(session.as_str())),
+        )]);
+        response(connection, &header, &options, 0, results).await
+    }
+    async fn select_devices(
+        &self,
+        session: ObjectPath<'_>,
+        options: Options,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(connection)] connection: &Connection,
+    ) -> fdo::Result<OwnedObjectPath> {
+        if matches!(self.mode, Mode::CloseDuringSelect) {
+            closed(connection, &session.into()).await.map_err(error)?;
+        }
+        response(
+            connection,
+            &header,
+            &options,
+            u32::from(matches!(self.mode, Mode::Deny)),
+            Options::new(),
+        )
+        .await
+    }
+    async fn start(
+        &self,
+        _session: ObjectPath<'_>,
+        _parent: &str,
+        options: Options,
+        #[zbus(header)] header: Header<'_>,
+        #[zbus(connection)] connection: &Connection,
+    ) -> fdo::Result<OwnedObjectPath> {
+        lock(&self.state).starts += 1;
+        if matches!(self.mode, Mode::HoldStart) {
+            return path(&header, &options, "request", "handle_token");
+        }
+        response(
+            connection,
+            &header,
+            &options,
+            0,
+            HashMap::from([("devices".into(), OwnedValue::from(2u32))]),
+        )
+        .await
+    }
+    fn notify_pointer_button(
+        &self,
+        _session: ObjectPath<'_>,
+        _options: Options,
+        button: i32,
+        state: u32,
+    ) -> fdo::Result<()> {
+        let mut observed = lock(&self.state);
+        if observed.buttons.len() >= 8 {
+            return Err(error("Unexpected extra input"));
+        }
+        observed.buttons.push((button, state));
+        if matches!(self.mode, Mode::FailRelease) && state == 0 && !observed.release_failed {
+            observed.release_failed = true;
+            return Err(error("Injected release failure"));
+        }
+        Ok(())
+    }
+}
+pub async fn serve(mode: Mode) -> zbus::Result<(Connection, Shared)> {
+    let state = Shared::default();
+    let connection = Connection::session().await?;
+    connection
+        .object_server()
+        .at(
+            "/org/freedesktop/portal/desktop",
+            Portal {
+                state: state.clone(),
+                mode,
+            },
+        )
+        .await?;
+    // Do not replace an existing service, even if the isolation guard is misused.
+    connection
+        .request_name_with_flags(
+            NAME,
+            fdo::RequestNameFlags::AllowReplacement | fdo::RequestNameFlags::DoNotQueue,
+        )
+        .await?;
+    Ok((connection, state))
+}

@@ -26,6 +26,14 @@ windows-sys = { version = "0.61.2", features = ["Win32_UI_Input_KeyboardAndMouse
 
 [features]
 x11-tests = []
+portal-tests = []
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+zbus = { version = "5.19.0", default-features = false, features = ["async-io"] }
+
+[[example]]
+name = "portal_lifecycle"
+required-features = ["portal-tests"]
 
 [[example]]
 name = "x11_acceptance"
