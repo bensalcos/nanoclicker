@@ -1,33 +1,33 @@
-# Calidad, rendimiento y aceptación
+# Quality, performance and acceptance
 
-Todos los números siguientes son **presupuestos iniciales pendientes de medición**, no resultados ni garantías de tiempo real. No reducirlos silenciosamente: documentar datos, causa y decisión si requieren revisión.
+All numbers below are **initial budgets requiring measurement**, not results or real-time guarantees. Never lower them silently: record the data, cause and decision if they need revision.
 
-## Presupuestos
+## Budgets
 
-| Medida | Objetivo inicial | Condiciones |
+| Measurement | Initial target | Conditions |
 |---|---|---|
-| Arranque cálido hasta ventana utilizable | p95 ≤500 ms | 30 aperturas release, sin diálogo de permiso |
-| Memoria en reposo | RSS/private working set ≤100 MiB | 60 s estabilizado, registrar SO y renderer |
-| CPU en reposo | ≤1% de un núcleo | Media 60 s, sin animaciones ni interacción |
-| CPU activo a 100 clics/s | ≤5% de un núcleo | Media 60 s, proceso completo; registrar backend |
-| Stop hasta acuse del motor | p99 ≤20 ms, máximo observado ≤100 ms | 1000 paradas aleatorias, intervalos 1/10/100/999999 ms |
-| Retraso de deadline a 10 ms de período | p99 ≤2 ms | 60 s sin carga y 60 s con carga documentada |
-| Binario portable comprimido | ≤25 MiB | Por plataforma, listar librerías requeridas aparte |
+| Warm startup to usable window | p95 ≤500 ms | 30 release launches, without permission dialogs |
+| Idle memory | RSS/private working set ≤100 MiB | Stabilized for 60 s; record OS and renderer |
+| Idle CPU | ≤1% of one core | 60 s average, without animations or interaction |
+| Active CPU at 100 clicks/s | ≤5% of one core | 60 s average, entire process; record backend |
+| Stop to engine acknowledgement | p99 ≤20 ms, observed maximum ≤100 ms | 1000 randomized stops at 1/10/100/999999 ms intervals |
+| Deadline lateness at a 10 ms period | p99 ≤2 ms | 60 s unloaded and 60 s under documented load |
+| Compressed portable binary | ≤25 MiB | Per platform; list required libraries separately |
 
-Aplicar la misma tabla a cada backend. Un incumplimiento Wayland no queda exento por usar D-Bus: requiere optimización o decisión explícita de capacidad/rango admitido. El intervalo mínimo configurable de 1 ms no promete 1000 clics/s sostenidos; mostrar período solicitado y resultado medido por separado.
+Apply the same table to each backend. Wayland does not receive an exemption for using D-Bus: a missed budget requires optimization or an explicit capability/supported-range decision. The minimum configurable interval of 1 ms does not promise sustained 1000 clicks/s; show the requested period and measured result separately.
 
-Máquinas de referencia: x86_64, al menos 4 núcleos y 8 GiB; registrar CPU exacta, RAM, GPU/driver, SO/kernel, escritorio/compositor/portal, energía, carga y commit. Para cada medida separar cold/warm, depuración/release y motor/UI/destino. Medir el proceso completo para CPU/RAM, no solo un microbenchmark.
+Reference machines: x86_64, at least 4 cores and 8 GiB; record exact CPU, RAM, GPU/driver, OS/kernel, desktop/compositor/portal, power settings, load and commit. For each measurement distinguish cold/warm, debug/release and engine/UI/target scope. Measure the entire process for CPU/RAM, rather than only a microbenchmark.
 
-## Estrategia de pruebas
+## Test strategy
 
-1. **Core determinista:** reloj/espera/inyección falsos; validación, N exacto, primer clic, slots omitidos, overflow, inicio repetido, parada en preparación y ejecución, Shutdown y errores parciales. Probar conteos sin esperar tiempo real.
-2. **Concurrencia:** carreras Start/Stop/Start y cierre, wakeup perdido, canal lleno, snapshot terminal y eventos de run_id anterior; tests de estrés acotados. Usar Loom solo si aporta cobertura al protocolo propio de sincronización.
-3. **Adaptadores:** destinos de prueba aislados capturan botón, orden down/up y conteo. No inyectar sobre escritorios de CI compartidos. Xvfb aporta evidencia X11 aislada, no soporte Wayland ni QA gráfico nativo.
-4. **Fallos:** atajo ocupado, pérdida de servidor X/D-Bus, portal ausente, permiso denegado/revocado, fallo de liberación y configuración corrupta. El estado Running no puede sobrevivir a un backend inválido.
-5. **UI:** textos y mensajes en inglés, fin de conteo habilita controles, cuenta regresiva cancelable, DPI, teclado y lectores de pantalla según UI.md.
-6. **Rendimiento:** benchmarks release del scheduler y mediciones end-to-end; histogramas acotados, p50/p95/p99/máximo y slots omitidos. Diferenciar timestamp de llamada de inyección y recepción en capturador; ninguna prueba demuestra comportamiento de todas las aplicaciones.
+1. **Deterministic core:** fake clock/waiter/input; validation, exact N, first click, skipped slots, overflow, repeated Start, Stop during preparation and execution, Shutdown and partial failures. Test count arithmetic without waiting for real time.
+2. **Concurrency:** Start/Stop/Start and close races, lost wakeups, full channel, terminal snapshot and events from a previous run_id; bounded stress tests. Use Loom only when it adds coverage of the application's synchronization protocol.
+3. **Adapters:** isolated test targets capture button, down/up order and count. Never inject into shared CI desktops. Xvfb provides isolated X11 evidence, not Wayland support or native graphical QA.
+4. **Failures:** occupied shortcut, lost X server/D-Bus connection, missing portal, denied/revoked permission, failed button release and corrupt configuration. Running must not survive an invalid backend.
+5. **UI:** English text and messages, count completion unlocks controls, cancelable countdown, DPI, keyboard and screen readers according to UI.md.
+6. **Performance:** release scheduler benchmarks and end-to-end measurements; bounded histograms, p50/p95/p99/maximum and skipped slots. Distinguish injection-call timestamps from capture-reception timestamps; no test establishes behavior in every application.
 
-Cuando exista workspace, checks esperados por target admitido:
+Expected checks for each supported target:
 
 ```sh
 cargo fmt --all --check
@@ -37,17 +37,17 @@ cargo build --release --locked
 cargo bench --locked
 ```
 
-Añadir matriz de features válidas (renderer elegido y backend por target); `--all-features` solo si no combina opciones mutuamente excluyentes. Mantener check de MSRV, auditoría de dependencias/licencias y símbolos de diagnóstico. Miri para core si las dependencias lo permiten; no considerarlo prueba de FFI del SO.
+Include a valid feature matrix (selected renderer and backend per target); use `--all-features` only when it does not combine mutually exclusive options. Maintain MSRV checks, dependency/license audits and diagnostic symbols. Run Miri for the core if dependencies permit; do not treat it as proof of OS FFI behavior.
 
-## Matriz de entrega
+## Delivery matrix
 
-| Plataforma | Build/test CI | Prueba nativa requerida |
+| Platform | CI build/tests | Required native tests |
 |---|---|---|
-| Windows 11 x64 MSVC | fmt, clippy, tests, release | SendInput, hotkey fuera de foco, DPI, NVDA, cierre |
-| Ubuntu 24.04 x64 X11 | tests, release, integración aislada | XTEST, conflictos, layouts, Orca |
-| Ubuntu GNOME Wayland | build Linux y tests de contrato | Portales, cliente Wayland nativo, permisos y revocación |
-| KDE Plasma Wayland | build Linux y tests de contrato | Mismos flujos; registrar distro/versiones en P0 |
+| Windows 11 x64 MSVC | fmt, clippy, tests, release | SendInput, shortcut outside focus, DPI, NVDA, close |
+| Ubuntu 24.04 x64 X11 | tests, release, isolated integration | XTEST, conflicts, layouts, Orca |
+| Ubuntu GNOME Wayland | Linux build and contract tests | Portals, native Wayland client, permissions and revocation |
+| KDE Plasma Wayland | Linux build and contract tests | Same flows; record distribution/versions during P0 |
 
-Artefactos iniciales: ZIP Windows con ejecutable y licencias; tar.gz Linux con binario, `.desktop`, icono y lista de requisitos. AppImage/MSI/Flatpak quedan posteriores a verificar necesidad y compatibilidad; no llamar “portable sin dependencias” a un binario Linux sin comprobar linkage y baseline glibc.
+Initial artifacts: Windows ZIP with executable and licenses; Linux tar.gz with binary, `.desktop`, icon and requirements. AppImage/MSI/Flatpak follow only after verifying need and compatibility; do not describe a Linux binary as dependency-free portable without checking linkage and its glibc baseline.
 
-Release solo después de paridad, matriz nativa y presupuestos aceptados, inventario de licencias, checksums y guía reproducible de compilación. Revisar procedencia del icono y completar aviso MIT con datos confirmados. Firma de código y publicación requieren credenciales/alcance explícito; preparar artefactos localmente sin bloquear la implementación por ello.
+Release requires accepted parity, native matrix and budgets, a license inventory, checksums and reproducible build instructions. Review icon provenance and complete the MIT notice with confirmed details. Code signing and publication require explicit credentials/scope; prepare artifacts locally without making those credentials a prerequisite for implementation.

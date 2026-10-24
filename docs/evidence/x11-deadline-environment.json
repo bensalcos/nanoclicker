@@ -1,0 +1,9 @@
+{
+  "source_commit": "65d509da93b8260b3545c648637a1388df61197c",
+  "binary_sha256": "37c59e4b99d410c7c25ac2295cfd897689a01987cd88b7b72021535d40cf367d",
+  "kernel": "7.2.6-200.fc44.x86_64",
+  "logical_cpus": 12,
+  "load_before": "2.77 1.72 1.16 1/1846 2376856",
+  "governor": "powersave",
+  "scope": "Engine and native X11 input in private Xvfb; no GUI; shared host; no CPU affinity or load isolation."
+}

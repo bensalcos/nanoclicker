@@ -98,7 +98,7 @@ Accepted CI evidence: run 40090868511 at e71fc32 passed all four jobs; X11 evide
 
 ### T13 — Persistir preferencias de forma recuperable [M]
 
-Implementation: versioned explicit Save and six recovery tests pass on Linux; Windows native replacement remains pending.
+Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Native desktop Save/relaunch QA remains pending.
 - [x] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
 - [ ] Escritura/reemplazo seguro en cada SO, recuperación de archivo inválido y directorios estándar.
 
@@ -124,7 +124,7 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 
 ### T16 — Medir y optimizar cuellos de botella [M]
 
-Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. See `docs/evidence/ui-performance.md`.
+Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. See `docs/evidence/ui-performance.md` and `docs/evidence/x11-deadline-lateness.md`.
 - [ ] Medir tabla VALIDATION.md por renderer/backend, comparar C++ donde exista baseline y perfilar desviaciones.
 - [ ] Optimizar únicamente hallazgos reproducibles; comprobar que ninguna mejora empeora Stop, CPU o precisión sin decisión registrada.
 

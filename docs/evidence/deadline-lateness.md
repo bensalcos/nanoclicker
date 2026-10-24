@@ -21,3 +21,5 @@ The 60-second local run produced 6000 attempts/sent operations and zero skipped 
 Three histogram unit tests first failed with the no-op implementation, then passed with the fixed buckets. They cover nearest-rank outlier exclusion, exact bucket boundaries, sub-microsecond rounding, empty input and extreme duration overflow. Engine tests also check ordered terminal quantiles and retention after a backend panic. All 42 local Rust tests and Linux/Windows-target Clippy checks pass. This does not establish native Windows timing.
 
 The required 60-second unloaded and documented-load measurements with native input, actual UI and captured delivery remain open. CPU/RSS budgets are unchanged and remain unmet. Stop latency must continue to be measured separately.
+
+Actual X11 input now has separate [captured timing evidence](x11-deadline-lateness.md), with no added load and two load threads. Its scope does not include the GUI or other native platforms.

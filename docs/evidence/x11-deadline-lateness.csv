@@ -1,0 +1,3 @@
+scope,load_threads,elapsed_s,attempts,sent,captured_pairs,skipped,p50_upper_us,p95_upper_us,p99_upper_us,max_us
+x11_native_input,0,60.001931,6001,6001,6001,0,100.000,200.000,500.000,2196.153
+x11_native_input,2,60.001614,6001,6001,6001,0,100.000,100.000,100.000,724.788
