@@ -29,7 +29,7 @@ Valores iniciales: intervalo 100 ms, conteo 10, modo infinito, botón izquierdo,
 7. **Validación:** `_wtoi` no distingue entradas inválidas; intervalo cero se convierte silenciosamente a uno; un conteo cero termina después del primer intento. La nueva versión rechazará explícitamente valores inválidos.
 8. **UI y recursos:** distribución por coordenadas y altura mínima fija; falta evidencia de DPI, teclado y lector de pantalla. El brush creado para la clase no tiene liberación visible. El menú About está declarado en recursos pero no tiene acción implementada en la ventana.
 9. **Documentación/build:** README menciona `.sln` aunque existe `.slnx`, C++17 aunque el proyecto usa C++20 y recomienda VS2022 aunque configura v145. Las afirmaciones de cero lag y precisión no tienen mediciones.
-10. **Licencia:** MIT con `[year] [fullname]` sin completar; conservar avisos y resolver titularidad antes de distribuir.
+10. **Licencia:** En la revisión inicial, MIT tenía `[year] [fullname]` sin completar. El usuario delegó la decisión y se fijó la atribución `Copyright (c) 2026 bensalcos`, usando el identificador del propietario del repositorio.
 
 ## Consecuencia para la migración
 
