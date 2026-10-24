@@ -52,3 +52,12 @@ Application code: `fb36ed5`; clean packaging checkout: `41c703a`. Local output `
 - The extracted binary passed isolated Ubuntu GUI start/stop outside focus, complete pairs, no post-stop input, minimum-size action visibility, manual preparation and clean exit. The private test screen is now 2048×1536 so the capture target remains outside the application at 200% scaling; the Ubuntu run itself uses 100% scaling.
 
 This preview includes the field names, keyboard order, contrast, scrolling and polite-status changes. Windows/Wayland native behavior, readers and performance budgets remain open.
+
+## Checked-pair X11 preview
+
+Local output `dist/preview-x11-checked-pairs/`, packaging checkout `e71fc32`. It includes the native-write optimization and Windows preference-parent fix, retaining the default release profile after rejecting ThinLTO. The extracted binary passed the full restricted Ubuntu GUI flow; both archive checksums verified and no dependency inventory notice is missing.
+
+- Application archive: 6,155,694 bytes, SHA256 `772105cf5ceb5f6c6f05e647e21624f904e83da1c7c7c39af746c87c05f94e82`.
+- Symbols archive: 19,338,857 bytes, SHA256 `6fdce44ac6f7d21eb4ebea4b3b875a64778f750e757899cece19b92f58908e74`.
+
+The packaging metadata retains its conservative dirty-tree marker because an unrelated untracked entry exists in the shared workspace. Only the explicit executable, license, icon and dependency-notice/source inventory inputs are packaged. This remains a preview; native desktop and resource-budget acceptance is incomplete.

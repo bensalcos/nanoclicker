@@ -68,7 +68,7 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 
 ### T09 — Automatizar checks por plataforma [S]
 
-Accepted CI evidence: run 40089494911 at 2ecaf23 passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
+Accepted CI evidence: run 40090868511 at e71fc32 passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
 - [x] CI Windows/Linux con fmt, clippy, tests, build release y features válidas.
 - [x] Artefactos de fallo e integración X11 aislada; separar estos checks de QA nativo.
 

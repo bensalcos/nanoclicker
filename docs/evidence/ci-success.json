@@ -1,15 +1,41 @@
 {
   "repository": "bensalcos/nanoclicker",
-  "head_sha": "2ecaf23122d50b0eafa42b8d6c544ab68002dbaf",
-  "run_id": 40089494911,
-  "url": "https://github.com/bensalcos/nanoclicker/actions/runs/40089494911",
+  "head_sha": "e71fc32d568fd2dd8a21010d6463097ed9214e2f",
+  "run_id": 40090868511,
+  "url": "https://github.com/bensalcos/nanoclicker/actions/runs/40090868511",
   "conclusion": "success",
   "jobs": [
-    {"name": "Desktop / ubuntu-24.04", "id": 120859091460, "conclusion": "success", "rust_tests": 39},
-    {"name": "Desktop / windows-2025", "id": 120859091392, "conclusion": "success", "rust_tests": 41},
-    {"name": "Minimum Rust / 1.95", "id": 120859091284, "conclusion": "success"},
-    {"name": "Alternative renderer / Linux", "id": 120859091439, "conclusion": "success"}
+    {
+      "name": "Desktop / ubuntu-24.04",
+      "id": 120863072678,
+      "conclusion": "success",
+      "rust_tests": 39
+    },
+    {
+      "name": "Desktop / windows-2025",
+      "id": 120863072627,
+      "conclusion": "success",
+      "rust_tests": 42
+    },
+    {
+      "name": "Minimum Rust / 1.95",
+      "id": 120863072605,
+      "conclusion": "success"
+    },
+    {
+      "name": "Alternative renderer / Linux",
+      "id": 120863072416,
+      "conclusion": "success"
+    }
   ],
-  "artifact": {"name": "x11-evidence", "id": 12558507530, "size_bytes": 1055, "files_verified": ["x11.log", "ui-x11.log"]},
+  "artifact": {
+    "name": "x11-evidence",
+    "id": 12558943182,
+    "size_bytes": 1054,
+    "files_verified": [
+      "x11.log",
+      "ui-x11.log"
+    ]
+  },
   "scope": "Native Windows headless tests/release linking and isolated Linux X11; not Windows GUI/SendInput, screen-reader or Wayland acceptance."
 }
