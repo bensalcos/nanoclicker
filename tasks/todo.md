@@ -97,14 +97,14 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 ### T13 — Persistir preferencias de forma recuperable [M]
 
 Implementation: versioned explicit Save and six recovery tests pass on Linux; Windows native replacement remains pending.
-- [ ] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
+- [x] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
 - [ ] Escritura/reemplazo seguro en cada SO, recuperación de archivo inválido y directorios estándar.
 
 **Dependencias:** T11, T12. **Verificación:** roundtrip, corrupción, versión futura y fallo de escritura preservando último archivo válido. **Archivos:** `app/src/settings.rs`, integración/controller y tests.
 
 ### T14 — Aceptar UI, DPI y accesibilidad [M]
 
-Partial evidence: six default-size Xvfb captures at 100/150/200% reviewed. Main controls fit; help clipping, non-text contrast and accessible field names still need work. Native DPI and screen-reader checks remain pending. See `docs/evidence/ui-scaling.md`.
+Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. Native DPI and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
 - [ ] Pulir tokens, foco, errores, escalado y temas según UI.md con capturas reales.
 - [ ] Completar teclado y pruebas NVDA/Orca, sin recorte a 420×520 y 200% DPI.
 

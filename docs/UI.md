@@ -47,3 +47,9 @@ Tab/Shift+Tab en orden de lectura; foco visible; Space/Enter solo en el control 
 Probar 100%, 150% y 200% DPI; ventana mínima; mensajes largos; teclado completo; NVDA en Windows y Orca en Linux. AccessKit habilitado no demuestra por sí solo que estas pruebas pasan. Guardar capturas y resultados por SO/tema; aprobar la apariencia en escritorio real, no solo compilación ni headless.
 
 Preferencias persistidas al pulsar Save: tema, configuración y atajo solicitado. El resultado del guardado se muestra en la ventana. Archivo versionado con escritura temporal y reemplazo seguro específico del SO; recuperación de archivo corrupto sin sobrescribirlo automáticamente. Usar directorios de configuración estándar. Nunca persistir estado Running, permisos como si fueran vigentes ni contadores que reactiven clics al abrir.
+
+## Implemented layout and accessibility update
+
+The initial 520×600 size and 420×520 minimum remain. Secondary padding is 14×6 with a 30-unit minimum target; the primary action remains 46 units high. Redundant section spacing was removed so help fits at default size. A nonfloating scrollbar appears when needed at smaller sizes.
+
+The body is created before the footer button for reading-order keyboard traversal; footer space is reserved from wrapped status/progress measurements. Fields/selectors have explicit English accessible names and values. Session status is a polite atomic live region; the counter is not live. Palette tokens have automated text/control/focus contrast checks. These implementation checks do not close native DPI/NVDA/Orca acceptance; see evidence/ui-accessibility.md and evidence/ui-scaling.md.
