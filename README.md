@@ -15,6 +15,8 @@
 
 ## 📖 Acerca del Proyecto
 
+> **Reescritura Rust en planificación:** la implementación actual sigue siendo C++/Win32. Consulta el [plan de migración](tasks/plan.md), la [arquitectura Rust](docs/architecture/RUST.md), las [tareas](tasks/todo.md) y el [estado verificado](docs/STATUS.md). El soporte Linux y los objetivos de rendimiento de la nueva versión todavía están pendientes de implementación y pruebas.
+
 **NanoClick** es una herramienta desarrollada nativamente con la API Win32 de Windows, diseñada para ser increíblemente rápida y no consumir recursos. A diferencia de otros autoclickers hechos en Python o C#, este programa se ejecuta directamente a bajo nivel, garantizando cero lag y máxima precisión gracias a la implementación de *High Resolution Timers*.
 
 ## ✨ Características
