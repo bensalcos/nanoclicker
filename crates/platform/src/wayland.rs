@@ -72,6 +72,7 @@ impl WaylandInput {
         )?);
         let (stop_monitor, stopped) = async_channel::bounded(1);
         let monitored = session.clone();
+        let owner_proxy = (*proxy).clone();
         let token = cancel.clone();
         let (ready, subscribed) = std::sync::mpsc::sync_channel(1);
         let monitor = std::thread::Builder::new()
@@ -80,16 +81,31 @@ impl WaylandInput {
                 block_on(race(
                     async {
                         let mut closed = match monitored.receive_closed().await {
-                            Ok(stream) => {
-                                let _ = ready.send(Ok(()));
-                                stream
-                            }
+                            Ok(stream) => stream,
                             Err(error) => {
                                 let _ = ready.send(Err(error.to_string()));
                                 return;
                             }
                         };
-                        let _ = closed.next().await;
+                        let mut owners = match owner_proxy.receive_owner_changed().await {
+                            Ok(stream) => stream,
+                            Err(error) => {
+                                let _ = ready.send(Err(error.to_string()));
+                                return;
+                            }
+                        };
+                        let _ = ready.send(Ok(()));
+                        // A replacement owner also invalidates this session.
+                        // Neither signal requires another click to wake the worker.
+                        race(
+                            async {
+                                let _ = closed.next().await;
+                            },
+                            async {
+                                let _ = owners.next().await;
+                            },
+                        )
+                        .await;
                         if !token.is_cancelled() {
                             token.fail(BackendError::new(
                                 "Desktop permission was revoked or the portal disconnected.",
@@ -126,7 +142,7 @@ impl WaylandInput {
                 )));
             }
         };
-        // The Closed subscription is ready before SelectDevices/Start can
+        // Closed and service-owner subscriptions are ready before SelectDevices/Start can
         // expose a permission dialog or a revocable active session.
         let result = bounded(
             async {
