@@ -1,15 +1,15 @@
-# Atajo Windows por eventos
+# Event-driven Windows shortcut
 
-Revisión de global-hotkey 0.9.0: su ruta Windows crea un hilo por activación que consulta GetAsyncKeyState cada 50 ms hasta liberación. NanoClick ya no usa ese listener; conserva la biblioteca como parser de HotKey.
+Review of global-hotkey 0.9.0 found that its Windows path starts a thread on each activation, polling GetAsyncKeyState every 50 ms until release. NanoClick no longer uses that listener; it retains the library as a HotKey parser.
 
-Implementado un worker propio en platform: RegisterHotKey asociado al hilo con MOD_NOREPEAT, cola de mensajes y MsgWaitForMultipleObjects. La espera atiende mensajes y un evento manual de apagado. OwnedHandle/Arc mantienen vivo el evento hasta terminar el worker; el cierre no depende de polling ni de enviar mensajes a un thread ID que podría haberse reciclado. Los bloques FFI incluyen precondiciones SAFETY.
+The platform crate implements its own worker: thread-associated RegisterHotKey with MOD_NOREPEAT, a message queue and MsgWaitForMultipleObjects. Waiting handles messages and a manual shutdown event. OwnedHandle/Arc keep the event alive until the worker finishes; shutdown depends neither on polling nor on posting to a potentially recycled thread ID. FFI blocks document SAFETY preconditions.
 
-Las actualizaciones de cada registro tienen su propio estado compartido: un callback tardío del registro sustituido no invalida el nuevo. Un conflicto conserva el registro anterior.
+Each registration has independent shared update state: a late callback from a replaced registration cannot invalidate the new one. A conflict preserves the previous registration.
 
-Fuentes primarias consultadas:
+Primary sources consulted:
 
-- [RegisterHotKey](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey): cola de hilo con hWnd NULL y MOD_NOREPEAT.
-- [MsgWaitForMultipleObjects](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-msgwaitformultipleobjects): espera de handles y mensajes; no cerrar handles durante una espera pendiente.
-- [Virtual-key codes](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes): mapeo explícito de letras, dígitos, F1–F24 y navegación.
+- [RegisterHotKey](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey): thread queue with NULL hWnd and MOD_NOREPEAT.
+- [MsgWaitForMultipleObjects](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-msgwaitformultipleobjects): handles/messages waiting; do not close handles during a pending wait.
+- [Virtual-key codes](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes): explicit letters, digits, F1–F24 and navigation mapping.
 
-Verificado: dos pruebas puras de mapeo pasan en Linux; suite total 24 tests; cargo check y Clippy del workspace Windows MSVC pasan. La prueba gráfica X11 pasó de nuevo tras refactorizar el despacho compartido. **No hay prueba nativa Windows del message loop, conflictos o teclas sostenidas**; T11/T15 permanecen pendientes de esa evidencia.
+Validation at this change: two pure mapping tests passed on Linux, the then-current suite passed 24 tests, and Windows MSVC workspace cargo check/Clippy passed. The X11 GUI regression passed after refactoring shared dispatch. **Native Windows message-loop, conflict and held-key testing remains pending**; T11/T15 require that evidence. Later test totals and timer evidence are tracked separately in STATUS.md and native-waiter.md.

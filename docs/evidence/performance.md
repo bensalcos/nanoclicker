@@ -1,13 +1,13 @@
-# Mediciones iniciales de rendimiento
+# Initial performance measurements
 
-## Cancelación del núcleo (2026-10-24)
+## Core cancellation (2026-10-24)
 
-Comando: `cargo run --release --locked -p nanoclick-core --example cancellation_latency -j 2`.
+Command: `cargo run --release --locked -p nanoclick-core --example cancellation_latency -j 2`.
 
-Entorno: Fedora 44, Ryzen 5 5625U, Rust 1.97.1; ver environment.md. Build release estándar, sin LTO personalizado ni target-cpu=native. Máquina con otras aplicaciones activas; primera medición exploratoria, sin control de carga/energía. El linker de este entorno imprimió un warning sobre optimización de enlazador '1' deprecada; la compilación y ejecución terminaron correctamente, sin suprimir el aviso.
+Environment: Fedora 44, Ryzen 5 5625U, Rust 1.97.1; see environment.md. Standard release build without custom LTO or target-cpu=native. Other applications were active; this first exploratory measurement did not control load/power. The environment's linker warned about deprecated optimization setting '1'; build and execution succeeded without suppressing it.
 
-4000 paradas en total: 1000 por período (1, 10, 100 y 999999 ms), con variación determinista de 0–1999 µs entre primer par y Stop. El observador espera por notificaciones, sin busy-wait. Se mide desde antes de solicitar Stop hasta observar el snapshot terminal, incluyendo overhead del observador. Backend **sin entrada de escritorio**.
+4000 Stops total: 1000 per period (1, 10, 100 and 999999 ms), with deterministic 0–1999 µs variation between the first pair and Stop. The observer waits on notifications without busy waiting. Measurement starts before requesting Stop and ends on observing the terminal snapshot, including observer overhead. Backend **without desktop input**.
 
-[Datos CSV](core-stop-latency.csv): p99 entre 255 y 296 µs; máximo observado 1281 µs. Esto demuestra que la espera cancelable del núcleo no espera a que venza un intervalo largo. No acredita latencia de teclado, portales, SendInput, XTEST, ni liberación de botón en una plataforma real.
+[CSV data](core-stop-latency.csv): p99 255–296 µs; observed maximum 1281 µs. This demonstrates that core cancellation does not wait for a long interval to expire. It does not establish keyboard, portal, SendInput, XTEST or actual platform button-release latency.
 
-El presupuesto de producto de p99 ≤20 ms y máximo ≤100 ms sigue pendiente de aceptación **por backend nativo**. Arranque, CPU, memoria, jitter de inyección, tamaño comprimido y comparación C++ aún pendientes. No presentar estos números de un sink sin entrada como rendimiento completo de NanoClick.
+The product budget of p99 ≤20 ms and maximum ≤100 ms requires acceptance **per native backend**. At this initial measurement, startup, CPU, memory, injection jitter, compressed size and C++ comparison were pending; later evidence is indexed in STATUS.md. Do not present a no-input sink's results as complete NanoClick performance.

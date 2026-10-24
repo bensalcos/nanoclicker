@@ -1,36 +1,38 @@
-# Registro de implementación
+# Implementation history
 
-## Incremento inicial
+Historical increments below retain their original test counts and pending checks. See STATUS.md for current results; early limitations are not a current completion report.
 
-- Toolchain fijado: Rust 1.97.1; edition 2024, MSRV declarado 1.95 (aún sin ejecutar con 1.95).
-- Workspace de tres crates. Core sin unsafe ni tipos de UI/SO; configuración validada, scheduler monotónico y worker persistente.
-- Primera verificación: 10 tests de core pasaron; Clippy sin warnings antes de incorporar los adaptadores. Una prueba adicional de revocación se añadió primero y falló por API ausente, antes de implementar la señal.
-- Espera inicial: Condvar de std, interrumpida bajo el mismo mutex que el predicado. Es una base funcional, no evidencia de precisión de 1 ms en Windows. Comparar con waitable timers en P0/T16 antes de aceptar presupuestos.
-- eframe 0.37.0 exige Rust 1.95. glow es el candidato inicial; no se ha elegido definitivamente sin comparar wgpu.
-- ashpd 0.13.13: el feature remote_desktop importa tipos de screencast pero no habilita ese feature automáticamente; habilitado screencast por compilación, sin pedir captura de pantalla. Cliente async-io acotado en el backend; sin Tokio en el motor.
-- Adaptadores escritos: SendInput por par, XTEST y portal RemoteDesktop con cleanup. Compilación Windows y prueba nativa todavía pendientes.
-- UI inicial inglesa implementada con lógica/control separada y redibujado por notificaciones. La pantalla provisional identifica el atajo Wayland como pendiente; no se considera T12 terminado.
+## Initial increment
 
-Fuentes de APIs: fuentes/documentación versionadas de eframe/egui 0.37.0, ashpd 0.13.13, global-hotkey 0.9.0 y x11rb 0.13.2 en el registro de Cargo; enlaces primarios generales en docs/architecture/RUST.md. Los resultados finales de tests y probes se añaden tras ejecutar cada comprobación.
+- Pinned toolchain: Rust 1.97.1; edition 2024, declared MSRV 1.95 (not yet executed with 1.95 at this stage).
+- Three-crate workspace. Core has no unsafe or UI/OS types; validated configuration, monotonic scheduler and persistent worker.
+- First verification: 10 core tests passed; warning-free Clippy before adapters. An additional revocation test was added first and failed on the missing API before the signal was implemented.
+- Initial waiter: std Condvar, interrupted under the same mutex as its predicate. This is a functional baseline, not evidence of 1 ms Windows precision. Compare waitable timers in P0/T16 before accepting budgets.
+- eframe 0.37.0 requires Rust 1.95. Glow was the initial candidate, pending wgpu comparison.
+- ashpd 0.13.13: remote_desktop imports screencast types without enabling that feature automatically; screencast was enabled for compilation without requesting screen capture. Bounded async-io client in the backend; no Tokio in the engine.
+- Adapters written: paired SendInput, XTEST and RemoteDesktop portal with cleanup. Windows compilation and native testing were still pending.
+- Initial English UI with separated logic/control and notification-driven repainting. Its provisional screen identified Wayland shortcuts as pending; T12 was not complete.
 
-## Evidencia posterior
+API sources: versioned Cargo registry source/documentation for eframe/egui 0.37.0, ashpd 0.13.13, global-hotkey 0.9.0 and x11rb 0.13.2; general primary links in docs/architecture/RUST.md. Test/probe results are added after executing each check.
 
-- `cargo check --workspace --target x86_64-pc-windows-msvc --locked -j 2`: terminó correctamente; se corrigió después un warning de campo ctx solo usado en Linux. No es build enlazado ni prueba nativa Windows.
-- `scripts/verify-x11.sh`: PASS para 10 pares completos Left/Middle/Right capturados en orden en Xvfb; PASS atajo fuera de foco, supresión de repetición tras sostener F6 900 ms y conservación del registro original al rechazar conflicto.
-- Reemplazado el listener global-hotkey de Linux (polling de 50 ms observado en su fuente) por listener X11 propio con poll de socket/pipe y apagado por señal; sin polling periódico. global-hotkey continúa como parser y como implementación Windows (MOD_NOREPEAT).
-- Primer screenshot Xvfb revisado: el bloque de atajos requería scroll a 520×600. Ajustado espaciado; captura final pendiente. Ninguna captura Xvfb sustituye QA nativo/DPI/lector.
-- Núcleo tras recuperación de panic y señal de revocación: 13 tests pasan, incluidos 200 ciclos Start/Stop y recuperación de un backend que entra en panic. Una prueba reprodujo primero la UI quedando en Running al morir el worker; ahora se publica Faulted y el worker permite reintento.
+## Subsequent evidence
 
-## Verificación del primer corte integrado (2026-10-24)
+- `cargo check --workspace --target x86_64-pc-windows-msvc --locked -j 2`: succeeded; a warning for the Linux-only ctx field was fixed afterwards. This was neither a linked build nor native Windows testing.
+- `scripts/verify-x11.sh`: PASS for 10 ordered complete Left/Middle/Right pairs in Xvfb; PASS for outside-focus shortcut, repeat suppression while holding F6 for 900 ms, and preserving the original registration after a conflict.
+- Replaced Linux's global-hotkey listener (50 ms polling found in its source) with an X11 listener waiting on socket/pipe and shutdown signal, without periodic polling. At this stage global-hotkey remained the parser and Windows implementation (MOD_NOREPEAT); the later Windows replacement is recorded in windows-shortcut.md.
+- First reviewed Xvfb screenshot: shortcuts required scrolling at 520×600. Spacing was adjusted; final capture was pending. Xvfb captures do not replace native/DPI/reader QA.
+- Core after panic recovery/revocation signal: 13 passing tests, including 200 Start/Stop cycles and recovery from a panicking backend. A regression first reproduced the UI remaining Running after worker death; the engine now publishes Faulted and permits retry.
 
-- `cargo test --workspace --locked -j 2`: 16 pruebas pasaron (14 core, 2 controller). Incluye regresión del primer contador visible durante intervalo largo.
+## First integrated slice verification (2026-10-24)
+
+- `cargo test --workspace --locked -j 2`: 16 tests passed (14 core, 2 controller), including visible first-pair progress during a long interval.
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`: PASS Linux.
-- `cargo clippy --workspace --all-targets --target x86_64-pc-windows-msvc --locked -- -D warnings`: PASS. El ejemplo de captura X11 se activa únicamente con feature x11-tests en la matriz Linux; no es una prueba Windows omitida.
-- Capturas finales Xvfb de 520×600 en `screenshots/linux-x11-{dark,light}.png`: revisadas visualmente; tres bloques completos, contraste de texto mejorado, acción principal visible. No acredita DPI, teclado ni lectores nativos.
-- El código conserva rough edges identificados: preferencias aún sin persistir, artefactos/CI hospedado y benchmarks no realizados, consentimiento/denegación/revocación real Wayland y Windows/KDE pendientes. No se declara paridad aceptada ni release listo.
+- `cargo clippy --workspace --all-targets --target x86_64-pc-windows-msvc --locked -- -D warnings`: PASS. The X11 capture example requires x11-tests in the Linux matrix; it is not an omitted Windows test.
+- Final 520×600 Xvfb captures at `screenshots/linux-x11-{dark,light}.png` were visually reviewed: three complete sections, improved text contrast and visible primary action. This did not establish native DPI, keyboard or reader behavior.
+- Remaining at this stage: preference persistence, artifacts/hosted CI, benchmarks, real Wayland consent/denial/revocation and Windows/KDE validation. No accepted parity or release readiness was claimed.
 
-## Preparación manual después del permiso
+## Manual preparation after permission
 
-La cuenta regresiva inicial vivía en controller y se consumía antes de que el worker solicitara permisos Wayland. Se trasladó al motor como una espera opcional después de preparar el sink. El snapshot publica ready_at durante esa espera; los atajos usan demora cero. Stop/cierre/revocación interrumpen la espera y el sink finaliza antes del acuse.
+The initial countdown lived in controller and elapsed before the worker requested Wayland permission. It moved into the engine as an optional wait after sink preparation. Snapshots publish ready_at during that wait; shortcut Start uses zero delay. Stop/shutdown/revocation interrupt it and sink cleanup finishes before acknowledgement.
 
-Tres pruebas adicionales cubren deadline posterior a preparación, limpieza al cancelar y rechazo de demora desmesurada. Suite total: 27 tests pasan. Clippy Linux pasa; prueba gráfica del ejecutable X11 volvió a pasar con la nueva secuencia. Esta prueba de protocolo no equivale a consentir un portal real Wayland.
+Three additional tests cover a deadline after preparation, cleanup on cancellation and rejection of excessive delay. At this increment, 27 total tests and Linux Clippy passed; the actual X11 executable's GUI flow passed with the new sequence. This protocol test does not establish real Wayland portal consent.

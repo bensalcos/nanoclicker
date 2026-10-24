@@ -2,7 +2,7 @@
 
 A focused desktop autoclicker being rewritten in Rust for Windows and Linux. The interface is English-only, with light, dark and system themes.
 
-**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Windows code passes cross-target checks, but native Windows testing is pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
+**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Hosted Windows Server 2025 passes 45 native Rust tests and builds the preview ZIP/PDB; native Windows desktop/input/DPI/screen-reader acceptance remains pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
 
 ## Run the Rust application
 
@@ -42,9 +42,12 @@ cargo test --workspace --locked
 scripts/verify-x11.sh
 scripts/verify-ui-x11.sh
 scripts/verify-ui-x11.sh target/debug/nanoclick 2
+scripts/verify-portal.sh
 ```
 
-The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size and window shutdown. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
+The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size window shutdown, and explicit Save/relaunch without automatic Start. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
+
+The portal script requires dbus-daemon and runs thirteen wire-level mock lifecycle scenarios on a private activation-disabled bus, without connecting to a compositor. It does not establish native GNOME/KDE acceptance.
 
 For an isolated visual snapshot:
 
