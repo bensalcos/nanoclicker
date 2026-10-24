@@ -18,4 +18,4 @@ cat > "$temporary/bus.conf" <<CONFIG
 </busconfig>
 CONFIG
 # Private directory/socket and no compositor: never use the user's session bus.
-dbus-run-session --config-file="$temporary/bus.conf" -- env -u DISPLAY -u WAYLAND_DISPLAY NANOCLICK_ISOLATED_DBUS=1 cargo run --locked -p nanoclick-platform --example portal_lifecycle --features portal-tests
+dbus-run-session --config-file="$temporary/bus.conf" -- env -u DISPLAY -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$temporary" NANOCLICK_ISOLATED_DBUS=1 cargo run --locked -p nanoclick-platform --example portal_lifecycle --features portal-tests

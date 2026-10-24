@@ -87,6 +87,8 @@ Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; X11 evide
 **Dependencias:** T10. **Verificación:** conflictos, modificadores/layout, tecla sostenida y mensajes en estados terminales. **Archivos:** adaptadores hotkey, UI/controller.
 
 ### T12 — Integrar Wayland y capacidades [M]
+
+Partial protocol evidence: eight real-D-Bus mock scenarios pass on an activation-disabled private bus. This exercises the production adapter and engine without a compositor; real GNOME/KDE portal and input acceptance remains open. See `docs/evidence/portal-contract-tests.md`.
 - [ ] Adaptador de portal con preparación cancelable, sesiones y señales de revocación; UI distingue inyección y atajo.
 - [ ] Trigger efectivo del escritorio y modo manual explícito cuando no hay atajo; portal ausente impide iniciar si falta inyección.
 
@@ -113,6 +115,8 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 **Dependencias:** T13. **Verificación:** matriz visual y checklist con resultados por entorno. **Archivos:** `app/src/{ui,theme}.rs`, `docs/evidence/ui-qa.md`.
 
 ### T15 — Endurecer lifecycle y fallos [M]
+
+Partial evidence: private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Native desktop/resource stability and other failure variants remain open.
 - [ ] Cubrir cierre en Preparing/Running/Stopping, backend desconectado, permisos revocados y liberación fallida.
 - [ ] Garantizar estado terminal observable y recursos cerrados; repetir ciclos y verificar estabilidad de memoria.
 
