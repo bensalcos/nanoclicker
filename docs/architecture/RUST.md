@@ -60,7 +60,7 @@ flowchart LR
 
 - `ClickInterval`: entero de 1 a 999999 ms; representación interna `Duration`. Es un período objetivo entre comienzos de clics. Mostrar CPS como derivado, sin segundo valor editable.
 - `StopCondition`: `UntilStopped` o `Count(NonZeroU64)`. Para V1, aceptar conteos 1..=999999, ampliables sin cambiar el tipo interno. Botón enum Left/Right/Middle.
-- Primer clic inmediato después de preparación exitosa; siguientes según deadline monotónico. Cada clic es un par down/up. Cambios del borrador se aplican solo al próximo Start.
+- Inicio por atajo: primer clic inmediato después de preparación exitosa. Inicio manual: esperar tres segundos cancelables después de que el backend y sus permisos estén preparados; publicar el deadline monotónico en el snapshot. Después, siguientes según deadline monotónico. Cada clic es un par down/up. Cambios del borrador se aplican solo al próximo Start.
 - Si el worker llega tarde, omitir slots vencidos y planificar el siguiente deadline futuro: nunca recuperar retraso con una ráfaga. Inyección secuencial, como máximo un par en vuelo.
 - Estados: Idle → Preparing → Running → Stopping → Idle; preparación fallida o error de inyección → Faulted. El conteo completo vuelve a Idle con razón Completed. Para reintentar desde Faulted se exige limpieza y nueva preparación.
 - Start repetido es idempotente; Stop y Shutdown también. Stop durante Preparing cancela permisos/preparación y no permite un inicio tardío. Cada ejecución tiene `run_id` para descartar respuestas obsoletas.

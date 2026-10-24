@@ -1,5 +1,5 @@
 use nanoclick_core::{ClickConfig, Engine, MouseButton};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub struct Draft {
     pub interval: String,
@@ -39,7 +39,6 @@ impl Draft {
 pub struct Controller {
     pub draft: Draft,
     pub engine: Engine,
-    pub countdown: Option<(Instant, ClickConfig)>,
     pub error: Option<String>,
 }
 impl Controller {
@@ -47,14 +46,10 @@ impl Controller {
         Self {
             draft: Draft::default(),
             engine,
-            countdown: None,
             error: None,
         }
     }
     pub fn toggle(&mut self, manual: bool) {
-        if self.countdown.take().is_some() {
-            return;
-        }
         if self.engine.snapshot().state.is_active() {
             self.engine.stop();
             return;
@@ -63,26 +58,18 @@ impl Controller {
             Err(error) => self.error = Some(error),
             Ok(plan) => {
                 self.error = None;
-                if manual {
-                    self.countdown = Some((Instant::now() + Duration::from_secs(3), plan));
-                } else if let Err(error) = self.engine.start(plan) {
+                let delay = if manual {
+                    Duration::from_secs(3)
+                } else {
+                    Duration::ZERO
+                };
+                if let Err(error) = self.engine.start_with_delay(plan, delay) {
                     self.error = Some(error.to_string());
                 }
             }
         }
     }
-    pub fn tick(&mut self) {
-        if let Some((deadline, plan)) = self.countdown
-            && Instant::now() >= deadline
-        {
-            self.countdown = None;
-            if let Err(error) = self.engine.start(plan) {
-                self.error = Some(error.to_string());
-            }
-        }
-    }
     pub fn stop(&mut self) {
-        self.countdown = None;
         self.engine.stop();
     }
 }
@@ -123,11 +110,16 @@ mod tests {
         let engine = Engine::new(move |_| Ok(Counter(shared.clone())), || {})?;
         let mut control = Controller::new(engine);
         control.toggle(true);
-        assert!(control.countdown.is_some());
+        assert_eq!(
+            control.engine.snapshot().state,
+            nanoclick_core::RunState::Preparing
+        );
         assert_eq!(count.load(Ordering::Relaxed), 0);
         control.toggle(true);
-        control.tick();
-        assert!(control.countdown.is_none());
+        assert!(matches!(
+            control.engine.snapshot().state,
+            nanoclick_core::RunState::Stopping | nanoclick_core::RunState::Idle
+        ));
         assert_eq!(count.load(Ordering::Relaxed), 0);
         Ok(())
     }

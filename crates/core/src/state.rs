@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Observable execution lifecycle.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -42,5 +42,7 @@ pub struct Snapshot {
     pub state: RunState,
     pub reason: Option<StopReason>,
     pub metrics: Metrics,
+    /// Present only during the post-permission, cancelable manual delay.
+    pub ready_at: Option<Instant>,
     pub error: Option<String>,
 }

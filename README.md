@@ -26,7 +26,7 @@ The default renderer is glow. The alternative wgpu build is available for compar
 
 - Set an interval from 1 to 999999 milliseconds and select Left, Right or Middle.
 - Repeat until stopped, or send a specified count from 1 to 999999.
-- **Start** provides three seconds to move the pointer to the target. **Cancel** interrupts that countdown.
+- **Start** prepares desktop input and any permission request, then provides three seconds to move the pointer to the target. **Cancel** interrupts that countdown.
 - The global shortcut starts immediately or stops the active session. F6 is the initial request. On Windows/X11, apply another shortcut such as `Ctrl+Shift+F6`. Wayland delegates assignment to the desktop through **Configure in desktop…**.
 - **Save** stores the current valid preferences for the next launch. Opening NanoClick always starts idle. Invalid or unsupported preferences files are preserved; move the file aside and restart to recover with defaults.
 - **Escape** stops while the NanoClick window has focus. Closing the application requests cancellation and releases its input resources.

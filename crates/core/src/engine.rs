@@ -10,7 +10,7 @@ use std::{
 
 struct Control {
     snapshot: Snapshot,
-    pending: Option<ClickConfig>,
+    pending: Option<(ClickConfig, Duration)>,
     cancellation: Cancellation,
     shutdown: bool,
 }
@@ -33,6 +33,8 @@ pub enum EngineError {
     Spawn(#[from] std::io::Error),
     #[error("No more execution identifiers are available. Restart NanoClick.")]
     IdentityExhausted,
+    #[error("Preparation delay must not exceed 60 seconds.")]
+    DelayOutOfRange,
 }
 
 /// One persistent worker, a bounded one-slot Start mailbox, and priority Stop.
@@ -71,6 +73,14 @@ impl Engine {
     }
     /// Starts a validated plan. Repeated Start while active returns the same ID.
     pub fn start(&self, plan: ClickConfig) -> Result<u64, EngineError> {
+        self.start_with_delay(plan, Duration::ZERO)
+    }
+    /// Starts after backend preparation and a cancelable delay (up to 60 s).
+    /// Permission dialogs complete before the delay begins.
+    pub fn start_with_delay(&self, plan: ClickConfig, delay: Duration) -> Result<u64, EngineError> {
+        if delay > Duration::from_secs(60) {
+            return Err(EngineError::DelayOutOfRange);
+        }
         let mut control = lock(&self.shared.control);
         if control.snapshot.state.is_active() {
             return Ok(control.snapshot.run_id);
@@ -92,7 +102,7 @@ impl Engine {
                 shared.changed.notify_one();
             }
         });
-        control.pending = Some(plan);
+        control.pending = Some((plan, delay));
         self.shared.changed.notify_one();
         drop(control);
         (self.shared.wake)();
@@ -134,7 +144,7 @@ fn worker_loop<S: InputSink>(
     factory: impl Fn(&Cancellation) -> Result<S, BackendError>,
 ) {
     loop {
-        let (plan, token) = {
+        let (plan, delay, token) = {
             let mut control = lock(&shared.control);
             while control.pending.is_none() && !control.shutdown {
                 control = shared
@@ -145,10 +155,10 @@ fn worker_loop<S: InputSink>(
             if control.shutdown {
                 return;
             }
-            let Some(plan) = control.pending.take() else {
+            let Some((plan, delay)) = control.pending.take() else {
                 continue;
             };
-            (plan, control.cancellation.clone())
+            (plan, delay, control.cancellation.clone())
         };
         let mut metrics = Metrics::default();
         // Isolate panics from external adapters. Their RAII cleanup runs while
@@ -163,7 +173,7 @@ fn worker_loop<S: InputSink>(
                 }
                 Err(error) => Err(error),
                 Ok(mut sink) => {
-                    let result = execute(&shared, &token, plan, &mut sink, &mut metrics);
+                    let result = execute(&shared, &token, plan, delay, &mut sink, &mut metrics);
                     match (result, sink.finish()) {
                         (Err(first), Err(cleanup)) => {
                             Err(BackendError::new(format!("{first} Cleanup: {cleanup}")))
@@ -183,6 +193,7 @@ fn worker_loop<S: InputSink>(
         };
         let mut control = lock(&shared.control);
         control.snapshot.metrics = metrics;
+        control.snapshot.ready_at = None;
         match result {
             Ok(reason) => {
                 control.snapshot.state = RunState::Idle;
@@ -203,10 +214,11 @@ fn execute(
     shared: &Shared,
     token: &Cancellation,
     plan: ClickConfig,
+    delay: Duration,
     sink: &mut impl InputSink,
     metrics: &mut Metrics,
 ) -> Result<StopReason, BackendError> {
-    if token.is_cancelled() {
+    if token.is_cancelled() || !prepare_delay(shared, token, delay)? {
         return Ok(StopReason::Stopped);
     }
     {
@@ -214,6 +226,7 @@ fn execute(
         if token.is_cancelled() {
             return Ok(StopReason::Stopped);
         }
+        control.snapshot.ready_at = None;
         control.snapshot.state = RunState::Running;
     }
     (shared.wake)();
@@ -267,5 +280,43 @@ fn execute(
             (shared.wake)();
             publish = Instant::now();
         }
+    }
+}
+
+// Called only after a native session exists: permission interaction cannot
+// consume the user's time to move the pointer to its actual target.
+fn prepare_delay(
+    shared: &Shared,
+    token: &Cancellation,
+    delay: Duration,
+) -> Result<bool, BackendError> {
+    if delay.is_zero() {
+        return Ok(!token.is_cancelled());
+    }
+    let deadline = Instant::now()
+        .checked_add(delay)
+        .ok_or_else(|| BackendError::new("Preparation deadline overflow."))?;
+    {
+        let mut control = lock(&shared.control);
+        if token.is_cancelled() {
+            return Ok(false);
+        }
+        control.snapshot.ready_at = Some(deadline);
+    }
+    (shared.wake)();
+    let mut control = lock(&shared.control);
+    loop {
+        if token.is_cancelled() {
+            return Ok(false);
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Ok(true);
+        }
+        let (guard, _) = shared
+            .changed
+            .wait_timeout(control, remaining)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        control = guard;
     }
 }

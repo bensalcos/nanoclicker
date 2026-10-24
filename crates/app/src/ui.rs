@@ -164,8 +164,7 @@ impl eframe::App for NanoClick {
             self.control.toggle(false);
         }
         self.shortcut.refresh();
-        self.control.tick();
-        if self.control.countdown.is_some() {
+        if self.control.engine.snapshot().ready_at.is_some() {
             ctx.request_repaint_after(Duration::from_millis(100));
         }
         if ctx.input(|input| input.key_pressed(egui::Key::Escape)) {
@@ -177,7 +176,7 @@ impl eframe::App for NanoClick {
     }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
         let snapshot = self.control.engine.snapshot();
-        let active = snapshot.state.is_active() || self.control.countdown.is_some();
+        let active = snapshot.state.is_active();
         egui::CentralPanel::default().frame(egui::Frame::central_panel(ui.style()).inner_margin(24)).show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("NanoClick");
@@ -193,11 +192,11 @@ impl eframe::App for NanoClick {
             ui.weak(self.desktop.name());
             ui.add_space(4.0);
             egui::Panel::bottom("action").frame(egui::Frame::NONE.inner_margin(egui::Margin { top: 12, bottom: 0, left: 0, right: 0 })).show(ui, |ui| {
-                let (label, status) = if let Some((deadline, _)) = self.control.countdown {
+                let (label, status) = if let Some(deadline) = snapshot.ready_at && snapshot.state == RunState::Preparing {
                     ("Cancel", format!("Starting in {} · move the pointer to your target", deadline.saturating_duration_since(std::time::Instant::now()).as_secs() + 1))
                 } else {
                     match snapshot.state {
-                        RunState::Preparing => ("Cancel", "Waiting for desktop permission…".to_owned()),
+                        RunState::Preparing => ("Cancel", "Preparing desktop input…".to_owned()),
                         RunState::Running => ("Stop", "Running".to_owned()),
                         RunState::Stopping => ("Stopping…", "Releasing input…".to_owned()),
                         RunState::Faulted => ("Start", "Could not complete the session".to_owned()),

@@ -182,3 +182,74 @@ fn first_pair_is_visible_while_waiting_for_a_long_interval() {
     wait_until(|| engine.snapshot().metrics.sent == 1);
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
+
+#[test]
+fn manual_delay_begins_after_backend_preparation_and_remains_cancelable() {
+    let count = Arc::new(AtomicU64::new(0));
+    let shared = count.clone();
+    let (release, released) = std::sync::mpsc::sync_channel(1);
+    let engine = Engine::new(
+        move |cancel: &Cancellation| {
+            while released.try_recv().is_err() {
+                if cancel.is_cancelled() {
+                    return Err(BackendError::new("Cancelled"));
+                }
+                thread::sleep(Duration::from_millis(1));
+            }
+            Ok(Counter(shared.clone()))
+        },
+        || {},
+    )
+    .unwrap();
+    engine
+        .start_with_delay(ClickConfig::default(), Duration::from_secs(3))
+        .unwrap();
+    assert!(engine.snapshot().ready_at.is_none());
+    let permission_time = Instant::now();
+    release.send(()).unwrap();
+    wait_until(|| engine.snapshot().ready_at.is_some());
+    assert!(engine.snapshot().ready_at.unwrap() >= permission_time + Duration::from_secs(3));
+    engine.stop();
+    wait_until(|| engine.snapshot().state == RunState::Idle);
+    assert_eq!(count.load(Ordering::Relaxed), 0);
+}
+
+#[test]
+fn stopping_a_prepared_delay_finishes_native_resources_before_ack() {
+    use std::sync::atomic::AtomicBool;
+    struct Prepared(Arc<AtomicBool>);
+    impl InputSink for Prepared {
+        fn click(&mut self, _: MouseButton) -> Result<(), BackendError> {
+            panic!("delay was bypassed")
+        }
+        fn finish(&mut self) -> Result<(), BackendError> {
+            self.0.store(true, Ordering::Release);
+            Ok(())
+        }
+    }
+    let finished = Arc::new(AtomicBool::new(false));
+    let shared = finished.clone();
+    let engine = Engine::new(move |_: &Cancellation| Ok(Prepared(shared.clone())), || {}).unwrap();
+    engine
+        .start_with_delay(ClickConfig::default(), Duration::from_secs(3))
+        .unwrap();
+    wait_until(|| engine.snapshot().ready_at.is_some());
+    engine.stop();
+    wait_until(|| engine.snapshot().state == RunState::Idle);
+    assert!(finished.load(Ordering::Acquire));
+    assert!(engine.snapshot().ready_at.is_none());
+}
+
+#[test]
+fn rejects_unbounded_preparation_delay_without_starting() {
+    let count = Arc::new(AtomicU64::new(0));
+    let shared = count.clone();
+    let engine = Engine::new(move |_: &Cancellation| Ok(Counter(shared.clone())), || {}).unwrap();
+    assert!(
+        engine
+            .start_with_delay(ClickConfig::default(), Duration::MAX)
+            .is_err()
+    );
+    assert_eq!(engine.snapshot().state, RunState::Idle);
+    assert_eq!(count.load(Ordering::Relaxed), 0);
+}

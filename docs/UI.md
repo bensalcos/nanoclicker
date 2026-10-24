@@ -28,7 +28,7 @@ Session: 0 pairs sent
 
 En Running, la acción principal cambia a **Stop**, se bloquea edición del plan activo y permanece posible cambiar el tema. En Preparing, mostrar solicitud de permiso y botón Cancel. En Stopping, mantener estado visible hasta acuse del motor. Al completar N pares, restaurar controles inmediatamente y mostrar “Completed”. Faulted incluye causa comprensible y recuperación, conservando valores.
 
-El botón Start no debe dejar que el primer clic inmediato reactive la propia UI por estar el cursor encima: tras pulsar, mostrar instrucción de mover el cursor y una cuenta regresiva cancelable de 3 segundos para inicio manual. El inicio por atajo conserva primer clic inmediato. La demora manual es una mejora deliberada respecto a C++; medir latencia de motor desde fin de cuenta regresiva, separada de la experiencia de arranque.
+El botón Start no debe dejar que el primer clic inmediato reactive la propia UI por estar el cursor encima: tras pulsar, preparar primero la entrada y completar cualquier permiso del escritorio; después mostrar instrucción de mover el cursor y una cuenta regresiva cancelable de 3 segundos para inicio manual. El inicio por atajo conserva primer clic inmediato. La demora manual es una mejora deliberada respecto a C++; medir latencia de motor desde fin de cuenta regresiva, separada de la experiencia de arranque.
 
 No añadir navegación lateral, gráficos de CPS en vivo, animaciones continuas, tray, macros o perfiles múltiples en V1. No minimizar al arrancar. El atajo mostrado debe ser el realmente registrado, con mensajes de conflicto y alternativa manual cuando falte soporte.
 
