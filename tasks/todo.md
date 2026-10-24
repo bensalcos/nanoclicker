@@ -12,7 +12,7 @@ Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/imple
 
 ### T02 — Prototipar renderer y UI accesible [M]
 
-Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional; Windows/GPU/accessibility acceptance is pending.
+Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional. A subsequent full glow run on a private AMD GPU-backed display meets startup/CPU/RSS targets in that case; software rendering remains over budget. Matched-GPU wgpu, Windows and native accessibility acceptance remain pending. See `docs/evidence/gpu-glow.md`.
 - [ ] Comparar glow/wgpu con ventana mínima, teclado, DPI y árbol accesible; registrar tamaño, arranque y reposo.
 - [ ] Elegir renderer y fijar tokens/componentes visuales con capturas de ambos temas; si ninguno cumple, evaluar alternativa de arquitectura.
 
@@ -81,6 +81,8 @@ Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; X11 evide
 **Dependencias:** T09. **Verificación:** pruebas core y capturador, N=1/N grande, secuencias rápidas y fallo down/up. **Archivos:** `app/src/ui.rs`, `controller.rs`, adaptadores/tests existentes.
 
 ### T11 — Integrar atajos Windows/X11 [M]
+
+Additional X11 evidence: pointer-only map changes preserve the binding, actual keyboard-map changes invalidate it, and unchanged XKB master-device transitions retain it. Native layout/group and Windows/Wayland acceptance remain open. See `docs/evidence/x11-shortcut-mapping.md`.
 - [ ] F6 por defecto y cambio sin perder binding válido ante conflicto; una pulsación produce una transición.
 - [ ] La UI en inglés muestra el atajo efectivo y permite Stop fuera de foco.
 
@@ -128,7 +130,7 @@ Partial evidence: private-bus tests cover cancellation during preparation, faile
 
 ### T16 — Medir y optimizar cuellos de botella [M]
 
-Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
+Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The full glow GPU-display experiment now meets startup/CPU/idle-RSS targets in that case; software and other native performance gates remain open. See `docs/evidence/gpu-glow.md`. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
 - [ ] Medir tabla VALIDATION.md por renderer/backend, comparar C++ donde exista baseline y perfilar desviaciones.
 - [ ] Optimizar únicamente hallazgos reproducibles; comprobar que ninguna mejora empeora Stop, CPU o precisión sin decisión registrada.
 

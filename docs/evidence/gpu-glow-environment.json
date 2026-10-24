@@ -1,0 +1,39 @@
+{
+  "source_commit": "11d92a71461490bf2f26157d42fff6878a421573",
+  "application_production_source_commit": "afbf03350e5f543a0ff645cf00190a076b504042",
+  "application_sha256": "b238d944de8b20d991970871a87887b6d0f684dff62e49ae6431988f34c507f7",
+  "harness_sha256": "571e3526a29f67e937b425e45635f0149c132ca413a9eac702f7efebe3a84c88",
+  "os": "Fedora 44",
+  "kernel": "7.2.6-200.fc44.x86_64",
+  "cpu": "AMD Ryzen 5 5625U, 6 cores / 12 threads",
+  "governor": "powersave",
+  "weston": "15.0.1-2.fc44, verified extracted RPMs",
+  "xwayland": "xorg-x11-server-Xwayland-24.1.13-1.fc44.x86_64",
+  "graphics_display": "AMD Radeon Graphics, radeonsi renoir ACO, Mesa 26.2.2; GLX accelerated yes",
+  "renderer": "glow default release",
+  "configuration": "private headless Weston GL + fullscreen rootful Xwayland, 2048x1536, scale 1; dark; requested 10 ms; no active screen reader / no activatable bus services",
+  "protocol": {
+    "warm_start_samples": 30,
+    "stabilization_seconds": 60,
+    "idle_seconds": 60,
+    "active_seconds": 60
+  },
+  "results": {
+    "startup_p95_ms": 124.316,
+    "idle_cpu_percent_one_core": 0.0,
+    "idle_rss_mib": 85.707,
+    "active_cpu_percent_one_core": 2.0833,
+    "active_rss_mib": 87.094,
+    "received_pairs": 6001.0,
+    "interval_abs_error_p99_ms": 0.0,
+    "interval_abs_error_max_ms": 2.0
+  },
+  "limits": [
+    "Shared host; not a controlled hardware/power isolation experiment",
+    "GLX display attestation does not query the exact application GL renderer string",
+    "Matching down/up counts and server millisecond timestamps, not arbitrary target delivery",
+    "Interarrival error is not engine deadline lateness",
+    "GPU-only manual preflight reasserts the emulated cursor once; no cursor guard runs in the measured active phase",
+    "Does not accept software-rendering, Windows, native GNOME/KDE, monitor or reader gates"
+  ]
+}
