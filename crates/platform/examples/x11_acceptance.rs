@@ -1,4 +1,5 @@
 //! Run only inside the private Xvfb started by scripts/verify-x11.sh.
+mod x11_stop_latency;
 use nanoclick_core::{ClickConfig, Engine, MouseButton, RunState, StopReason};
 use nanoclick_platform::{Desktop, NativeInput};
 use std::{
@@ -21,7 +22,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
     let arguments: Vec<_> = std::env::args().skip(1).collect();
+    let stop_latency = arguments.as_slice() == ["--stop-latency"];
     let timing = match arguments.as_slice() {
+        [mode] if mode == "--stop-latency" => None,
         [] => None,
         [seconds, workers] => {
             let seconds = seconds.parse::<u64>()?;
@@ -168,6 +171,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     if let Some((seconds, workers)) = timing {
         measure_deadlines(&capture, &engine, seconds, workers)?;
+    }
+    if stop_latency {
+        x11_stop_latency::measure(&capture, &engine)?;
     }
     capture.destroy_window(window)?.check()?;
     Ok(())
