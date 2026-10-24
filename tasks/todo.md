@@ -12,7 +12,7 @@ Status: implementation in progress; see docs/STATUS.md and docs/evidence/impleme
 
 ### T02 — Prototype the renderer and accessible UI [M]
 
-Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional. A subsequent full glow run on a private AMD GPU-backed display meets startup/CPU/RSS targets in that case; software rendering remains over budget. Matched-GPU wgpu, Windows and native accessibility acceptance remain pending. See `docs/evidence/gpu-glow.md`.
+Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional. A subsequent full glow run on a private AMD GPU-backed display meets startup/CPU/RSS targets in that case; software rendering remains over budget. Matched-source GPU glow/wgpu now both meet the measured startup/CPU/idle-RSS targets in the private display case; see `docs/evidence/gpu-renderers.md`. Windows and native accessibility acceptance remain pending. See `docs/evidence/gpu-glow.md`.
 - [ ] Compare glow/wgpu with the minimum window, keyboard, DPI and accessibility tree; record size, startup and idle use.
 - [ ] Select a renderer and define visual tokens/components with captures of both themes; if neither meets the criteria, evaluate an architectural alternative.
 
@@ -68,7 +68,7 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 
 ### T09 — Automate platform checks [S]
 
-Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
+Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; follow-up run 40121663794 at e244efd also passes all jobs and the expanded GUI/portal cases. Downloaded X11 logs and Windows preview archives were inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
 - [x] Windows/Linux CI with fmt, Clippy, tests, release build and valid features.
 - [x] Failure artifacts and isolated X11 integration; distinguish these checks from native QA.
 
@@ -130,7 +130,7 @@ Partial evidence: private-bus tests cover cancellation during preparation, faile
 
 ### T16 — Measure and optimize bottlenecks [M]
 
-Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The full glow GPU-display experiment now meets startup/CPU/idle-RSS targets in that case; software and other native performance gates remain open. See `docs/evidence/gpu-glow.md`. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
+Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The matched-source glow/wgpu GPU-display experiments both meet startup/CPU/idle-RSS targets in that case (see `docs/evidence/gpu-renderers.md`); software and other native performance gates remain open. See `docs/evidence/gpu-glow.md`. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
 - [ ] Measure the VALIDATION.md table per renderer/backend, compare C++ where a baseline exists and profile deviations.
 - [ ] Optimize only reproducible findings; verify that no improvement worsens Stop, CPU or precision without a recorded decision.
 

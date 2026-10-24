@@ -23,4 +23,4 @@ scripts/verify-ui-x11.sh target/release/nanoclick
 NANOCLICK_UI_STRESS_CYCLES=20 scripts/verify-ui-x11.sh target/release/nanoclick 2
 ```
 
-Local release flows pass at 100% and 200% scale, including the existing manual Start, complete-pair, minimum-window, Stop and active-close checks. The 200% run also includes twenty measured stress cycles. Xvfb proves this isolated X11 flow; native monitor/DPI, Wayland and Windows acceptance remain separate. Hosted execution of the new preferences case is pending.
+Local release flows pass at 100% and 200% scale, including the existing manual Start, complete-pair, minimum-window, Stop and active-close checks. The 200% run also includes twenty measured stress cycles. Xvfb proves this isolated X11 flow; native monitor/DPI, Wayland and Windows acceptance remain separate. Hosted run 40121663794 at e244efd also passes the release preferences case; its downloaded GUI log was inspected. See [CI evidence](ci.md).

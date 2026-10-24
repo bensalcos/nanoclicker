@@ -23,3 +23,5 @@ Unstripped input executable SHA256:
 - Wgpu: `1520b41c648c109e33847bc9d4ceb219f60d6ab3ed39a3ee29bb47d310ee80be`
 
 Decision: keep glow as the **provisional Linux default**. Wgpu remains an optional build for continued evaluation. Its modestly lower RSS does not close the memory gate, and its observed active CPU is higher in this environment. This does not establish the preferred renderer on Windows/DX12 or on physical Linux GPUs. Both budgets remain unchanged; further profiling/optimization and native accessibility/graphics evidence are required before accepting T02/T16.
+
+A later [matched-source hardware-display comparison](gpu-renderers.md) measures both renderers with the expanded GUI fixture. Those results do not replace this software-rendering case or close its budgets.

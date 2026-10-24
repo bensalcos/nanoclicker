@@ -1,0 +1,4 @@
+/usr/lib64/libGLX.so.0.0.0
+/usr/lib64/libGLX_mesa.so.0.0.0
+/usr/lib64/libLLVM.so.22.1
+/usr/lib64/libgallium-26.2.2.so

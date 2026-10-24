@@ -1,0 +1,64 @@
+{
+  "source_commit": "e244efd5212c85fe024057de569b7f2284e6e933",
+  "harness_sha256": "f5ae7ee275266e9ad8c30de01986808785fccf73b98e6a8fecc3b6a9337794bc",
+  "os": "Fedora 44",
+  "kernel": "7.2.6-200.fc44.x86_64",
+  "cpu": "AMD Ryzen 5 5625U, 6 cores / 12 threads",
+  "governor": "powersave",
+  "toolchain": "Rust 1.97.1, standard release profile",
+  "weston": "15.0.1-2.fc44, verified extracted RPMs",
+  "xwayland": "24.1.13-1.fc44.x86_64",
+  "mesa": "26.2.2-6.fc44",
+  "gpu": "AMD 1002:15e7 Renoir integrated GPU",
+  "configuration": "private headless Weston GL + fullscreen rootful Xwayland, 2048x1536, scale 1; dark; requested 10 ms; private bus without activatable services or active reader",
+  "environment": {
+    "WGPU_BACKEND": "vulkan",
+    "VK_DRIVER_FILES": "/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
+  },
+  "protocol": {
+    "warm_start_samples": 30,
+    "stabilization_seconds": 60,
+    "idle_seconds": 60,
+    "active_seconds": 60,
+    "order": [
+      "wgpu",
+      "glow"
+    ],
+    "runs_per_renderer": 1
+  },
+  "renderers": {
+    "wgpu": {
+      "application_sha256": "faea30d3488a29d2e3d8881306aed0a2ea8c4f12cfa6139395045c3f9b8eb90a",
+      "results": {
+        "startup_p95_ms": 71.11,
+        "idle_cpu_percent_one_core": 0.0,
+        "idle_rss_mib": 62.676,
+        "active_cpu_percent_one_core": 2.1333,
+        "active_rss_mib": 62.828,
+        "received_pairs": 6001.0,
+        "interval_abs_error_p99_ms": 1.0,
+        "interval_abs_error_max_ms": 1.0
+      }
+    },
+    "glow": {
+      "application_sha256": "317322b93cd353775828192b7b5f7f12ef14630f85fba8d266488fa64b845c6f",
+      "results": {
+        "startup_p95_ms": 117.712,
+        "idle_cpu_percent_one_core": 0.0167,
+        "idle_rss_mib": 84.762,
+        "active_cpu_percent_one_core": 2.3832,
+        "active_rss_mib": 87.047,
+        "received_pairs": 6001.0,
+        "interval_abs_error_p99_ms": 1.0,
+        "interval_abs_error_max_ms": 1.0
+      }
+    }
+  },
+  "limits": [
+    "Shared host, uncontrolled background load/power; no heavy verification or compilation during measured phases",
+    "GLX display, Vulkan driver enumeration and process library mappings; exact application adapter info/GL renderer string not queried",
+    "Each manual preflight reasserted the fake-seat cursor once; no guard during measured active phase",
+    "Interarrival error uses server millisecond timestamps and is not engine deadline lateness",
+    "Does not accept Windows, native GNOME/KDE, monitor/screen-reader or software-rendering gates"
+  ]
+}

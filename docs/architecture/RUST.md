@@ -89,7 +89,7 @@ A single thread owns active state; copy small values, borrow for reads and justi
 
 No allocations, formatting, configuration I/O or per-click logging in the stable fast path. Prebuild event buffers, use checked `u64` counters and aggregate metrics. No default busy waiting, real-time priority, fixed affinity or shortcut polling. Native interruptible waits: Windows timer/event and a Linux equivalent validated in P0; the monotonic clock and injection share a worker. Measure D-Bus backend costs instead of hiding them.
 
-Portable release build: compare `opt-level=3`, thin LTO and codegen-units=1 against the standard profile; select by measurement. No distributed `target-cpu=native` builds. Retain separate diagnostic symbols. Do not adopt panic=abort if it breaks release/diagnostic handling. Limit features and dependencies per target; do not compile all renderers by default.
+Portable release build: compare `opt-level=3`, thin LTO and codegen-units=1 against the standard profile; select by measurement. No distributed `target-cpu=native` builds. Retain separate diagnostic symbols. Do not adopt panic=abort if it breaks cleanup/diagnostic handling. Limit features and dependencies per target; do not compile all renderers by default.
 
 ## Primary sources consulted
 
