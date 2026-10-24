@@ -50,6 +50,7 @@ For an isolated visual snapshot:
 ```sh
 cargo build -p nanoclick --features eframe/__screenshot --locked
 scripts/capture-ui.sh /tmp/nanoclick-dark.png dark
+scripts/capture-ui.sh /tmp/nanoclick-dark-2x.png dark 2
 ```
 
 The screenshot feature is for verification, not release packaging.

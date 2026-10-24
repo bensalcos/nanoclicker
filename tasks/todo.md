@@ -101,6 +101,8 @@ Implementation: versioned explicit Save and six recovery tests pass on Linux; Wi
 **Dependencias:** T11, T12. **Verificación:** roundtrip, corrupción, versión futura y fallo de escritura preservando último archivo válido. **Archivos:** `app/src/settings.rs`, integración/controller y tests.
 
 ### T14 — Aceptar UI, DPI y accesibilidad [M]
+
+Partial evidence: six default-size Xvfb captures at 100/150/200% reviewed. Main controls fit; help clipping, non-text contrast and accessible field names still need work. Native DPI and screen-reader checks remain pending. See `docs/evidence/ui-scaling.md`.
 - [ ] Pulir tokens, foco, errores, escalado y temas según UI.md con capturas reales.
 - [ ] Completar teclado y pruebas NVDA/Orca, sin recorte a 420×520 y 200% DPI.
 
