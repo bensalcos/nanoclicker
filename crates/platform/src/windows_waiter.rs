@@ -4,7 +4,7 @@ use std::{
     os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
     ptr::null,
     sync::Arc,
-    time::Instant,
+    time::{Duration, Instant},
 };
 use windows_sys::Win32::{
     Foundation::{WAIT_FAILED, WAIT_OBJECT_0},
@@ -49,6 +49,36 @@ impl WindowsWaiter {
             armed: false,
         })
     }
+    fn arm(&mut self, remaining: Duration) -> Result<(), BackendError> {
+        let due = crate::windows_time::relative_due(remaining)?;
+        // SAFETY: valid owned timer and stack due time copied by Windows; no APC,
+        // no resume from sleep, no periodic timer, zero tolerance requested.
+        if unsafe {
+            SetWaitableTimerEx(self.timer.as_raw_handle(), &due, 0, None, null(), null(), 0)
+        } == 0
+        {
+            return Err(error("arming failed"));
+        }
+        self.armed = true;
+        Ok(())
+    }
+    fn wait_for_signal(&self) -> Result<(), BackendError> {
+        let cancel = self
+            .cancel
+            .as_ref()
+            .ok_or_else(|| BackendError::new("Windows timer was not bound to a run."))?;
+        let handles = [cancel.as_raw_handle(), self.timer.as_raw_handle()];
+        // SAFETY: both handles remain owned throughout this synchronous wait.
+        // Lowest index wins when both signal, giving cancellation priority.
+        match unsafe { WaitForMultipleObjects(2, handles.as_ptr(), 0, INFINITE) } {
+            WAIT_OBJECT_0 => Ok(()),
+            value if value == WAIT_OBJECT_0 + 1 => Ok(()),
+            WAIT_FAILED => Err(error("wait failed")),
+            value => Err(BackendError::new(format!(
+                "Unexpected Windows timer wait result: {value}."
+            ))),
+        }
+    }
 }
 impl Waiter for WindowsWaiter {
     fn bind(&mut self, token: &Cancellation) -> Result<(), BackendError> {
@@ -75,32 +105,8 @@ impl Waiter for WindowsWaiter {
         if token.is_cancelled() || Instant::now() >= deadline {
             return Ok(());
         }
-        let due =
-            crate::windows_time::relative_due(deadline.saturating_duration_since(Instant::now()))?;
-        // SAFETY: valid owned timer and stack due time copied by Windows; no APC,
-        // no resume from sleep, no periodic timer, zero tolerance requested.
-        if unsafe {
-            SetWaitableTimerEx(self.timer.as_raw_handle(), &due, 0, None, null(), null(), 0)
-        } == 0
-        {
-            return Err(error("arming failed"));
-        }
-        self.armed = true;
-        let cancel = self
-            .cancel
-            .as_ref()
-            .ok_or_else(|| BackendError::new("Windows timer was not bound to a run."))?;
-        let handles = [cancel.as_raw_handle(), self.timer.as_raw_handle()];
-        // SAFETY: both handles remain owned throughout this synchronous wait.
-        // Lowest index wins when both signal, giving cancellation priority.
-        match unsafe { WaitForMultipleObjects(2, handles.as_ptr(), 0, INFINITE) } {
-            WAIT_OBJECT_0 => Ok(()),
-            value if value == WAIT_OBJECT_0 + 1 => Ok(()),
-            WAIT_FAILED => Err(error("wait failed")),
-            value => Err(BackendError::new(format!(
-                "Unexpected Windows timer wait result: {value}."
-            ))),
-        }
+        self.arm(deadline.saturating_duration_since(Instant::now()))?;
+        self.wait_for_signal()
     }
     fn finish(&mut self) -> Result<(), BackendError> {
         if self.armed {
@@ -146,21 +152,42 @@ mod tests {
         waiter.finish()
     }
     #[test]
-    fn native_cancel_event_interrupts_a_long_timer() -> Result<(), Box<dyn std::error::Error>> {
+    fn native_cancel_event_interrupts_an_armed_long_timer() -> Result<(), Box<dyn std::error::Error>>
+    {
         let token = Cancellation::default();
-        let worker_token = token.clone();
         let mut waiter = WindowsWaiter::new()?;
         waiter.bind(&token)?;
+        // Arm before cancellation can race with the worker. The worker must
+        // enter the native wait even when cancellation was signalled first.
+        waiter.arm(Duration::from_secs(60))?;
         let (done, completed) = mpsc::sync_channel(1);
-        let worker = thread::spawn(move || -> Result<(), BackendError> {
-            waiter.wait_until(Instant::now() + Duration::from_secs(60), &worker_token)?;
-            waiter.finish()?;
-            let _ = done.send(());
-            Ok(())
+        let worker = thread::spawn(move || {
+            let result = waiter.wait_for_signal().and_then(|()| waiter.finish());
+            let _ = done.send(result);
         });
         token.fail(BackendError::new("test cancellation; no input is sent"));
-        completed.recv_timeout(Duration::from_secs(3))?;
-        worker.join().map_err(|_| "Timer test worker panicked")??;
+        completed.recv_timeout(Duration::from_secs(3))??;
+        worker.join().map_err(|_| "Timer test worker panicked")?;
+        Ok(())
+    }
+    #[test]
+    fn native_timer_fires_and_rearms() -> Result<(), Box<dyn std::error::Error>> {
+        let mut waiter = WindowsWaiter::new()?;
+        waiter.bind(&Cancellation::default())?;
+        let (done, completed) = mpsc::sync_channel(1);
+        let worker = thread::spawn(move || {
+            let result = (|| -> Result<(), BackendError> {
+                for _ in 0..2 {
+                    waiter.arm(Duration::from_millis(1))?;
+                    waiter.wait_for_signal()?;
+                    waiter.finish()?;
+                }
+                Ok(())
+            })();
+            let _ = done.send(result);
+        });
+        completed.recv_timeout(Duration::from_secs(3))??;
+        worker.join().map_err(|_| "Timer test worker panicked")?;
         Ok(())
     }
 }

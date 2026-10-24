@@ -25,3 +25,9 @@ Checked 2026-10-24:
 - [CreateWaitableTimerExW](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerexw): high-resolution flag supported since Windows 10 version 1803; Windows 11 is the project baseline.
 - [SetWaitableTimerEx](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-setwaitabletimerex): negative relative due times in 100 ns units; actual accuracy depends on hardware.
 - [WaitForMultipleObjects](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitformultipleobjects): lowest index wins when multiple handles signal; owners must keep handles valid throughout the wait.
+
+## Hosted execution and stronger timer coverage
+
+Run 40089494911 at 2ecaf23 executed the original two Windows-only event/cancellation tests successfully and linked the release executable. Review found that the original cancellation test could signal before `wait_until` armed a timer, so that green result alone did not prove timer arming/disarming.
+
+The native wait is now factored into private arming and signal-wait helpers, with the public Waiter contract unchanged. The strengthened cancellation test arms a 60-second timer before cancellation can race, then always enters the native wait. A new test fires and rearms a timer twice. Both report worker errors through the result channel and use a bounded observer timeout. Their new hosted execution is pending; timing-accuracy and input Stop budgets remain separate.
