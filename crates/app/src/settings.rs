@@ -172,6 +172,18 @@ impl PreferencesFile {
         let file = match File::open(&self.path) {
             Ok(file) => file,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                // Windows can report PATH_NOT_FOUND when an existing parent is
+                // a regular file. That is a blocked location, not a first run.
+                for parent in self.path.ancestors().skip(1) {
+                    match fs::metadata(parent) {
+                        Ok(metadata) if metadata.is_dir() => break,
+                        Ok(_) => return Err(SettingsError::Invalid(
+                            "A parent of the preferences path is not a directory. The original path was preserved.".into(),
+                        )),
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                        Err(error) => return Err(error.into()),
+                    }
+                }
                 self.can_replace = true;
                 return Ok(Preferences::default());
             }
@@ -259,8 +271,27 @@ mod tests {
         std::fs::write(&path, b"keep me")?;
         let mut file = PreferencesFile::new(path.join("preferences.json"));
         assert!(file.load().is_err());
-        assert!(file.save(&Preferences::default()).is_err());
+        assert!(matches!(
+            file.save(&Preferences::default()),
+            Err(SettingsError::Protected)
+        ));
         assert_eq!(std::fs::read(path)?, b"keep me");
+        Ok(())
+    }
+    #[test]
+    fn missing_nested_directories_allow_first_save() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let path = dir
+            .path()
+            .join("missing")
+            .join("nested")
+            .join("preferences.json");
+        let mut file = PreferencesFile::new(path.clone());
+        let mut preferences = file.load()?;
+        assert!(!path.exists());
+        preferences.interval_ms = 25;
+        file.save(&preferences)?;
+        assert_eq!(file.load()?.interval_ms, 25);
         Ok(())
     }
     #[test]
