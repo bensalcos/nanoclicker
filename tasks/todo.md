@@ -116,7 +116,7 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 
 ### T15 — Endurecer lifecycle y fallos [M]
 
-Partial evidence: private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Native desktop/resource stability and other failure variants remain open.
+Partial evidence: private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Actual X11 release UI also passes 1000 measured Start/Stop cycles with stable sampled resources and graceful close during preparation/running/Stop-request races at 100/200% scale. Windows/Wayland desktop/resource stability and other failure variants remain open. See `docs/evidence/ui-lifecycle-stress.md`.
 - [ ] Cubrir cierre en Preparing/Running/Stopping, backend desconectado, permisos revocados y liberación fallida.
 - [ ] Garantizar estado terminal observable y recursos cerrados; repetir ciclos y verificar estabilidad de memoria.
 

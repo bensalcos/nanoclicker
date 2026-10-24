@@ -51,5 +51,22 @@
     },
     "dependency_inventory_entries": 128,
     "downloaded_and_verified": true
+  },
+  "portal_followup": {
+    "run_id": 40094952287,
+    "head_sha": "0a4837e0937b3805603f5191bc017bc48b579f24",
+    "conclusion": "success",
+    "all_four_jobs_pass": true,
+    "ubuntu_job": 120875139856,
+    "portal_scenarios": 8,
+    "artifact": {
+      "id": 12560264318,
+      "size_bytes": 1413,
+      "files_verified": [
+        "x11.log",
+        "ui-x11.log",
+        "portal.log"
+      ]
+    }
   }
 }

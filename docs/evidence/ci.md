@@ -25,3 +25,5 @@ The workflow uses contents:read and disables checkout credential persistence. Ac
 - [actions/upload-artifact v7](https://github.com/actions/upload-artifact/tree/cf430e030ddbb5b0abf93d22962f4752f3646cd9)
 
 The draft PR is still blocked by the current GitHub credential's PR-write permission; its branch and successful push workflow are independently available. A separate GitHub connection authorization is pending.
+
+Follow-up [run 40094952287](https://github.com/bensalcos/nanoclicker/actions/runs/40094952287) at `0a4837e0937b3805603f5191bc017bc48b579f24` also passes all four jobs and adds eight private-D-Bus lifecycle scenarios on Ubuntu. Its `x11-evidence` artifact (id 12560264318, 1413 compressed bytes) was downloaded; x11.log, ui-x11.log and portal.log were inspected. The Windows artifact verification above remains specifically tied to run 40092934864. A new invocation against the release UI with twenty stress cycles and active-close cases is pending hosted validation.

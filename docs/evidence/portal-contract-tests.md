@@ -1,6 +1,6 @@
 # Isolated portal lifecycle contract tests
 
-Date: 2026-10-24. Test source: `446852cf6493b4ed084bfbb2edd3cffcc96fc281`. Reproduce with:
+Date: 2026-10-24. Test source: `0a4837e0937b3805603f5191bc017bc48b579f24`. Reproduce with:
 
 ```sh
 scripts/verify-portal.sh
@@ -31,4 +31,4 @@ All eight pass locally; [aggregate log](portal-lifecycle.txt). The observer time
 
 A negative control temporarily disabled the production monitor's failure notification. The closed-during-selection case then timed out in Running after sending a pair, as expected. The original production source was restored byte-for-byte and the positive suite passed again. No production adapter changes were needed for these tests. The fixture explicitly uses the already-present zbus 5.19.0 as a Linux development dependency; no new package version or shipping dependency was introduced.
 
-Linux CI now runs the feature-gated example and its Clippy check, retaining portal.log with the existing diagnostic artifact. Its first hosted result is pending. Real GNOME/KDE consent, denial/revocation, native Wayland delivery, shortcut behavior, D-Bus failure/timeout variants and performance remain open.
+Linux CI now runs the feature-gated example and its Clippy check, retaining portal.log with the existing diagnostic artifact. Hosted run 40094952287 at 0a4837e passes all four jobs, including all eight portal scenarios on Ubuntu 24.04. The diagnostic artifact was downloaded and its portal.log inspected; it contains eight PASS lines and no service-activation messages. Real GNOME/KDE consent, denial/revocation, native Wayland delivery, shortcut behavior, D-Bus failure/timeout variants and performance remain open.

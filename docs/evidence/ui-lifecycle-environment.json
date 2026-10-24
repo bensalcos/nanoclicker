@@ -1,0 +1,15 @@
+{
+  "harness_source_commit": "beac3a302e61e0eb969b0ef87168d83a4eba861c",
+  "application_build_checkout": "0a4837e0937b3805603f5191bc017bc48b579f24",
+  "application_sources_match_harness_checkout": true,
+  "application_sha256": "edd250b7ef8b3dd68309dda3b7a2a4cb20bbc74d5856b093473efdbbe86aaeaa",
+  "profile": "release, default glow",
+  "interval_ms": 100,
+  "theme": "dark",
+  "scale_factor": 1,
+  "warmup_cycles": 10,
+  "measured_cycles": 1000,
+  "resource_samples": 51,
+  "host": "Fedora 44, Ryzen 5 5625U, Xvfb software rendering; shared host",
+  "scope": "Actual app process; lifecycle and sampled idle resources; not active CPU or Stop latency."
+}
