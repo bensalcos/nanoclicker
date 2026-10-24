@@ -1,12 +1,12 @@
-# UI de NanoClick Rust
+# NanoClick Rust UI
 
-Especificación inicial; requiere prototipo visual y QA nativo antes de considerarse aceptada.
+Initial specification; visual prototyping and native QA are required before acceptance.
 
-La nueva aplicación será únicamente en inglés: controles, estados, errores, tooltips y nombres accesibles. No tendrá selector de idioma ni módulo de traducciones. Esta decisión reemplaza el comportamiento bilingüe de la versión C++.
+The new application is English only: controls, states, errors, tooltips and accessible names. It has no language selector or translation module. This replaces the C++ version's bilingual behavior.
 
-## Flujo principal
+## Main flow
 
-Una ventana compacta, tamaño inicial 520×600 unidades lógicas, mínimo 420×520 con scroll si el contenido no cabe. Cabecera con marca NanoClick, selector de tema sistema/claro/oscuro y botón Save para guardar preferencias de forma explícita. Tres bloques: ritmo y botón, condición de parada, atajo. Pie con estado, contador de sesión y acción principal persistente. Respetar decoraciones del SO para mover, redimensionar y cerrar.
+One compact window, initially 520×600 logical units, minimum 420×520 with scrolling when content does not fit. The header contains the NanoClick brand, system/light/dark theme selector and Save button for explicit preference persistence. Three sections cover timing/button, stop condition and shortcut. The footer contains status, session counter and a persistent primary action. Respect OS decorations for moving, resizing and closing.
 
 ```text
 NanoClick                              Theme
@@ -26,27 +26,27 @@ Session: 0 pairs sent
 [                 Start                   ]
 ```
 
-En Running, la acción principal cambia a **Stop**, se bloquea edición del plan activo y permanece posible cambiar el tema. En Preparing, mostrar solicitud de permiso y botón Cancel. En Stopping, mantener estado visible hasta acuse del motor. Al completar N pares, restaurar controles inmediatamente y mostrar “Completed”. Faulted incluye causa comprensible y recuperación, conservando valores.
+While Running, the primary action becomes **Stop**, active-plan editing is disabled and theme changes remain available. Preparing shows the permission request and Cancel. Stopping remains visible until the engine acknowledges termination. Completing N pairs immediately restores controls and shows “Completed”. Faulted shows an understandable cause and recovery while preserving entered values.
 
-El botón Start no debe dejar que el primer clic inmediato reactive la propia UI por estar el cursor encima: tras pulsar, preparar primero la entrada y completar cualquier permiso del escritorio; después mostrar instrucción de mover el cursor y una cuenta regresiva cancelable de 3 segundos para inicio manual. El inicio por atajo conserva primer clic inmediato. La demora manual es una mejora deliberada respecto a C++; medir latencia de motor desde fin de cuenta regresiva, separada de la experiencia de arranque.
+Manual Start must not let the immediate first click reactivate the UI beneath the pointer. Prepare input and complete any desktop permission first; then instruct the user to move the pointer and show a cancelable 3-second countdown. Shortcut Start retains an immediate first click. The manual delay is a deliberate improvement over C++; measure engine latency from countdown completion, separately from the startup experience.
 
-No añadir navegación lateral, gráficos de CPS en vivo, animaciones continuas, tray, macros o perfiles múltiples en V1. No minimizar al arrancar. El atajo mostrado debe ser el realmente registrado, con mensajes de conflicto y alternativa manual cuando falte soporte.
+Do not add sidebar navigation, live CPS charts, continuous animations, tray integration, macros or multiple profiles in V1. Do not minimize on startup. Show the shortcut actually registered, conflict messages and a manual alternative when shortcut support is unavailable.
 
-## Sistema visual
+## Visual system
 
-- Espaciado base 8, márgenes 24, separación de bloques 20; radios 10 y bordes discretos.
-- Tipografía legible de 14–16 unidades lógicas, título 24, cifras con alineación estable. Fuente incluida solo si su licencia permite redistribución.
-- Tema oscuro: fondo grafito, superficies elevadas suaves y acento azul; tema claro equivalente. Reservar rojo para Detener/error, sin depender únicamente del color.
-- Labels permanentes, unidades visibles, error junto al campo, sin corregir silenciosamente entradas inválidas. Cantidad e intervalo enteros; tooltip del período objetivo y límites.
-- Estado textual y visual: listo, preparando, activo, deteniendo, completado, error o capacidad no disponible. Evitar presentar precisión teórica como CPS observado.
+- Base spacing 8, margins 24, section gaps 20; corner radius 10 and subtle borders.
+- Readable typography at 14–16 logical units, title 24, stable numeral alignment. Bundle a font only when its license permits redistribution.
+- Dark theme: graphite background, softly raised surfaces and blue accent; equivalent light theme. Reserve red for Stop/errors without relying on color alone.
+- Persistent labels, visible units, field-local errors and no silent correction of invalid input. Integer count and interval; tooltip for the target period and limits.
+- Textual and visual status: ready, preparing, running, stopping, completed, faulted or unavailable capability. Do not present theoretical precision as observed CPS.
 
-## Accesibilidad y QA
+## Accessibility and QA
 
-Tab/Shift+Tab en orden de lectura; foco visible; Space/Enter solo en el control adecuado; Escape cancela captura de atajo o preparación y detiene una ejecución activa cuando la ventana tiene foco. No hacer Start por Enter mientras se edita un campo. Contraste de texto ≥4.5:1, controles identificables y nombres accesibles en inglés. Desactivar movimiento innecesario.
+Tab/Shift+Tab follow reading order; focus is visible; Space/Enter activate only the appropriate control. Escape cancels shortcut capture or preparation and stops active input when the window has focus. Enter while editing a field must not Start. Text contrast ≥4.5:1, identifiable controls and English accessible names. Disable unnecessary motion.
 
-Probar 100%, 150% y 200% DPI; ventana mínima; mensajes largos; teclado completo; NVDA en Windows y Orca en Linux. AccessKit habilitado no demuestra por sí solo que estas pruebas pasan. Guardar capturas y resultados por SO/tema; aprobar la apariencia en escritorio real, no solo compilación ni headless.
+Test 100%, 150% and 200% DPI, the minimum window, long messages, complete keyboard operation, NVDA on Windows and Orca on Linux. Enabling AccessKit alone does not prove these tests pass. Save captures and per-OS/theme results; accept appearance on an actual desktop, beyond compilation or headless tests.
 
-Preferencias persistidas al pulsar Save: tema, configuración y atajo solicitado. El resultado del guardado se muestra en la ventana. Archivo versionado con escritura temporal y reemplazo seguro específico del SO; recuperación de archivo corrupto sin sobrescribirlo automáticamente. Usar directorios de configuración estándar. Nunca persistir estado Running, permisos como si fueran vigentes ni contadores que reactiven clics al abrir.
+Save explicitly persists theme, configuration and requested shortcut. Show its result in the window. Use a versioned file, temporary writes and safe OS-specific replacement; recover from corrupt files without automatically overwriting them. Use standard configuration directories. Never persist Running state, permissions as if still valid, or counters that resume clicks on launch.
 
 ## Implemented layout and accessibility update
 

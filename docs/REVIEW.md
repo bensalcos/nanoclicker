@@ -1,36 +1,36 @@
-# Revisión del proyecto existente
+# Review of the original project
 
-Revisión estática: 2026-10-23. Base: `3fd5cd8`. No se ejecutó el binario Windows ni se midió rendimiento. El árbol estaba limpio al comenzar. No hay tests ni automatización de CI versionados.
+Static review: 2026-10-23. Base: `3fd5cd8`. The Windows binary was not executed and performance was not measured. The tree was clean at the start of that review. That original revision had no versioned tests or CI automation.
 
-## Inventario y paridad
+## Inventory and parity
 
-| Componente | Implementación actual | Comportamiento que preservar |
+| Component | Original implementation | Behavior to preserve |
 |---|---|---|
-| Arranque | `Autoclicker.cpp`, Win32 y common controls | Una ventana de escritorio |
-| Motor | `AutoclickerEngine.{h,cpp}`, hilo persistente | Primer clic inmediato, intervalo en ms, cursor actual |
-| Entrada | `SendInput`, down/up separados | Izquierdo, derecho y central |
-| Parada | Flag atómico y conteo `int` | Manual o después de N clics completos |
-| UI | `MainWindow.{h,cpp}` | Configuración bloqueada durante ejecución |
-| Atajo | `RegisterHotKey`, F6 por defecto | Alternar inicio/parada fuera de foco |
-| Idioma | Cadenas ES/EN dentro de la ventana | La reescritura será solo en inglés por decisión del usuario |
-| Recursos | `.rc`, dos iconos, menú | Identidad NanoClick |
-| Build | `.vcxproj`, `.slnx` | Actualmente solo Windows, toolset v145, C++20 |
+| Startup | `Autoclicker.cpp`, Win32 and common controls | One desktop window |
+| Engine | `AutoclickerEngine.{h,cpp}`, persistent thread | Immediate first click, millisecond interval, current pointer position |
+| Input | `SendInput`, separate down/up calls | Left, right and middle buttons |
+| Stop | Atomic flag and `int` count | Manual Stop or completion after N whole clicks |
+| UI | `MainWindow.{h,cpp}` | Configuration disabled while running |
+| Shortcut | `RegisterHotKey`, default F6 | Toggle Start/Stop outside focus |
+| Language | ES/EN strings inside the window | The rewrite is English only by user decision |
+| Resources | `.rc`, two icons, menu | NanoClick identity |
+| Build | `.vcxproj`, `.slnx` | Windows only, toolset v145, C++20 |
 
-Valores iniciales: intervalo 100 ms, conteo 10, modo infinito, botón izquierdo, español y F6. No existe configuración persistente que importar. No hay posición fija, macros, doble clic, bandeja ni actualizador implementados.
+Defaults: 100 ms interval, count 10, infinite mode, left button, Spanish and F6. There is no persistent configuration to import. Fixed positioning, macros, double-click mode, tray integration and an updater are not implemented.
 
-## Hallazgos
+## Findings
 
-1. **Concurrencia:** los campos de configuración se escriben en `Start()` sin el mutex usado por el worker; ciclos rápidos Stop/Start pueden solaparse con lecturas de la ejecución anterior. El protocolo de condición tampoco protege con el mismo mutex todas las transiciones del predicado: existe riesgo de perder una notificación. Rediseñar ownership y sincronización; no trasladar este esquema a Rust.
-2. **Cancelación:** `Stop()` no despierta `Sleep(clickRate)`. El cierre hace `join()` y puede bloquear hasta el intervalo restante, que la UI permite llevar a 999999 ms.
-3. **Fin automático:** el worker pone `isRunning=false` antes del callback; `StopAutoclicker()` retorna si ya está detenido y no llama `UpdateControlStates()`. Los controles pueden quedar deshabilitados.
-4. **Inyección:** se ignoran los resultados de ambas llamadas `SendInput`. Se cuentan intentos aunque fallen; un down aceptado y un up fallido necesitan recuperación explícita.
-5. **Temporización:** `Sleep(intervalo)` añade el coste de inyección al período y acumula deriva. `timeBeginPeriod(1)` se mantiene toda la vida del proceso y su resultado se ignora. Resolución de reloj no equivale a precisión garantizada.
-6. **Atajos:** registro inicial y cambios ignoran errores; se elimina el atajo anterior antes de comprobar el nuevo. Se consulta el control cada 500 ms. Falta supresión de repetición de tecla.
-7. **Validación:** `_wtoi` no distingue entradas inválidas; intervalo cero se convierte silenciosamente a uno; un conteo cero termina después del primer intento. La nueva versión rechazará explícitamente valores inválidos.
-8. **UI y recursos:** distribución por coordenadas y altura mínima fija; falta evidencia de DPI, teclado y lector de pantalla. El brush creado para la clase no tiene liberación visible. El menú About está declarado en recursos pero no tiene acción implementada en la ventana.
-9. **Documentación/build:** README menciona `.sln` aunque existe `.slnx`, C++17 aunque el proyecto usa C++20 y recomienda VS2022 aunque configura v145. Las afirmaciones de cero lag y precisión no tienen mediciones.
-10. **Licencia:** En la revisión inicial, MIT tenía `[year] [fullname]` sin completar. El usuario delegó la decisión y se fijó la atribución `Copyright (c) 2026 bensalcos`, usando el identificador del propietario del repositorio.
+1. **Concurrency:** `Start()` writes configuration fields without the mutex used by the worker; rapid Stop/Start cycles may overlap reads from the previous run. The condition protocol also fails to protect all predicate transitions with the same mutex, risking lost notification. Redesign ownership and synchronization rather than translating this scheme into Rust.
+2. **Cancellation:** `Stop()` does not wake `Sleep(clickRate)`. Shutdown joins the worker and may block for the remaining interval, which the UI allows up to 999999 ms.
+3. **Automatic completion:** the worker sets `isRunning=false` before the callback; `StopAutoclicker()` returns when already stopped without calling `UpdateControlStates()`. Controls may remain disabled.
+4. **Injection:** both `SendInput` return values are ignored. Failed attempts are counted; an accepted down followed by a failed up requires explicit recovery.
+5. **Timing:** `Sleep(interval)` adds injection cost to the period and accumulates drift. `timeBeginPeriod(1)` remains active for the process lifetime and its result is ignored. Clock resolution does not guarantee precision.
+6. **Shortcuts:** initial registration and changes ignore errors; the previous shortcut is removed before checking the new one. The control is polled every 500 ms. Held-key repeat suppression is missing.
+7. **Validation:** `_wtoi` does not distinguish invalid input; a zero interval silently becomes one, and count zero finishes after the first attempt. The new version explicitly rejects invalid values.
+8. **UI and resources:** coordinate-based layout and fixed minimum height lack DPI, keyboard and screen-reader evidence. The class brush has no visible release. The resource menu declares About, but the window implements no corresponding action.
+9. **Documentation/build:** README names `.sln` although the project has `.slnx`, says C++17 although it uses C++20, and recommends VS2022 although it configures v145. Zero-lag and precision claims lack measurements.
+10. **License:** the initial MIT notice contained `[year] [fullname]`. The user delegated the decision; attribution became `Copyright (c) 2026 bensalcos`, using the repository owner's identifier.
 
-## Consecuencia para la migración
+## Migration implications
 
-Reescritura pequeña y modular, sin FFI hacia el motor C++. Mantener la versión existente como referencia hasta validar paridad. La sustitución de lenguaje por sí sola no prueba una mejora frente a C++: el objetivo medible es reducir deriva, latencia de parada y consumo, además de ampliar compatibilidad.
+Use a small modular rewrite without FFI into the C++ engine. Retain the original version as a reference until parity is validated. A language change alone does not prove improvement over C++: measurable objectives are lower drift, Stop latency and resource use, alongside broader compatibility.

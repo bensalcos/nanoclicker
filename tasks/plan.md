@@ -1,52 +1,52 @@
-# Plan de reescritura de NanoClick en Rust
+# NanoClick Rust migration plan
 
-## Objetivo
+## Objective
 
-Conservar funciones del autoclicker C++ y entregar UI moderna en Rust para Windows y Linux, con parada rápida, temporización estable y consumo medido. Esta primera entrega define el proyecto; la implementación comienza por pruebas técnicas pequeñas, antes de comprometer el motor completo.
+Preserve the C++ auto-clicker's functions and deliver a modern Rust UI for Windows and Linux, with fast Stop, stable scheduling and measured resource use. Implementation proceeds through small technical experiments and verifiable vertical slices. The current implementation and acceptance evidence are tracked separately: completed code does not imply completed platform acceptance.
 
-Documentos normativos: [revisión](../docs/REVIEW.md), [arquitectura](../docs/architecture/RUST.md), [UI](../docs/UI.md), [validación](../docs/VALIDATION.md). Tareas y aceptación: [todo.md](todo.md). Estado actual: [STATUS.md](../docs/STATUS.md).
+Normative documents: [review](../docs/REVIEW.md), [architecture](../docs/architecture/RUST.md), [UI](../docs/UI.md), [validation](../docs/VALIDATION.md). Tasks and acceptance: [todo.md](todo.md). Current state: [STATUS.md](../docs/STATUS.md).
 
-## Fases e hitos
+## Phases and milestones
 
-| Fase | Tareas | Resultado / condición de salida |
+| Phase | Tasks | Deliverable / exit condition |
 |---|---|---|
-| P0 — Reducir incertidumbre | T01–T04 | Renderer seleccionado y evidencia real de Windows, X11 y portales; limitaciones enumeradas |
-| P1 — Primera función completa | T05–T08 | Iniciar/detener botón izquierdo desde UI en Windows/X11, espera cancelable y CI |
-| P2 — Paridad y Linux moderno | T09–T12 | N exacto, tres botones, atajos, UI en inglés y Wayland integrado |
-| P3 — Experiencia y recuperación | T13–T15 | Preferencias, accesibilidad, fallos y lifecycle aceptados |
-| P4 — Optimización y entrega | T16–T18 | Mediciones aceptadas, artefactos reproducibles y documentación de usuario |
+| P0 — Reduce uncertainty | T01–T04 | Renderer selection and real Windows, X11 and portal evidence; explicit limitations |
+| P1 — First complete capability | T05–T08 | UI Start/Stop for the left button on Windows/X11, cancelable waiting and CI |
+| P2 — Parity and modern Linux | T09–T12 | Exact N, three buttons, shortcuts, English UI and integrated Wayland |
+| P3 — Usability and recovery | T13–T15 | Accepted preferences, accessibility, failure handling and lifecycle |
+| P4 — Optimization and delivery | T16–T18 | Accepted measurements, reproducible artifacts and user documentation |
 
-Cada hito requiere evidencia de sus criterios, no solo tareas marcadas. No declarar Linux completo si solo funciona X11. Si un portal está ausente, registrar bloqueo por entorno y continuar tareas independientes; no sustituir automáticamente por acceso privilegiado.
+Each milestone requires evidence against its criteria, not only checked tasks. Do not declare Linux complete based on X11 alone. If a portal is unavailable, record the environment blocker and continue independent tasks; do not automatically substitute privileged access.
 
-## Orden y dependencias
+## Order and dependencies
 
 ```text
-T01 ─ T02/T03/T04 (pruebas independientes)
+T01 ─ T02/T03/T04 (independent experiments)
  └─ T05 ─ T06 ─ T07 ─ T08 ─ T09 ─ T10 ─ T11
              T04 + T08 + T10 ─ T12
              T11 + T12 ─ T13 ─ T14 ─ T15 ─ T16 ─ T17 ─ T18
 ```
 
-T05 puede avanzar cuando la UI de T02 esté decidida; T07 requiere T03. Los spikes de P0 son descartables y no congelan APIs por conveniencia. No mantener dos motores conectados mediante FFI. Implementar cortes verticales verificables; conservar C++ compilable hasta aceptación final. Después retirar fuentes/build antiguos en un cambio separado con referencia al commit histórico.
+T05 can proceed once the UI approach in T02 is selected; T07 requires T03. P0 experiments are disposable and must not freeze APIs for convenience. Do not maintain two engines connected through FFI. Keep the C++ reference buildable until final acceptance. Afterwards, remove legacy source/build files in a separate change that references the historical commit.
 
-## Riesgos y mitigaciones
+## Risks and mitigations
 
-| Riesgo | Tratamiento |
+| Risk | Treatment |
 |---|---|
-| Portales incompletos o lentos | Probar primero GNOME/KDE, capacidades explícitas y métricas por backend |
-| Renderer consume demasiado o falla en GPU | Prototipo glow/wgpu, elegir uno y conservar criterio de revisión |
-| UI bonita pero inaccesible | Navegación y AccessKit desde prototipo; NVDA/Orca antes de aceptación |
-| Optimización empeora energía/parada | Espera cancelable sin spin; medir CPU, jitter y Stop juntos |
-| Rust introduce complejidad innecesaria | Tres crates, std para worker, executor solo si plataforma lo requiere |
-| Sin escritorio Windows disponible | Tests de core/CI avanzan; soporte nativo permanece pendiente de evidencia |
-| Aplicación destino rechaza eventos | Reportar semántica de backend, sin prometer recepción ni eludir restricciones |
+| Incomplete or slow portals | Test GNOME/KDE early; report explicit capabilities and per-backend measurements |
+| Excessive renderer cost or GPU failures | Compare glow/wgpu, select one and retain explicit review criteria |
+| Attractive but inaccessible UI | Keyboard navigation and AccessKit from the prototype; NVDA/Orca before acceptance |
+| Optimization harms energy use or Stop | Cancelable waiting without spinning; measure CPU, jitter and Stop together |
+| Unnecessary Rust complexity | Three crates, a standard-library worker, executors only where platform APIs require them |
+| No Windows desktop available | Continue core tests/CI; native desktop support remains pending evidence |
+| Target application rejects events | Report backend semantics without promising receipt or bypassing restrictions |
 
-## Decisiones pendientes de evidencia
+## Decisions and remaining evidence
 
-- Conjunto de versiones, MSRV y dependencias por target en T01/T05.
-- glow frente a wgpu en T02; Slint solo si fracasa el criterio de UI.
-- Mecanismo exacto de espera cancelable e integración portal en T03/T04.
-- Distro/versiones KDE y máquinas de referencia en T01.
-- Presupuestos: medirlos en T16; cualquier modificación requiere decisión documentada con resultados.
+- Toolchain, MSRV and target dependencies are recorded in the workspace manifests and lockfile; Rust 1.95 compatibility is checked in CI.
+- Glow remains the provisional default; wgpu is an optional comparison build. T02/T16 require the remaining native graphics and performance evidence. Reconsider the UI framework only if the acceptance criteria cannot be met.
+- Cancelable native waiting and portal lifecycle handling are implemented; T03/T04 still require the corresponding desktop and timing acceptance.
+- Complete the KDE/version and reference-machine matrix in T01 before claiming full platform coverage.
+- Measure the unchanged validation budgets in T16. Any proposed budget change requires a documented decision supported by results.
 
-Ninguna de estas decisiones exige una pregunta previa para comenzar las pruebas técnicas. Datos de firma/publicación y titularidad de licencia se necesitan únicamente para distribuir.
+Technical experiments can proceed without asking the user to resolve routine implementation choices. Signing/publication information and license attribution are distribution concerns. The MIT attribution was resolved through the user's explicit delegation; publishing a release remains a separate action from producing a preview.

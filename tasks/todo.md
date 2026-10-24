@@ -1,153 +1,153 @@
-# Backlog Rust
+# Rust backlog
 
-Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/implementation.md. Tamaño S: 1–2 archivos; M: 3–5 archivos. Si una tarea excede ese alcance, dividirla antes de implementarla, conservando dependencias y aceptación. Rutas siguientes son previstas.
+Status: implementation in progress; see docs/STATUS.md and docs/evidence/implementation.md. Size S: 1–2 files; M: 3–5 files. Split tasks that exceed that scope before implementing them, preserving dependencies and acceptance criteria. Paths below are planned locations.
 
-## P0 — Viabilidad
+## P0 — Feasibility
 
-### T01 — Fijar protocolo de comparación [S]
-- [x] Registrar máquinas, sistemas disponibles, matriz de versiones y capturador de prueba en `docs/evidence/environment.md`.
-- [x] Definir fixtures de paridad y medir C++ en Windows si está disponible; si no, dejar baseline explícitamente pendiente.
+### T01 — Establish the comparison protocol [S]
+- [x] Record machines, available systems, version matrix and the test capture fixture in `docs/evidence/environment.md`.
+- [x] Define parity fixtures and measure C++ on Windows if available; otherwise leave that baseline explicitly pending.
 
-**Dependencias:** ninguna. **Verificación:** protocolo reproducible y evidencia separada de resultados pendientes. **Archivos:** `docs/evidence/environment.md`, `docs/evidence/baseline.md`.
+**Dependencies:** none. **Verification:** reproducible protocol and evidence distinguished from pending results. **Files:** `docs/evidence/environment.md`, `docs/evidence/baseline.md`.
 
-### T02 — Prototipar renderer y UI accesible [M]
+### T02 — Prototype the renderer and accessible UI [M]
 
 Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional. A subsequent full glow run on a private AMD GPU-backed display meets startup/CPU/RSS targets in that case; software rendering remains over budget. Matched-GPU wgpu, Windows and native accessibility acceptance remain pending. See `docs/evidence/gpu-glow.md`.
-- [ ] Comparar glow/wgpu con ventana mínima, teclado, DPI y árbol accesible; registrar tamaño, arranque y reposo.
-- [ ] Elegir renderer y fijar tokens/componentes visuales con capturas de ambos temas; si ninguno cumple, evaluar alternativa de arquitectura.
+- [ ] Compare glow/wgpu with the minimum window, keyboard, DPI and accessibility tree; record size, startup and idle use.
+- [ ] Select a renderer and define visual tokens/components with captures of both themes; if neither meets the criteria, evaluate an architectural alternative.
 
-**Dependencias:** T01. **Verificación:** ejecución Windows/Linux y revisión de resultados contra UI.md/VALIDATION.md. **Archivos:** `experiments/ui/`, `docs/evidence/ui-spike.md`.
+**Dependencies:** T01. **Verification:** Windows/Linux execution and review against UI.md/VALIDATION.md. **Files:** `experiments/ui/`, `docs/evidence/ui-spike.md`.
 
-### T03 — Probar entrada y espera Windows/X11 [M]
+### T03 — Test Windows/X11 input and waiting [M]
 
 Implementation: Windows high-resolution timer and per-run cancellation event compile; Linux condition-variable and X11 tests pass. Native Windows timing remains pending. See `docs/evidence/native-waiter.md`.
-- [ ] Inyectar pares en capturador aislado, detectar errores y liberar botón ante fallo parcial; probar registro/conflicto de atajo.
-- [ ] Seleccionar espera nativa cancelable y comprobar Stop durante intervalo largo sin busy-wait.
+- [ ] Inject pairs into an isolated capture fixture, detect errors and release the button after partial failure; test shortcut registration/conflicts.
+- [ ] Select cancelable native waiting and check Stop during a long interval without busy waiting.
 
-**Dependencias:** T01. **Verificación:** eventos capturados, pruebas de error y tiempos registrados por SO. **Archivos:** `experiments/input/`, `docs/evidence/input-spike.md`.
+**Dependencies:** T01. **Verification:** captured events, error tests and timings recorded per OS. **Files:** `experiments/input/`, `docs/evidence/input-spike.md`.
 
-### T04 — Probar portales Wayland [M]
-- [ ] En GNOME/KDE, probar sesión POINTER y atajo fuera de foco sobre cliente Wayland nativo; documentar trigger efectivo.
-- [ ] Probar denegación/revocación y medir coste de NotifyPointerButton; seleccionar cliente D-Bus y modelo de ejecución.
+### T04 — Test Wayland portals [M]
+- [ ] On GNOME/KDE, test a POINTER session and an outside-focus shortcut against a native Wayland client; document the assigned trigger.
+- [ ] Test denial/revocation and measure NotifyPointerButton cost; select the D-Bus client and execution model.
 
-**Dependencias:** T01. **Verificación:** tabla de capacidades/versiones, eventos y mediciones; entornos ausentes permanecen pendientes. **Archivos:** `experiments/wayland/`, `docs/evidence/wayland-spike.md`.
+**Dependencies:** T01. **Verification:** capability/version table, events and measurements; unavailable environments remain pending. **Files:** `experiments/wayland/`, `docs/evidence/wayland-spike.md`.
 
-**Hito P0:** [ ] Decisiones de UI/plataforma sustentadas; ninguna limitación crítica oculta.
+**Milestone P0:** [ ] Evidence supports UI/platform decisions; no critical limitation is hidden.
 
-## P1 — Primer flujo utilizable
+## P1 — First usable flow
 
-### T05 — Crear workspace y dominio validado [M]
-- [x] Añadir manifests de tres crates, toolchain/MSRV, lockfile y features compatibles por target.
-- [x] Modelar intervalo, botón, conteo y estados con errores tipados; rechazar límites inválidos.
+### T05 — Create the workspace and validated domain [M]
+- [x] Add three-crate manifests, toolchain/MSRV, lockfile and compatible per-target features.
+- [x] Model interval, button, count and states with typed errors; reject invalid bounds.
 
-**Nota de ejecución:** el dominio y el workspace avanzan mientras T02/T03/T04 reúnen evidencia de escritorio; esto no cierra P0 ni congela el renderer.
+**Execution note:** domain/workspace implementation proceeds while T02/T03/T04 collect desktop evidence; this does not close P0 or freeze the renderer.
 
-**Dependencias:** T02 y T01. **Verificación:** fmt, clippy y tests de límites; builds por target. **Archivos:** manifests/toolchain, `crates/core/src/config.rs`, `state.rs` y entradas mínimas.
+**Dependencies:** T02 and T01. **Verification:** fmt, Clippy and boundary tests; per-target builds. **Files:** manifests/toolchain, `crates/core/src/config.rs`, `state.rs` and minimal entry points.
 
-### T06 — Implementar sesión con backend falso [M]
-- [x] Scheduler monotónico, primer clic inmediato, N exacto, omisión de slots y métricas acotadas.
-- [x] Worker con señal Stop/Shutdown prioritaria, snapshot terminal y run_id; parada y cierre interrumpen espera.
+### T06 — Implement sessions with a fake backend [M]
+- [x] Monotonic scheduler, immediate first click, exact N, skipped slots and bounded metrics.
+- [x] Worker with priority Stop/Shutdown, terminal snapshot and run_id; Stop and shutdown interrupt waiting.
 
-**Dependencias:** T05. **Verificación:** reloj falso, pruebas de carreras, saturación y overflow; sin sleeps para probar aritmética. **Archivos:** `core/src/{engine,scheduler,ports,metrics}.rs`, tests.
+**Dependencies:** T05. **Verification:** fake clock, race, saturation and overflow tests; no sleeps for arithmetic tests. **Files:** `core/src/{engine,scheduler,ports,metrics}.rs`, tests.
 
-### T07 — Integrar backend Windows [M]
-- [ ] Wrapper SendInput con verificación de retorno, recuperación de botón y espera cancelable seleccionada.
-- [ ] Flujo real Start/Stop izquierdo desde harness; cierre sin worker activo ni handle perdido.
+### T07 — Integrate the Windows backend [M]
+- [ ] SendInput wrapper with checked return values, button recovery and the selected cancelable waiter.
+- [ ] Actual left-button Start/Stop from the harness; shutdown leaves no active worker or leaked handle.
 
-**Dependencias:** T03, T06. **Verificación:** capturador Windows y pruebas de error; no usar el escritorio del usuario como test automático. **Archivos:** `platform/src/windows/`, integración Windows.
+**Dependencies:** T03, T06. **Verification:** Windows capture fixture and error tests; do not use the user desktop for automated testing. **Files:** `platform/src/windows/`, Windows integration.
 
-### T08 — Entregar Start/Stop desde UI en Linux X11 [M]
-- [ ] Backend XTEST y composición UI/controller usando contratos existentes; conectar también Windows.
-- [ ] UI permite inicio manual con cuenta regresiva cancelable y parada con acuse, sin bloquear hilo gráfico.
+### T08 — Deliver UI Start/Stop on Linux X11 [M]
+- [ ] XTEST backend and UI/controller composition using existing contracts; connect Windows as well.
+- [ ] UI supports manual Start with a cancelable countdown and acknowledged Stop without blocking the graphics thread.
 
-**Dependencias:** T02, T03, T07. **Verificación:** clics fuera de la UI, Stop y cierre en ambos sistemas. **Archivos:** `platform/src/x11/`, `app/src/{main,controller,ui}.rs`.
+**Dependencies:** T02, T03, T07. **Verification:** outside-UI clicks, Stop and shutdown on both systems. **Files:** `platform/src/x11/`, `app/src/{main,controller,ui}.rs`.
 
-**Hito P1:** [ ] Flujo izquierdo Windows/X11 medido y utilizable; núcleo independiente del renderer.
+**Milestone P1:** [ ] Measured, usable Windows/X11 left-button flow; renderer-independent core.
 
-## P2 — Paridad
+## P2 — Parity
 
-### T09 — Automatizar checks por plataforma [S]
+### T09 — Automate platform checks [S]
 
 Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
-- [x] CI Windows/Linux con fmt, clippy, tests, build release y features válidas.
-- [x] Artefactos de fallo e integración X11 aislada; separar estos checks de QA nativo.
+- [x] Windows/Linux CI with fmt, Clippy, tests, release build and valid features.
+- [x] Failure artifacts and isolated X11 integration; distinguish these checks from native QA.
 
-**Dependencias:** T08. **Verificación:** runs hospedados exitosos y logs; un YAML local no es CI aceptado. **Archivos:** `.github/workflows/`, scripts si son necesarios.
+**Dependencies:** T08. **Verification:** successful hosted runs and logs; local YAML is not accepted CI evidence. **Files:** `.github/workflows/`, scripts if needed.
 
-### T10 — Completar botones y repetición [M]
-- [ ] Tres botones, infinito y N validados desde UI; snapshot muestra conteo y razón de parada.
-- [ ] Fin automático desbloquea controles; edición activa bloqueada, reinicio rápido no reutiliza estado anterior.
+### T10 — Complete buttons and repetition [M]
+- [ ] Three buttons, infinite mode and N validated through the UI; snapshots show count and stop reason.
+- [ ] Automatic completion unlocks controls; active editing is disabled and rapid restart does not reuse previous state.
 
-**Dependencias:** T09. **Verificación:** pruebas core y capturador, N=1/N grande, secuencias rápidas y fallo down/up. **Archivos:** `app/src/ui.rs`, `controller.rs`, adaptadores/tests existentes.
+**Dependencies:** T09. **Verification:** core and capture tests, N=1/large N, rapid sequences and down/up failure. **Files:** `app/src/ui.rs`, `controller.rs`, existing adapters/tests.
 
-### T11 — Integrar atajos Windows/X11 [M]
+### T11 — Integrate Windows/X11 shortcuts [M]
 
 Additional X11 evidence: pointer-only map changes preserve the binding, actual keyboard-map changes invalidate it, and unchanged XKB master-device transitions retain it. Native layout/group and Windows/Wayland acceptance remain open. See `docs/evidence/x11-shortcut-mapping.md`.
-- [ ] F6 por defecto y cambio sin perder binding válido ante conflicto; una pulsación produce una transición.
-- [ ] La UI en inglés muestra el atajo efectivo y permite Stop fuera de foco.
+- [ ] Default F6 and rebinding without losing a valid binding on conflict; one press produces one transition.
+- [ ] The English UI shows the effective shortcut and allows outside-focus Stop.
 
-**Dependencias:** T10. **Verificación:** conflictos, modificadores/layout, tecla sostenida y mensajes en estados terminales. **Archivos:** adaptadores hotkey, UI/controller.
+**Dependencies:** T10. **Verification:** conflicts, modifiers/layout, held key and messages in terminal states. **Files:** hotkey adapters, UI/controller.
 
-### T12 — Integrar Wayland y capacidades [M]
+### T12 — Integrate Wayland and capabilities [M]
 
 Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activation-disabled private bus, including five GlobalShortcuts service-loss/closure cases before and after binding. This exercises the production adapter and engine without a compositor; real GNOME/KDE portal and input acceptance remains open. See `docs/evidence/portal-contract-tests.md`.
-- [ ] Adaptador de portal con preparación cancelable, sesiones y señales de revocación; UI distingue inyección y atajo.
-- [ ] Trigger efectivo del escritorio y modo manual explícito cuando no hay atajo; portal ausente impide iniciar si falta inyección.
+- [ ] Portal adapter with cancelable preparation, sessions and revocation signals; UI distinguishes input injection from shortcuts.
+- [ ] Desktop-assigned trigger and explicit manual mode when no shortcut exists; unavailable input injection prevents Start.
 
-**Dependencias:** T04, T08, T10. **Verificación:** flujos nativos GNOME/KDE, rechazo y revocación; prueba XWayland separada. **Archivos:** `platform/src/wayland/`, `capabilities.rs`, controller y vista de capacidades.
+**Dependencies:** T04, T08, T10. **Verification:** native GNOME/KDE flows, denial and revocation; separate XWayland testing. **Files:** `platform/src/wayland/`, `capabilities.rs`, controller and capability view.
 
-**Hito P2:** [ ] Matriz de paridad completa, con soporte por entorno acreditado y limitaciones visibles.
+**Milestone P2:** [ ] Complete parity matrix, with evidence for each supported environment and visible limitations.
 
-## P3 — Calidad de uso
+## P3 — Usability
 
-### T13 — Persistir preferencias de forma recuperable [M]
+### T13 — Persist recoverable preferences [M]
 
 Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch now also checks the restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Native Windows/Wayland desktop QA and other preference fields remain pending. See `docs/evidence/ui-preferences.md`.
-- [x] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
-- [ ] Escritura/reemplazo seguro en cada SO, recuperación de archivo inválido y directorios estándar.
+- [x] Theme, plan and requested shortcut in a versioned schema, without active state or automatic resumption.
+- [ ] Safe writing/replacement on each OS, invalid-file recovery and standard directories.
 
-**Dependencias:** T11, T12. **Verificación:** roundtrip, corrupción, versión futura y fallo de escritura preservando último archivo válido. **Archivos:** `app/src/settings.rs`, integración/controller y tests.
+**Dependencies:** T11, T12. **Verification:** roundtrip, corruption, future version and failed write preserving the last valid file. **Files:** `app/src/settings.rs`, integration/controller and tests.
 
-### T14 — Aceptar UI, DPI y accesibilidad [M]
+### T14 — Accept UI, DPI and accessibility [M]
 
 Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. Native DPI and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
-- [ ] Pulir tokens, foco, errores, escalado y temas según UI.md con capturas reales.
-- [ ] Completar teclado y pruebas NVDA/Orca, sin recorte a 420×520 y 200% DPI.
+- [ ] Polish tokens, focus, errors, scaling and themes against UI.md with actual captures.
+- [ ] Complete keyboard and NVDA/Orca testing, without clipping at 420×520 and 200% DPI.
 
-**Dependencias:** T13. **Verificación:** matriz visual y checklist con resultados por entorno. **Archivos:** `app/src/{ui,theme}.rs`, `docs/evidence/ui-qa.md`.
+**Dependencies:** T13. **Verification:** visual matrix and checklist with per-environment results. **Files:** `app/src/{ui,theme}.rs`, `docs/evidence/ui-qa.md`.
 
-### T15 — Endurecer lifecycle y fallos [M]
+### T15 — Harden lifecycle and failure handling [M]
 
 Partial evidence: private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Actual X11 release UI also passes 1000 measured Start/Stop cycles with stable sampled resources and graceful close during preparation/running/Stop-request races at 100/200% scale. Windows/Wayland desktop/resource stability and other failure variants remain open. See `docs/evidence/ui-lifecycle-stress.md`.
-- [ ] Cubrir cierre en Preparing/Running/Stopping, backend desconectado, permisos revocados y liberación fallida.
-- [ ] Garantizar estado terminal observable y recursos cerrados; repetir ciclos y verificar estabilidad de memoria.
+- [ ] Cover closing in Preparing/Running/Stopping, disconnected backend, revoked permissions and failed release.
+- [ ] Ensure observable terminal state and closed resources; repeat cycles and verify memory stability.
 
-**Dependencias:** T14. **Verificación:** fallos inyectados y estrés nativo acotado; logs agregados sin evento por clic. **Archivos:** motor/controller/adaptadores afectados, tests y evidencia.
+**Dependencies:** T14. **Verification:** injected failures and bounded native stress; aggregate logs without per-click events. **Files:** affected engine/controller/adapters, tests and evidence.
 
-**Hito P3:** [ ] Flujos normales y fallos aceptados con accesibilidad verificada.
+**Milestone P3:** [ ] Normal and failure flows accepted with verified accessibility.
 
-## P4 — Rendimiento y entrega
+## P4 — Performance and delivery
 
-### T16 — Medir y optimizar cuellos de botella [M]
+### T16 — Measure and optimize bottlenecks [M]
 
 Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The full glow GPU-display experiment now meets startup/CPU/idle-RSS targets in that case; software and other native performance gates remain open. See `docs/evidence/gpu-glow.md`. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
-- [ ] Medir tabla VALIDATION.md por renderer/backend, comparar C++ donde exista baseline y perfilar desviaciones.
-- [ ] Optimizar únicamente hallazgos reproducibles; comprobar que ninguna mejora empeora Stop, CPU o precisión sin decisión registrada.
+- [ ] Measure the VALIDATION.md table per renderer/backend, compare C++ where a baseline exists and profile deviations.
+- [ ] Optimize only reproducible findings; verify that no improvement worsens Stop, CPU or precision without a recorded decision.
 
-**Dependencias:** T15. **Verificación:** release, capturador, 30 arranques, pruebas de carga y 1000 paradas; datos por commit. **Archivos:** `benches/`, harness, `docs/evidence/performance.md` y módulo perfilado.
+**Dependencies:** T15. **Verification:** release, capture fixture, 30 starts, load tests and 1000 Stops; data tied to commits. **Files:** `benches/`, harness, `docs/evidence/performance.md` and profiled module.
 
-### T17 — Empaquetar y comprobar instalación limpia [M]
+### T17 — Package and verify clean installation [M]
 
 Partial evidence: Linux preview with notices, source archives, checksums and separate symbols passed isolated Ubuntu 24.04 execution. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
-- [ ] ZIP Windows y tar.gz Linux con iconos, licencias, checksums, requisitos y símbolos separados.
-- [ ] Ejecutar en instalaciones limpias de referencia; revisar features, dependencias/licencias y baseline glibc.
+- [ ] Windows ZIP and Linux tar.gz with icons, licenses, checksums, requirements and separate symbols.
+- [ ] Run on clean reference installations; review features, dependencies/licenses and glibc baseline.
 
-**Dependencias:** T16. **Verificación:** ejecutar artefacto final, no solo `cargo run`; registrar auditoría y recursos usados. **Archivos:** scripts de packaging, workflow de artefactos, documentación.
+**Dependencies:** T16. **Verification:** execute the final artifact, not only `cargo run`; record the audit and resources used. **Files:** packaging scripts, artifact workflow, documentation.
 
-### T18 — Cerrar migración y actualizar documentación [M]
-- [ ] README Rust con build, uso, permisos y límites reales; changelog y matriz final de evidencia.
-- [ ] Retirar C++/Visual Studio en cambio separado después de aceptación; conservar referencia histórica y revisar titularidad MIT/iconos antes de distribución.
+### T18 — Close the migration and update documentation [M]
+- [ ] Rust README with build, usage, permissions and actual limitations; changelog and final evidence matrix.
+- [ ] Remove C++/Visual Studio in a separate change after acceptance; preserve a historical reference and review MIT/icon ownership before distribution.
 
-**Dependencias:** T17 y todos los hitos. **Verificación:** reproducción desde checkout limpio, links y guía de rollback al commit C++; publicación solo con alcance y credenciales disponibles. **Archivos:** README/changelog/docs y retirada legacy posterior.
+**Dependencies:** T17 and all milestones. **Verification:** reproduction from a clean checkout, links and rollback guide to the C++ commit; publication only with the required scope and credentials. **Files:** README/changelog/docs and subsequent legacy removal.
 
-**Hito P4:** [ ] Paridad, presupuestos y matriz nativa aceptados; artefactos listos para distribuir.
+**Milestone P4:** [ ] Parity, budgets and native matrix accepted; artifacts ready for distribution.
