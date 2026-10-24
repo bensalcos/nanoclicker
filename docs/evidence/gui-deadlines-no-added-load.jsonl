@@ -1,0 +1,1 @@
+{"schema_version":1,"app_version":"0.1.0","backend":"x11","renderer":"glow","run_id":1,"reason":"stopped","attempts":6001,"sent":6001,"failures":0,"skipped":0,"lateness_p50_ns":100000,"lateness_p95_ns":200000,"lateness_p99_ns":400000,"max_lateness_ns":749458}

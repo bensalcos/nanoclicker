@@ -36,3 +36,10 @@ Follow-up [run 40094952287](https://github.com/bensalcos/nanoclicker/actions/run
 The downloaded Windows artifact (id 12571782053) also passes independent `verify_windows_package.py` verification on Linux against the exact commit. Application ZIP: 3,532,359 bytes, SHA-256 `6359d1624f6ace03da5fd240278528625af318abe1e1420132c8e5e3fb5da9df`; symbols ZIP: 8,302,658 bytes, SHA-256 `002868fd95c62b4f52b1d67302b06acfafc41eb29eb6a8e9984a4f6197768455`. The packaged input executable hash is `7891fb0e24285eeed91571a2ec293a890e50ca7606307e74451c9bb177f0855d`; metadata records a clean preview packaging tree and no unresolved notices. This is archive/provenance/PE/PDB-structure evidence, not Windows desktop execution or matching executable/PDB debug identity.
 
 Local downloads remain under `artifacts/ci/linux-run-40121663794/` and `artifacts/ci/windows-preview-40121663794/`. Earlier artifact records above retain their own source commits and hashes.
+
+
+## GUI diagnostics and loaded observer follow-up
+
+[Run 40139252678](https://github.com/bensalcos/nanoclicker/actions/runs/40139252678) at `ef4bc51d48f464a2057a136afd7a84000e13c698` passes all four jobs. Its logs report 47 Linux and 50 native Windows Rust tests plus eight packaging tests per desktop job. This adds CLI parsing, no-clobber diagnostic creation, terminal deduplication and writer-failure tests; Windows desktop execution remains outside this scope. Linux wgpu and Rust 1.95 jobs pass.
+
+The X11 artifact was downloaded to `artifacts/ci/linux-run-40139252678/`. Its GUI/portal logs confirm twenty measured release stress cycles, Save/relaunch and thirteen portal scenarios. The hardware GUI deadline runs are separate local evidence in [gui-deadline-lateness.md](gui-deadline-lateness.md), not hosted GPU tests. Independent Windows archive verification above remains tied to its named earlier runs.

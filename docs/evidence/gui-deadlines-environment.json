@@ -1,0 +1,65 @@
+{
+  "application_source_commit": "2b4ea47ba47c381f3e0f670039f752b551a45ccc",
+  "application_sha256": "0f6a7049b40936492bd87dcacdd3c13a32f2c8fbe053cc431e4a9dec52e58e51",
+  "loaded_harness_sha256": "7d61a354bf2de6be85afdc2a84a1db8df9215ebaf332c8d6747f278b31f131cd",
+  "unloaded_harness_sha256": null,
+  "unloaded_harness_hash_note": "Source commit is retained; binary hash was not captured before rebuilding the observer for loaded mode.",
+  "environment": "Fedora 44; Ryzen 5 5625U 6C/12T; private Weston 15 GL + rootful Xwayland 24.1.13; AMD Renoir Mesa 26.2.2; scale 1; dark; requested 10 ms; no reader; private activation-disabled bus",
+  "protocol": {
+    "startup_samples": 30,
+    "stabilization_seconds": 60,
+    "idle_seconds": 60,
+    "active_seconds": 60,
+    "load": "0 or 2 observer-owned black-box wrapping-integer worker threads; added only before active Start; no affinity/priority changes"
+  },
+  "cases": {
+    "no-added-load": {
+      "source_commit": "2b4ea47ba47c381f3e0f670039f752b551a45ccc",
+      "terminal_record": {
+        "schema_version": 1,
+        "app_version": "0.1.0",
+        "backend": "x11",
+        "renderer": "glow",
+        "run_id": 1,
+        "reason": "stopped",
+        "attempts": 6001,
+        "sent": 6001,
+        "failures": 0,
+        "skipped": 0,
+        "lateness_p50_ns": 100000,
+        "lateness_p95_ns": 200000,
+        "lateness_p99_ns": 400000,
+        "max_lateness_ns": 749458
+      },
+      "local_session": "/tmp/nanoclick-gpu.NyvOQ1"
+    },
+    "two-load-threads": {
+      "source_commit": "ef4bc51d48f464a2057a136afd7a84000e13c698",
+      "terminal_record": {
+        "schema_version": 1,
+        "app_version": "0.1.0",
+        "backend": "x11",
+        "renderer": "glow",
+        "run_id": 1,
+        "reason": "stopped",
+        "attempts": 6001,
+        "sent": 6001,
+        "failures": 0,
+        "skipped": 0,
+        "lateness_p50_ns": 100000,
+        "lateness_p95_ns": 100000,
+        "lateness_p99_ns": 100000,
+        "max_lateness_ns": 1300360
+      },
+      "local_session": "/tmp/nanoclick-gpu.TPp6gJ"
+    }
+  },
+  "limits": [
+    "Shared host with uncontrolled background applications/power; no heavy local builds during measured phases",
+    "Percentiles are conservative 100 us histogram upper bounds of pre-injection deadline lateness",
+    "Observed maxima and percentiles do not guarantee arbitrary target receipt or real-time scheduling",
+    "Matching captured down/up counts; strict pair ordering has separate GUI/adapter preflight coverage",
+    "No Windows/native Wayland/reader/monitor acceptance; software-rendering budgets remain separate",
+    "Lower loaded p99 is not a causal improvement claim; no independent per-thread load-utilization trace was captured"
+  ]
+}

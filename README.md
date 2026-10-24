@@ -2,7 +2,7 @@
 
 A focused desktop autoclicker being rewritten in Rust for Windows and Linux. The interface is English-only, with light, dark and system themes.
 
-**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Hosted Windows Server 2025 passes 45 native Rust tests and builds the preview ZIP/PDB; native Windows desktop/input/DPI/screen-reader acceptance remains pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
+**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Hosted Windows Server 2025 passes 50 native Rust tests and builds the preview ZIP/PDB; native Windows desktop/input/DPI/screen-reader acceptance remains pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
 
 ## Run the Rust application
 

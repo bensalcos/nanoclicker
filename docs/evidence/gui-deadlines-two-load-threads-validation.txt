@@ -1,0 +1,9 @@
+PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input
+PASS GUI: Start remains visible at 420x520 logical units, scale 1
+gpu_fixture_cursor_reassertions,0
+PASS GUI: manual Start delays input for preparation and then sends pairs to the target
+PASS GUI: clean window shutdown
+PASS GUI close: preparing; clean exit, no held pair and no post-exit input
+PASS GUI close: running; clean exit, no held pair and no post-exit input
+PASS GUI close: stop-request-race; clean exit, no held pair and no post-exit input
+PASS GUI preferences: explicit Save, unsaved edit discarded, saved interval restored, no automatic Start; captured median interval 37 ms
