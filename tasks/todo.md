@@ -11,6 +11,8 @@ Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/imple
 **Dependencias:** ninguna. **Verificación:** protocolo reproducible y evidencia separada de resultados pendientes. **Archivos:** `docs/evidence/environment.md`, `docs/evidence/baseline.md`.
 
 ### T02 — Prototipar renderer y UI accesible [M]
+
+Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional; Windows/GPU/accessibility acceptance is pending.
 - [ ] Comparar glow/wgpu con ventana mínima, teclado, DPI y árbol accesible; registrar tamaño, arranque y reposo.
 - [ ] Elegir renderer y fijar tokens/componentes visuales con capturas de ambos temas; si ninguno cumple, evaluar alternativa de arquitectura.
 
