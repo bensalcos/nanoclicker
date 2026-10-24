@@ -67,3 +67,7 @@ The packaging metadata retains its conservative dirty-tree marker because an unr
 The desktop CI job now packages its MSVC release executable and PDB with the existing packager, checks both archive hashes, verifies the packaged PE architecture and input hash, and requires a matching packaging commit with no unresolved dependency notices. It checks the separate PDB signature and retains the ZIPs/checksum manifest for 14 days. This is a preview artifact, not a GitHub release.
 
 Seven local Python tests pass, including corruption, missing-symbol-checksum and wrong-provenance failures. The initial hosted packaging result is pending. Archive verification does not execute the application or prove native GUI, input, DPI or screen-reader acceptance.
+
+### Windows checkout integrity regression
+
+Run 40092266378 reached Windows preview packaging but failed on the cached AccessKit notice hash. Reproducing `git -c core.autocrlf=true cat-file --filters` locally produced CRLF bytes and a different hash from the verified upstream LF file. The new `.gitattributes` rule marks only `assets/third-party/**` as `-text`, preserving exact upstream bytes; the packager still requires the original hashes. A temporary-repository regression test failed before the rule and passes afterward. All 32 cached notice references also match under Windows checkout filters. Eight packaging tests now pass locally. Hosted packaging verification must still succeed.

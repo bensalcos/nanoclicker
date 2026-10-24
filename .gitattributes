@@ -3,6 +3,10 @@
 ###############################################################################
 * text=auto
 
+# Cached upstream notices are verified against their original byte hashes.
+# Preserve them exactly, including on Windows with core.autocrlf=true.
+/assets/third-party/** -text
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

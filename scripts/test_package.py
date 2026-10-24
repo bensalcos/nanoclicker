@@ -1,9 +1,23 @@
 import tempfile
 from pathlib import Path
 import unittest
+import subprocess
 from package import publish, tar_bundle, verify_binary
 
 class PackageTests(unittest.TestCase):
+    def test_cached_notice_bytes_survive_windows_checkout_filters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / ".gitattributes").write_bytes((Path(__file__).resolve().parents[1] / ".gitattributes").read_bytes())
+            notice = root / "assets/third-party/example/LICENSE-MIT"
+            notice.parent.mkdir(parents=True)
+            original = b"Copyright fixture\nPermission notice\n"
+            notice.write_bytes(original)
+            subprocess.run(["git", "-C", str(root), "-c", "core.autocrlf=false", "add", "."], check=True)
+            filtered = subprocess.check_output(["git", "-C", str(root), "-c", "core.autocrlf=true", "cat-file", "--filters", ":assets/third-party/example/LICENSE-MIT"])
+            self.assertEqual(filtered, original)
+
     def test_existing_publication_is_never_overwritten_or_removed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
