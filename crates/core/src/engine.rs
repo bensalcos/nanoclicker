@@ -275,7 +275,7 @@ fn execute(
                     .map_err(|error| BackendError::new(error.to_string()))?,
             )
             .ok_or_else(|| BackendError::new("Skipped-period counter overflow."))?;
-        if metrics.sent == 1 || publish.elapsed() >= Duration::from_millis(100) {
+        if metrics.sent == 1 || publish.elapsed() >= Duration::from_millis(500) {
             lock(&shared.control).snapshot.metrics = *metrics;
             (shared.wake)();
             publish = Instant::now();
