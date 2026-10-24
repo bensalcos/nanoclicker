@@ -67,6 +67,23 @@
       }
     ]
   },
+  "accesskit_windows@0.35.1": {
+    "crate_revision": "ce8164ba92995cfa86005b6259115e08c8244253",
+    "notice_revision": "ce8164ba92995cfa86005b6259115e08c8244253",
+    "clarification": null,
+    "files": [
+      {
+        "path": "AccessKit-accesskit-ce8164ba92995cfa86005b6259115e08c8244253/LICENSE-MIT",
+        "source_url": "https://raw.githubusercontent.com/AccessKit/accesskit/ce8164ba92995cfa86005b6259115e08c8244253/LICENSE-MIT",
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      },
+      {
+        "path": "AccessKit-accesskit-ce8164ba92995cfa86005b6259115e08c8244253/LICENSE-APACHE",
+        "source_url": "https://raw.githubusercontent.com/AccessKit/accesskit/ce8164ba92995cfa86005b6259115e08c8244253/LICENSE-APACHE",
+        "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+      }
+    ]
+  },
   "accesskit_winit@0.34.1": {
     "crate_revision": "ce8164ba92995cfa86005b6259115e08c8244253",
     "notice_revision": "ce8164ba92995cfa86005b6259115e08c8244253",
@@ -126,27 +143,6 @@
       }
     ]
   },
-  "egui@0.37.0": {
-    "crate_revision": "7c0b40402271e8d40cda69f87cf3c2617c2e4382",
-    "notice_revision": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
-    "clarification": {
-      "release_tag": "0.37.0",
-      "commit": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
-      "reason": "The Cargo VCS revisions 7c0b40402271e8d40cda69f87cf3c2617c2e4382 and 3c6eb8261c3293ad9c7ea1ed58487e038860ebef returned HTTP 404 from the public repository. Use the matching 0.37.0 release tag, peeled and verified with git ls-remote on 2026-10-24, for license notices only. This does not assert code equivalence between those revisions."
-    },
-    "files": [
-      {
-        "path": "emilk-egui-841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-MIT",
-        "source_url": "https://raw.githubusercontent.com/emilk/egui/841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-MIT",
-        "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
-      },
-      {
-        "path": "emilk-egui-841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-APACHE",
-        "source_url": "https://raw.githubusercontent.com/emilk/egui/841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-APACHE",
-        "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
-      }
-    ]
-  },
   "egui-wgpu@0.37.0": {
     "crate_revision": "7c0b40402271e8d40cda69f87cf3c2617c2e4382",
     "notice_revision": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
@@ -169,6 +165,27 @@
     ]
   },
   "egui-winit@0.37.0": {
+    "crate_revision": "7c0b40402271e8d40cda69f87cf3c2617c2e4382",
+    "notice_revision": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
+    "clarification": {
+      "release_tag": "0.37.0",
+      "commit": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
+      "reason": "The Cargo VCS revisions 7c0b40402271e8d40cda69f87cf3c2617c2e4382 and 3c6eb8261c3293ad9c7ea1ed58487e038860ebef returned HTTP 404 from the public repository. Use the matching 0.37.0 release tag, peeled and verified with git ls-remote on 2026-10-24, for license notices only. This does not assert code equivalence between those revisions."
+    },
+    "files": [
+      {
+        "path": "emilk-egui-841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-MIT",
+        "source_url": "https://raw.githubusercontent.com/emilk/egui/841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-MIT",
+        "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+      },
+      {
+        "path": "emilk-egui-841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-APACHE",
+        "source_url": "https://raw.githubusercontent.com/emilk/egui/841a328ba2dd8f6996beb7189ebb7fc00e668a2a/LICENSE-APACHE",
+        "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+      }
+    ]
+  },
+  "egui@0.37.0": {
     "crate_revision": "7c0b40402271e8d40cda69f87cf3c2617c2e4382",
     "notice_revision": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
     "clarification": {
