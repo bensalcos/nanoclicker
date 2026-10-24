@@ -2,12 +2,13 @@
 #![forbid(unsafe_code)]
 mod controller;
 mod hotkey;
+mod settings;
 mod theme;
 mod ui;
 
 use eframe::egui;
 fn main() -> eframe::Result {
-    let mut selected_theme = egui::ThemePreference::System;
+    let mut selected_theme = None;
     let mut args = std::env::args().skip(1);
     while let Some(argument) = args.next() {
         if argument == "--help" {
@@ -19,7 +20,7 @@ fn main() -> eframe::Result {
         } else {
             None
         };
-        selected_theme = match value.as_deref() {
+        selected_theme = Some(match value.as_deref() {
             Some("system") => egui::ThemePreference::System,
             Some("light") => egui::ThemePreference::Light,
             Some("dark") => egui::ThemePreference::Dark,
@@ -29,7 +30,7 @@ fn main() -> eframe::Result {
                     "Usage: nanoclick [--theme system|light|dark]",
                 ))));
             }
-        };
+        });
     }
     let mut options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

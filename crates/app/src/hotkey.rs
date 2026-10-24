@@ -27,7 +27,7 @@ pub struct Shortcut {
     active_id: Arc<AtomicU32>,
 }
 impl Shortcut {
-    pub fn new(desktop: Desktop, ctx: &egui::Context) -> Self {
+    pub fn new(desktop: Desktop, ctx: &egui::Context, requested: String) -> Self {
         let events = Arc::new(AtomicUsize::new(0));
         let active_id = Arc::new(AtomicU32::new(0));
         let mut shortcut = Self {
@@ -43,7 +43,7 @@ impl Shortcut {
             portal_update: Arc::new(std::sync::Mutex::new(None)),
             manager: None,
             current: None,
-            requested: "F6".into(),
+            requested,
             status: "Not registered".into(),
             error: None,
             events: events.clone(),
@@ -89,6 +89,11 @@ impl Shortcut {
         #[cfg(target_os = "linux")]
         {
             self.portal = None;
+            *self
+                .portal_update
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+            self.events.store(0, Ordering::Release);
             let latest = self.portal_update.clone();
             let changed = ctx.clone();
             let triggered = ctx.clone();

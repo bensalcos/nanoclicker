@@ -28,6 +28,7 @@ The default renderer is glow. The alternative wgpu build is available for compar
 - Repeat until stopped, or send a specified count from 1 to 999999.
 - **Start** provides three seconds to move the pointer to the target. **Cancel** interrupts that countdown.
 - The global shortcut starts immediately or stops the active session. F6 is the initial request. On Windows/X11, apply another shortcut such as `Ctrl+Shift+F6`. Wayland delegates assignment to the desktop through **Configure in desktop…**.
+- **Save** stores the current valid preferences for the next launch. Opening NanoClick always starts idle. Invalid or unsupported preferences files are preserved; move the file aside and restart to recover with defaults.
 - **Escape** stops while the NanoClick window has focus. Closing the application requests cancellation and releases its input resources.
 
 Clicks are sent at the current pointer position. “Pairs sent” describes backend submission, not proof that the target application processed them. A 1 ms requested interval does not guarantee 1000 clicks per second. Windows may block input into applications running at higher integrity. Wayland requires the desktop's RemoteDesktop portal and pointer permission; no root daemon is required. XWayland is not a substitute for native Wayland support.

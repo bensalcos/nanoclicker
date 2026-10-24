@@ -1,4 +1,9 @@
-use crate::{controller::Controller, hotkey::Shortcut, theme};
+use crate::{
+    controller::Controller,
+    hotkey::Shortcut,
+    settings::{Preferences, PreferencesFile},
+    theme,
+};
 use eframe::egui::{self, Color32, RichText};
 use nanoclick_core::{Engine, MouseButton, RunState, StopReason};
 use nanoclick_platform::{Desktop, NativeInput};
@@ -8,6 +13,8 @@ use std::{
 };
 
 pub struct NanoClick {
+    preferences: Option<PreferencesFile>,
+    preferences_message: Option<String>,
     control: Controller,
     shortcut: Shortcut,
     desktop: Desktop,
@@ -18,10 +25,18 @@ pub struct NanoClick {
 impl NanoClick {
     pub fn new(
         cc: &eframe::CreationContext<'_>,
-        selected_theme: egui::ThemePreference,
+        selected_theme: Option<egui::ThemePreference>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let ctx = cc.egui_ctx.clone();
         theme::configure(&ctx);
+        let (preferences, saved, preferences_message) = match PreferencesFile::discover() {
+            Ok(mut file) => match file.load() {
+                Ok(saved) => (Some(file), saved, None),
+                Err(error) => (Some(file), Preferences::default(), Some(error.to_string())),
+            },
+            Err(error) => (None, Preferences::default(), Some(error.to_string())),
+        };
+        let selected_theme = selected_theme.unwrap_or_else(|| saved.theme.into());
         ctx.set_theme(selected_theme);
         let desktop = Desktop::detect();
         let wake = ctx.clone();
@@ -37,14 +52,32 @@ impl NanoClick {
                 let _ = sender.send(desktop.probe().map_err(|e| e.to_string()));
                 wake.request_repaint();
             })?;
+        let mut control = Controller::new(engine);
+        control.draft = saved.draft();
         Ok(Self {
-            control: Controller::new(engine),
-            shortcut: Shortcut::new(desktop, &ctx),
+            preferences,
+            preferences_message,
+            control,
+            shortcut: Shortcut::new(desktop, &ctx, saved.shortcut),
             desktop,
             probe,
             available: None,
             theme: selected_theme,
         })
+    }
+    fn save_preferences(&mut self) {
+        let saved =
+            Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
+                .and_then(|value| match &self.preferences {
+                    Some(file) => file.save(&value),
+                    None => Err(crate::settings::SettingsError::Invalid(
+                        "No preferences directory is available.".into(),
+                    )),
+                });
+        self.preferences_message = Some(match saved {
+            Ok(()) => "Preferences saved.".into(),
+            Err(error) => error.to_string(),
+        });
     }
     fn controls(&mut self, ui: &mut egui::Ui, active: bool) {
         ui.add_enabled_ui(!active, |ui| {
@@ -149,6 +182,7 @@ impl eframe::App for NanoClick {
             ui.horizontal(|ui| {
                 ui.heading("NanoClick");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("Save").on_hover_text("Save preferences for the next launch").clicked() { self.save_preferences(); }
                     egui::ComboBox::from_id_salt("theme").selected_text(match self.theme { egui::ThemePreference::Dark => "Dark", egui::ThemePreference::Light => "Light", _ => "System" }).show_ui(ui, |ui| {
                         for (value, label) in [(egui::ThemePreference::System, "System"), (egui::ThemePreference::Light, "Light"), (egui::ThemePreference::Dark, "Dark")] {
                             if ui.selectable_value(&mut self.theme, value, label).changed() { ui.ctx().set_theme(self.theme); }
@@ -182,8 +216,9 @@ impl eframe::App for NanoClick {
                     Some(Err(error)) => { ui.colored_label(error_color(ui), error); }
                     _ => {}
                 }
-                self.controls(ui, active);
+                if let Some(message) = &self.preferences_message { ui.label(message); }
                 if let Some(error) = self.control.error.as_ref().or(snapshot.error.as_ref()) { ui.colored_label(error_color(ui), error); }
+                self.controls(ui, active);
                 ui.add_space(8.0);
                 ui.small("Clicks are sent at the current pointer location. Escape stops while this window is focused.");
             });

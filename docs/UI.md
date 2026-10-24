@@ -6,7 +6,7 @@ La nueva aplicación será únicamente en inglés: controles, estados, errores, 
 
 ## Flujo principal
 
-Una ventana compacta, tamaño inicial 520×600 unidades lógicas, mínimo 420×520 con scroll si el contenido no cabe. Cabecera con marca NanoClick y selector de tema sistema/claro/oscuro. Tres bloques: ritmo y botón, condición de parada, atajo. Pie con estado, contador de sesión y acción principal persistente. Respetar decoraciones del SO para mover, redimensionar y cerrar.
+Una ventana compacta, tamaño inicial 520×600 unidades lógicas, mínimo 420×520 con scroll si el contenido no cabe. Cabecera con marca NanoClick, selector de tema sistema/claro/oscuro y botón Save para guardar preferencias de forma explícita. Tres bloques: ritmo y botón, condición de parada, atajo. Pie con estado, contador de sesión y acción principal persistente. Respetar decoraciones del SO para mover, redimensionar y cerrar.
 
 ```text
 NanoClick                              Theme
@@ -46,4 +46,4 @@ Tab/Shift+Tab en orden de lectura; foco visible; Space/Enter solo en el control 
 
 Probar 100%, 150% y 200% DPI; ventana mínima; mensajes largos; teclado completo; NVDA en Windows y Orca en Linux. AccessKit habilitado no demuestra por sí solo que estas pruebas pasan. Guardar capturas y resultados por SO/tema; aprobar la apariencia en escritorio real, no solo compilación ni headless.
 
-Preferencias persistidas: tema, configuración y atajo solicitado. Archivo versionado con escritura temporal y reemplazo seguro específico del SO; recuperación de archivo corrupto sin sobrescribirlo automáticamente. Usar directorios de configuración estándar. Nunca persistir estado Running, permisos como si fueran vigentes ni contadores que reactiven clics al abrir.
+Preferencias persistidas al pulsar Save: tema, configuración y atajo solicitado. El resultado del guardado se muestra en la ventana. Archivo versionado con escritura temporal y reemplazo seguro específico del SO; recuperación de archivo corrupto sin sobrescribirlo automáticamente. Usar directorios de configuración estándar. Nunca persistir estado Running, permisos como si fueran vigentes ni contadores que reactiven clics al abrir.
