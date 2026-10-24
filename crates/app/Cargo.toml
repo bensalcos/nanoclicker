@@ -1,0 +1,21 @@
+[package]
+name = "nanoclick"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+nanoclick-core.workspace = true
+nanoclick-platform.workspace = true
+
+eframe = { version = "0.37.0", default-features = false, features = ["accesskit", "default_fonts", "wayland", "x11"] }
+global-hotkey = "0.9.0"
+
+[lints]
+workspace = true
+
+[features]
+default = ["glow"]
+glow = ["eframe/glow"]
+wgpu = ["eframe/wgpu"]

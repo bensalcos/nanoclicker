@@ -1,44 +1,62 @@
-<div align="center">
-  <img src="Autoclicker.ico" alt="Logo" width="100" height="100">
-  
-  # NanoClick 🖱️⚡
+# NanoClick
 
-  **Un autoclicker ultra-rápido, ligero y nativo para Windows.**
+A focused desktop autoclicker being rewritten in Rust for Windows and Linux. The interface is English-only, with light, dark and system themes.
 
-  [![C++](https://img.shields.io/badge/C%2B%2B-17%2B-blue.svg)](https://isocpp.org/)
-  [![Platform](https://img.shields.io/badge/Platform-Windows%20Win32-lightgrey.svg)]()
-  [![Architecture](https://img.shields.io/badge/Architecture-Clean%20Code-success.svg)]()
+**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Windows code passes cross-target checks, but native Windows testing is pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
 
-</div>
+## Run the Rust application
 
----
+Install Rust through [rustup](https://rustup.rs/), then run:
 
-## 📖 Acerca del Proyecto
+```sh
+cargo run --locked -p nanoclick
+```
 
-> **Reescritura Rust en planificación:** la implementación actual sigue siendo C++/Win32. Consulta el [plan de migración](tasks/plan.md), la [arquitectura Rust](docs/architecture/RUST.md), las [tareas](tasks/todo.md) y el [estado verificado](docs/STATUS.md). El soporte Linux y los objetivos de rendimiento de la nueva versión todavía están pendientes de implementación y pruebas.
+The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; a separate check with that compiler is still pending. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer.
 
-**NanoClick** es una herramienta desarrollada nativamente con la API Win32 de Windows, diseñada para ser increíblemente rápida y no consumir recursos. A diferencia de otros autoclickers hechos en Python o C#, este programa se ejecuta directamente a bajo nivel, garantizando cero lag y máxima precisión gracias a la implementación de *High Resolution Timers*.
+```sh
+cargo run --locked -p nanoclick -- --theme light
+cargo run --locked -p nanoclick -- --theme dark
+cargo build --release --locked -p nanoclick
+```
 
-## ✨ Características
+The default renderer is glow. The alternative wgpu build is available for comparison with `--no-default-features --features wgpu`; its native acceptance is pending.
 
-- 🚀 **Ultra-rápido**: Precisión al milisegundo mediante `timeBeginPeriod(1)`.
-- 🪶 **Ligero**: Sin dependencias externas, no requiere instalar .NET, Java, ni nada.
-- 🌎 **Bilingüe**: Interfaz completamente en Español e Inglés en tiempo real.
-- 🎯 **Modos de Parada**: Haz clic infinitamente o detente exactamente luego de N clics.
-- ⌨️ **Atajos Globales**: Configura tu propia tecla (por defecto `F6`) para iniciar o detener en cualquier momento.
+## Use
 
-## 🛠️ Instalación y Compilación
+- Set an interval from 1 to 999999 milliseconds and select Left, Right or Middle.
+- Repeat until stopped, or send a specified count from 1 to 999999.
+- **Start** provides three seconds to move the pointer to the target. **Cancel** interrupts that countdown.
+- The global shortcut starts immediately or stops the active session. F6 is the initial request. On Windows/X11, apply another shortcut such as `Ctrl+Shift+F6`. Wayland delegates assignment to the desktop through **Configure in desktop…**.
+- **Escape** stops while the NanoClick window has focus. Closing the application requests cancellation and releases its input resources.
 
-Este proyecto está construido para **Visual Studio** (recomendado VS 2022).
+Clicks are sent at the current pointer position. “Pairs sent” describes backend submission, not proof that the target application processed them. A 1 ms requested interval does not guarantee 1000 clicks per second. Windows may block input into applications running at higher integrity. Wayland requires the desktop's RemoteDesktop portal and pointer permission; no root daemon is required. XWayland is not a substitute for native Wayland support.
 
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/bensalcos/Autoclicker.git
-   ```
-2. Abre la solución `Autoclicker.sln` en Visual Studio.
-3. Asegúrate de tener instalado el *Workload* **Desarrollo para el escritorio con C++**.
-4. Selecciona configuración `Release` y compila la solución (`Ctrl + Shift + B`).
-5. El ejecutable compilado estará listo para ser utilizado en la carpeta `x64/Release/`.
+## Verify
 
----
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+scripts/verify-x11.sh
+```
 
+The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop.
+
+For an isolated visual snapshot:
+
+```sh
+cargo build -p nanoclick --features eframe/__screenshot --locked
+scripts/capture-ui.sh /tmp/nanoclick-dark.png dark
+```
+
+The screenshot feature is for verification, not release packaging.
+
+## Project documentation
+
+- [Current status](docs/STATUS.md)
+- [Architecture](docs/architecture/RUST.md), [UI specification](docs/UI.md) and [validation budgets](docs/VALIDATION.md)
+- [Migration phases](tasks/plan.md) and [task acceptance criteria](tasks/todo.md)
+- [Implementation evidence](docs/evidence/implementation.md)
+
+The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice currently contains owner/year placeholders that must be resolved before distribution.

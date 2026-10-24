@@ -1,12 +1,12 @@
 # Backlog Rust
 
-Estado inicial: todas las tareas de implementación pendientes. Tamaño S: 1–2 archivos; M: 3–5 archivos. Si una tarea excede ese alcance, dividirla antes de implementarla, conservando dependencias y aceptación. Rutas siguientes son previstas.
+Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/implementation.md. Tamaño S: 1–2 archivos; M: 3–5 archivos. Si una tarea excede ese alcance, dividirla antes de implementarla, conservando dependencias y aceptación. Rutas siguientes son previstas.
 
 ## P0 — Viabilidad
 
 ### T01 — Fijar protocolo de comparación [S]
-- [ ] Registrar máquinas, sistemas disponibles, matriz de versiones y capturador de prueba en `docs/evidence/environment.md`.
-- [ ] Definir fixtures de paridad y medir C++ en Windows si está disponible; si no, dejar baseline explícitamente pendiente.
+- [x] Registrar máquinas, sistemas disponibles, matriz de versiones y capturador de prueba en `docs/evidence/environment.md`.
+- [x] Definir fixtures de paridad y medir C++ en Windows si está disponible; si no, dejar baseline explícitamente pendiente.
 
 **Dependencias:** ninguna. **Verificación:** protocolo reproducible y evidencia separada de resultados pendientes. **Archivos:** `docs/evidence/environment.md`, `docs/evidence/baseline.md`.
 
@@ -33,14 +33,16 @@ Estado inicial: todas las tareas de implementación pendientes. Tamaño S: 1–2
 ## P1 — Primer flujo utilizable
 
 ### T05 — Crear workspace y dominio validado [M]
-- [ ] Añadir manifests de tres crates, toolchain/MSRV, lockfile y features compatibles por target.
-- [ ] Modelar intervalo, botón, conteo y estados con errores tipados; rechazar límites inválidos.
+- [x] Añadir manifests de tres crates, toolchain/MSRV, lockfile y features compatibles por target.
+- [x] Modelar intervalo, botón, conteo y estados con errores tipados; rechazar límites inválidos.
+
+**Nota de ejecución:** el dominio y el workspace avanzan mientras T02/T03/T04 reúnen evidencia de escritorio; esto no cierra P0 ni congela el renderer.
 
 **Dependencias:** T02 y T01. **Verificación:** fmt, clippy y tests de límites; builds por target. **Archivos:** manifests/toolchain, `crates/core/src/config.rs`, `state.rs` y entradas mínimas.
 
 ### T06 — Implementar sesión con backend falso [M]
-- [ ] Scheduler monotónico, primer clic inmediato, N exacto, omisión de slots y métricas acotadas.
-- [ ] Worker con señal Stop/Shutdown prioritaria, snapshot terminal y run_id; parada y cierre interrumpen espera.
+- [x] Scheduler monotónico, primer clic inmediato, N exacto, omisión de slots y métricas acotadas.
+- [x] Worker con señal Stop/Shutdown prioritaria, snapshot terminal y run_id; parada y cierre interrumpen espera.
 
 **Dependencias:** T05. **Verificación:** reloj falso, pruebas de carreras, saturación y overflow; sin sleeps para probar aritmética. **Archivos:** `core/src/{engine,scheduler,ports,metrics}.rs`, tests.
 

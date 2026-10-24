@@ -1,13 +1,14 @@
 # Estado de NanoClick
 
-Actualizado: 2026-10-23.
+Actualizado: 2026-10-24.
 
-- **Completado:** revisión estática del C++ y documentación de arquitectura, UI, calidad, fases y backlog Rust.
-- **Idioma de la nueva aplicación:** únicamente inglés, por decisión del usuario; sin selector ni traducciones.
-- **Implementación Rust:** pendiente; todavía no hay workspace ni binarios Rust.
-- **Validado:** inventario del repositorio y consulta de documentación primaria de eframe, SendInput, portales y XTEST. Esto no equivale a pruebas nativas.
-- **Rendimiento y compatibilidad:** objetivos definidos, sin mediciones de la aplicación nueva.
-- **Siguiente tarea:** T01 de `tasks/todo.md`, establecer matriz y protocolo de evidencia; luego spikes de renderer e integración de entrada.
-- **Bloqueos actuales de esta entrega documental:** ninguno. Disponibilidad de Windows y escritorios Wayland para pruebas nativas debe comprobarse en P0.
+- **Plan:** arquitectura, UI, calidad, fases y backlog documentados; T01 completada con baseline Windows explícitamente pendiente.
+- **Idioma:** nueva aplicación únicamente en inglés.
+- **Implementado:** workspace Rust de tres crates; dominio validado, scheduler monotónico, worker cancelable y snapshots; UI inicial de temas claro/oscuro, tres botones, infinito/N, cuenta regresiva manual, atajos Windows/X11 y configuración mediante portal Wayland.
+- **Verificado:** 16 tests (14 core y 2 controller), Clippy Linux y Windows sin warnings; capturador Xvfb recibió 10 pares ordenados para cada botón y comprobó atajo fuera de foco, tecla sostenida y conflicto. Capturas finales Xvfb de ambos temas revisadas, con los tres bloques completos.
+- **Windows:** cargo check para x86_64-pc-windows-msvc terminó; no hay ejecución nativa ni binario enlazado validado. Clippy Windows también pasó tras corregir el warning de campo exclusivo de Linux.
+- **Wayland:** interfaces reales RemoteDesktop v2 y GlobalShortcuts v1 disponibles en GNOME local; adaptadores implementados, sin sesión de inyección autorizada/validada. KDE pendiente.
+- **Pendiente:** comparación glow/wgpu y benchmarks release; preferencias; CI hospedado; QA nativo/DPI/NVDA/Orca; packaging y aceptación por plataforma. No retirar C++ todavía.
+- **Siguiente:** cerrar verificación del primer corte ejecutable, guardar commit y continuar preferencias, CI y mediciones independientes de los escritorios ausentes.
 
-Consultar [plan](../tasks/plan.md) y [tareas](../tasks/todo.md). Mantener este archivo al completar cada corte verificable; no marcar una plataforma aceptada por compilar solamente.
+Ver [evidencia](evidence/implementation.md), [plan](../tasks/plan.md) y [tareas](../tasks/todo.md). Los hitos de plataforma permanecen abiertos aunque exista código compilable.

@@ -377,3 +377,7 @@ x86/
 Debug/
 Release/
 *.user
+
+# Rust build output
+/target/
+/graphify-out/
