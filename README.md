@@ -12,7 +12,7 @@ Install Rust through [rustup](https://rustup.rs/), then run:
 cargo run --locked -p nanoclick
 ```
 
-The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; the workspace has also passed a local check with Rust 1.95.0. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer.
+The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; the workspace has also passed a local check with Rust 1.95.0. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer. On Ubuntu 24.04, X11 also requires `libxkbcommon-x11-0`; the clean runtime check installs `libx11-6`, `libxkbcommon0`, `libxkbcommon-x11-0`, `libgl1`, `libegl1`, `libxi6`, `libxrandr2`, `libxcursor1` and `libxinerama1`.
 
 ```sh
 cargo run --locked -p nanoclick -- --theme light
@@ -61,4 +61,4 @@ The screenshot feature is for verification, not release packaging.
 - [Migration phases](tasks/plan.md) and [task acceptance criteria](tasks/todo.md)
 - [Implementation evidence](docs/evidence/implementation.md)
 
-The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice currently contains owner/year placeholders that must be resolved before distribution.
+The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice attributes the project to bensalcos (2026). Platform acceptance and the dependency maintenance warnings remain separate release checks.

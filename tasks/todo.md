@@ -91,6 +91,8 @@ Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/imple
 ## P3 — Calidad de uso
 
 ### T13 — Persistir preferencias de forma recuperable [M]
+
+Implementation: versioned explicit Save and six recovery tests pass on Linux; Windows native replacement remains pending.
 - [ ] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
 - [ ] Escritura/reemplazo seguro en cada SO, recuperación de archivo inválido y directorios estándar.
 
@@ -113,12 +115,16 @@ Estado: implementación en curso; consultar docs/STATUS.md y docs/evidence/imple
 ## P4 — Rendimiento y entrega
 
 ### T16 — Medir y optimizar cuellos de botella [M]
+
+Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. See `docs/evidence/ui-performance.md`.
 - [ ] Medir tabla VALIDATION.md por renderer/backend, comparar C++ donde exista baseline y perfilar desviaciones.
 - [ ] Optimizar únicamente hallazgos reproducibles; comprobar que ninguna mejora empeora Stop, CPU o precisión sin decisión registrada.
 
 **Dependencias:** T15. **Verificación:** release, capturador, 30 arranques, pruebas de carga y 1000 paradas; datos por commit. **Archivos:** `benches/`, harness, `docs/evidence/performance.md` y módulo perfilado.
 
 ### T17 — Empaquetar y comprobar instalación limpia [M]
+
+Partial evidence: Linux preview with notices, source archives, checksums and separate symbols passed isolated Ubuntu 24.04 execution. Three packaging tests pass; Windows and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
 - [ ] ZIP Windows y tar.gz Linux con iconos, licencias, checksums, requisitos y símbolos separados.
 - [ ] Ejecutar en instalaciones limpias de referencia; revisar features, dependencias/licencias y baseline glibc.
 

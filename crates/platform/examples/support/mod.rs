@@ -102,5 +102,12 @@ pub fn close(conn: &RustConnection, window: u32, app: &mut App) -> Result<()> {
         ),
     )?
     .check()?;
-    wait(|| Ok(app.0.try_wait()?.is_some()), Duration::from_secs(3))
+    wait(
+        || match app.0.try_wait()? {
+            None => Ok(false),
+            Some(status) if status.success() => Ok(true),
+            Some(status) => Err(format!("NanoClick failed during shutdown: {status}").into()),
+        },
+        Duration::from_secs(3),
+    )
 }

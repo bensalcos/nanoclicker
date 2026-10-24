@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=NanoClick
+GenericName=Auto clicker
+Comment=Controlled mouse clicks with a global shortcut
+Exec=nanoclick
+Icon=nanoclick
+Terminal=false
+Categories=Utility;
+StartupWMClass=io.github.bensalcos.NanoClick

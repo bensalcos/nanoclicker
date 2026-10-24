@@ -381,3 +381,11 @@ Release/
 # Rust build output
 /target/
 /graphify-out/
+
+# Local verification and packaging artifacts
+/artifacts/
+/dist/
+
+# Python verification helpers
+__pycache__/
+*.pyc

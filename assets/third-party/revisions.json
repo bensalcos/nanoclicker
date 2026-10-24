@@ -1,0 +1,7 @@
+{
+  "emilk/egui@0.37.0": {
+    "release_tag": "0.37.0",
+    "commit": "841a328ba2dd8f6996beb7189ebb7fc00e668a2a",
+    "reason": "The Cargo VCS revisions 7c0b40402271e8d40cda69f87cf3c2617c2e4382 and 3c6eb8261c3293ad9c7ea1ed58487e038860ebef returned HTTP 404 from the public repository. Use the matching 0.37.0 release tag, peeled and verified with git ls-remote on 2026-10-24, for license notices only. This does not assert code equivalence between those revisions."
+  }
+}
