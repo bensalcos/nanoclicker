@@ -9,7 +9,7 @@ Actualizado: 2026-10-24.
 - **Atajos:** listeners propios por eventos en X11 y Windows; biblioteca global-hotkey solo como parser. La prueba del ejecutable completo pasó en Xvfb (atajo, cuenta regresiva, Stop y cierre).
 - **Espera del worker:** puerto Waiter integrado; Condvar Linux y temporizador Windows de alta resolución con evento cancelable por ejecución. Errores de espera/cleanup cubiertos, ver evidence/native-waiter.md.
 - **Windows:** cargo check para x86_64-pc-windows-msvc terminó; no hay ejecución nativa ni binario enlazado validado. Clippy Windows también pasó tras corregir el warning de campo exclusivo de Linux.
-- **Wayland:** interfaces reales RemoteDesktop v2 y GlobalShortcuts v1 disponibles en GNOME local; adaptadores implementados, sin sesión de inyección autorizada/validada. KDE pendiente.
+- **Wayland:** interfaces reales RemoteDesktop v2 y GlobalShortcuts v1 disponibles en GNOME local; adaptadores implementados, sin sesión de inyección autorizada/validada. KDE pendiente. Monitor Closed instalado antes de solicitar permisos; detección explícita de pérdida del servicio y QA nativo aún pendientes (evidence/wayland-lifecycle.md).
 - **Preferencias:** guardado explícito con Save; esquema versionado y reemplazo atómico, tests Linux de corrupción, versión futura y fallo de publicación. Compila para Windows; ejecución allí pendiente.
 - **CI:** workflow Windows/Linux, renderer alternativo y MSRV definido; YAML parseado y acciones fijadas por commit. Ejecución hospedada pendiente.
 - **Licencia del proyecto:** aviso MIT completado como Copyright (c) 2026 bensalcos, tras delegación explícita del usuario.

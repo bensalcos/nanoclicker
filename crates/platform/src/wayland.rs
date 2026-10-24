@@ -70,32 +70,6 @@ impl WaylandInput {
             Duration::from_secs(3),
             Some(cancel),
         )?);
-        let result = bounded(
-            async {
-                proxy
-                    .select_devices(
-                        &session,
-                        SelectDevicesOptions::default()
-                            .set_devices(Some(DeviceType::Pointer.into())),
-                    )
-                    .await?
-                    .response()?;
-                let response = proxy
-                    .start(&session, None, Default::default())
-                    .await?
-                    .response()?;
-                if !response.devices().contains(DeviceType::Pointer) {
-                    return Err(ashpd::Error::NoResponse);
-                }
-                Ok(())
-            },
-            Duration::from_secs(120),
-            Some(cancel),
-        );
-        if let Err(error) = result {
-            let _ = bounded(session.close(), Duration::from_secs(1), None);
-            return Err(error);
-        }
         let (stop_monitor, stopped) = async_channel::bounded(1);
         let monitored = session.clone();
         let token = cancel.clone();
@@ -126,26 +100,65 @@ impl WaylandInput {
                         let _ = stopped.recv().await;
                     },
                 ));
-            })
-            .map_err(error)?;
-        match subscribed.recv_timeout(Duration::from_secs(3)) {
-            Ok(Ok(())) => Ok(Self {
+            });
+        let monitor = match monitor {
+            Ok(monitor) => monitor,
+            Err(spawn) => {
+                let _ = bounded(session.close(), Duration::from_secs(1), None);
+                return Err(error(spawn));
+            }
+        };
+        let mut input = match subscribed.recv_timeout(Duration::from_secs(3)) {
+            Ok(Ok(())) => Self {
                 proxy,
                 session,
                 pressed: None,
                 closed: false,
                 stop_monitor,
                 monitor: Some(monitor),
-            }),
+            },
             result => {
                 let _ = stop_monitor.try_send(());
                 let _ = monitor.join();
                 let _ = bounded(session.close(), Duration::from_secs(1), None);
-                Err(BackendError::new(format!(
+                return Err(BackendError::new(format!(
                     "Could not monitor desktop permission: {result:?}"
-                )))
+                )));
             }
+        };
+        // The Closed subscription is ready before SelectDevices/Start can
+        // expose a permission dialog or a revocable active session.
+        let result = bounded(
+            async {
+                input
+                    .proxy
+                    .select_devices(
+                        &input.session,
+                        SelectDevicesOptions::default()
+                            .set_devices(Some(DeviceType::Pointer.into())),
+                    )
+                    .await?
+                    .response()?;
+                let response = input
+                    .proxy
+                    .start(&input.session, None, Default::default())
+                    .await?
+                    .response()?;
+                if !response.devices().contains(DeviceType::Pointer) {
+                    return Err(ashpd::Error::NoResponse);
+                }
+                Ok(())
+            },
+            Duration::from_secs(120),
+            Some(cancel),
+        );
+        if let Err(error) = result {
+            return match input.finish() {
+                Ok(()) => Err(error),
+                Err(cleanup) => Err(BackendError::new(format!("{error} Cleanup: {cleanup}"))),
+            };
         }
+        Ok(input)
     }
     fn release(&mut self) -> Result<(), BackendError> {
         if let Some(button) = self.pressed {
