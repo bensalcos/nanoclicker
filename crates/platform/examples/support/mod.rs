@@ -7,7 +7,10 @@ use std::{
 };
 use x11rb::{
     protocol::{
-        xproto::{AtomEnum, ClientMessageEvent, ConnectionExt, EventMask, ImageFormat, MapState},
+        xproto::{
+            AtomEnum, ClientMessageEvent, ConfigureWindowAux, ConnectionExt, EventMask,
+            ImageFormat, InputFocus, MapState, StackMode,
+        },
         xtest::ConnectionExt as _,
     },
     rust_connection::RustConnection,
@@ -87,6 +90,41 @@ pub fn pair(conn: &RustConnection, key: u8) -> Result<()> {
     Ok(())
 }
 
+pub fn focus_target(conn: &RustConnection, target: u32) -> Result<()> {
+    conn.configure_window(
+        target,
+        &ConfigureWindowAux::new().stack_mode(StackMode::ABOVE),
+    )?
+    .check()?;
+    conn.warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
+        .check()?;
+    conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
+        .check()?;
+    Ok(())
+}
+fn candidate_windows(conn: &RustConnection, root: u32) -> Result<Vec<u32>> {
+    let mut pending = vec![(root, 0)];
+    let mut windows = Vec::new();
+    while let Some((window, depth)) = pending.pop() {
+        if windows.len() >= 256 {
+            return Err("Window discovery exceeded its bounded test tree".into());
+        }
+        windows.push(window);
+        if depth < 4 {
+            let reply = match conn.query_tree(window)?.reply() {
+                Ok(reply) => reply,
+                Err(x11rb::errors::ReplyError::X11Error(error))
+                    if error.error_kind == x11rb::protocol::ErrorKind::Window =>
+                {
+                    continue;
+                }
+                Err(error) => return Err(error.into()),
+            };
+            pending.extend(reply.children.into_iter().map(|child| (child, depth + 1)));
+        }
+    }
+    Ok(windows)
+}
 pub fn launch(conn: &RustConnection, root: u32, binary: &OsStr) -> Result<(App, u32, Duration)> {
     let began = Instant::now();
     let mut app = App(Command::new(binary).args(["--theme", "dark"]).spawn()?);
@@ -96,7 +134,7 @@ pub fn launch(conn: &RustConnection, root: u32, binary: &OsStr) -> Result<(App, 
             if let Some(status) = app.0.try_wait()? {
                 return Err(format!("NanoClick exited early: {status}").into());
             }
-            for candidate in conn.query_tree(root)?.reply()?.children {
+            for candidate in candidate_windows(conn, root)? {
                 let name = conn
                     .get_property(false, candidate, AtomEnum::WM_NAME, AtomEnum::ANY, 0, 64)?
                     .reply()?
@@ -113,7 +151,8 @@ pub fn launch(conn: &RustConnection, root: u32, binary: &OsStr) -> Result<(App, 
             Ok(false)
         },
         Duration::from_secs(15),
-    )?;
+    )
+    .map_err(|error| format!("Application window discovery/readiness failed: {error}"))?;
     Ok((
         app,
         window.ok_or("NanoClick window was not found.")?,

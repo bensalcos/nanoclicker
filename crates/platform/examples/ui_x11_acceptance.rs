@@ -81,7 +81,10 @@ fn main() -> Result<()> {
         0,
         WindowClass::INPUT_OUTPUT,
         0,
-        &CreateWindowAux::new().event_mask(EventMask::BUTTON_PRESS | EventMask::BUTTON_RELEASE),
+        &CreateWindowAux::new()
+            .override_redirect(1u32)
+            .background_pixel(0x202020)
+            .event_mask(EventMask::BUTTON_PRESS | EventMask::BUTTON_RELEASE),
     )?
     .check()?;
     conn.map_window(target)?.check()?;
@@ -96,10 +99,7 @@ fn main() -> Result<()> {
         .position(|symbols| symbols.contains(&0xffc3))
         .ok_or("F6 not mapped.")?;
     let key = u8::try_from(usize::from(first) + offset)?;
-    conn.warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
-        .check()?;
-    conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
-        .check()?;
+    support::focus_target(&conn, target)?;
     pair(&conn, key)?;
     let mut events = Vec::new();
     wait(
@@ -108,7 +108,15 @@ fn main() -> Result<()> {
             Ok(events.len() >= 4)
         },
         Duration::from_secs(3),
-    )?;
+    )
+    .map_err(|error| {
+        format!(
+            "Outside-focus Start failed: {error}; received {} target events, ready={}, active={}",
+            events.len(),
+            ready_button(&conn, window),
+            active_button(&conn, window)
+        )
+    })?;
     capture(window, "NANOCLICK_RUNNING_CAPTURE")?;
     pair(&conn, key)?;
     wait(|| Ok(ready_button(&conn, window)), Duration::from_secs(3))?;
@@ -186,10 +194,8 @@ fn main() -> Result<()> {
     conn.xtest_fake_input(5, 1, 0, x11rb::NONE, 0, 0, 0)?
         .check()?;
     let started = Instant::now();
-    conn.warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
-        .check()?;
-    conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
-        .check()?;
+    wait(|| Ok(active_button(&conn, window)), Duration::from_secs(3))?;
+    support::focus_target(&conn, target)?;
     capture(window, "NANOCLICK_PREPARING_CAPTURE")?;
     wait(
         || {

@@ -37,12 +37,13 @@ pub fn run(
                 .xtest_fake_input(5, 1, 0, x11rb::NONE, 0, 0, 0)?
                 .check()?;
         }
-        connection
-            .warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
-            .check()?;
-        connection
-            .set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
-            .check()?;
+        if scenario == "preparing" {
+            wait(
+                || Ok(active_button(connection, window)),
+                Duration::from_secs(3),
+            )?;
+        }
+        crate::support::focus_target(connection, target)?;
         if scenario != "preparing" {
             pair(connection, key)?;
         }

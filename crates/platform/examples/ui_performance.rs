@@ -12,7 +12,7 @@ use x11rb::{
     connection::Connection,
     protocol::{
         Event,
-        xproto::{ConnectionExt, CreateWindowAux, EventMask, InputFocus, WindowClass},
+        xproto::{ConnectionExt, CreateWindowAux, EventMask, WindowClass},
     },
 };
 
@@ -151,14 +151,14 @@ fn main() -> Result<()> {
         0,
         WindowClass::INPUT_OUTPUT,
         0,
-        &CreateWindowAux::new().event_mask(EventMask::BUTTON_PRESS | EventMask::BUTTON_RELEASE),
+        &CreateWindowAux::new()
+            .override_redirect(1u32)
+            .background_pixel(0x202020)
+            .event_mask(EventMask::BUTTON_PRESS | EventMask::BUTTON_RELEASE),
     )?
     .check()?;
     conn.map_window(target)?.check()?;
-    conn.warp_pointer(x11rb::NONE, target, 0, 0, 0, 0, 100, 100)?
-        .check()?;
-    conn.set_input_focus(InputFocus::PARENT, target, x11rb::CURRENT_TIME)?
-        .check()?;
+    support::focus_target(&conn, target)?;
     let first = conn.setup().min_keycode;
     let map = conn
         .get_keyboard_mapping(first, conn.setup().max_keycode - first + 1)?
