@@ -59,7 +59,7 @@ jobs:
         run: |
           mkdir -p artifacts
           scripts/verify-x11.sh 2>&1 | tee artifacts/x11.log
-          scripts/verify-ui-x11.sh 2>&1 | tee artifacts/ui-x11.log
+          NANOCLICK_UI_STRESS_CYCLES=20 scripts/verify-ui-x11.sh target/release/nanoclick 2>&1 | tee artifacts/ui-x11.log
       - name: Isolated portal lifecycle
         if: runner.os == 'Linux'
         shell: bash
