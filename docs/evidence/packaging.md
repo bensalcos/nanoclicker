@@ -41,3 +41,14 @@ Clean packaging checkout: `207f6362e7b1333748c03dadf800334aaff44a5d`. The defaul
 - The extracted application passed the full isolated Ubuntu 24.04 GUI flow again after the worker-wait and Wayland lifecycle changes. Container user/capability/network restrictions above were retained. The cached runtime image config was `sha256:304676374e4fe459b75c206cc40b5b48085860a523b51f580d509255bb8412c1`; BuildKit attestation/manifest-list hashes may vary between image exports.
 
 `build.json` deliberately separates the packaging commit from binary provenance, records the input binary hash and never infers a compiled commit from an arbitrary binary path. Packaging itself does not compile or certify the executable.
+
+## Accessibility UI preview
+
+Application code: `fb36ed5`; clean packaging checkout: `41c703a`. Local output `dist/preview-ui-accessibility/`. Input executable SHA256 `39cb222a455908f2979c8084dc71cfcaf6142d5a9d16d57b93ea51cb70fcb965` matches the measured release executable.
+
+- Application archive: 6,154,251 bytes, SHA256 `50a46b8cb343b4ba9c7d02978c4f23b73bac0c368e5ff25845d299ea03c3f76e`.
+- Symbols archive: 19,336,358 bytes, SHA256 `cf23539b7b19383921429e9dc5919d551c311279c268403c12e06e77c293ce67`.
+- Both checksums verified; zero inventory entries without a notice. The three packaging tests pass.
+- The extracted binary passed isolated Ubuntu GUI start/stop outside focus, complete pairs, no post-stop input, minimum-size action visibility, manual preparation and clean exit. The private test screen is now 2048×1536 so the capture target remains outside the application at 200% scaling; the Ubuntu run itself uses 100% scaling.
+
+This preview includes the field names, keyboard order, contrast, scrolling and polite-status changes. Windows/Wayland native behavior, readers and performance budgets remain open.

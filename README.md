@@ -41,9 +41,10 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 scripts/verify-x11.sh
 scripts/verify-ui-x11.sh
+scripts/verify-ui-x11.sh target/debug/nanoclick 2
 ```
 
-The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation and window shutdown.
+The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size and window shutdown. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
 
 For an isolated visual snapshot:
 
@@ -61,5 +62,6 @@ The screenshot feature is for verification, not release packaging.
 - [Architecture](docs/architecture/RUST.md), [UI specification](docs/UI.md) and [validation budgets](docs/VALIDATION.md)
 - [Migration phases](tasks/plan.md) and [task acceptance criteria](tasks/todo.md)
 - [Implementation evidence](docs/evidence/implementation.md)
+- [Accessibility checks](docs/evidence/ui-accessibility.md), [scaling captures](docs/evidence/ui-scaling.md) and [current release performance](docs/evidence/ui-polish-performance.md)
 
 The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice attributes the project to bensalcos (2026). Platform acceptance and the dependency maintenance warnings remain separate release checks.
