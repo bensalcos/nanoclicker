@@ -67,8 +67,10 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 ## P2 — Paridad
 
 ### T09 — Automatizar checks por plataforma [S]
-- [ ] CI Windows/Linux con fmt, clippy, tests, build release y features válidas.
-- [ ] Artefactos de fallo e integración X11 aislada; separar estos checks de QA nativo.
+
+Accepted CI evidence: run 40089494911 at 2ecaf23 passed all four jobs; X11 evidence artifact downloaded and inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
+- [x] CI Windows/Linux con fmt, clippy, tests, build release y features válidas.
+- [x] Artefactos de fallo e integración X11 aislada; separar estos checks de QA nativo.
 
 **Dependencias:** T08. **Verificación:** runs hospedados exitosos y logs; un YAML local no es CI aceptado. **Archivos:** `.github/workflows/`, scripts si son necesarios.
 

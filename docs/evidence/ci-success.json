@@ -1,0 +1,15 @@
+{
+  "repository": "bensalcos/nanoclicker",
+  "head_sha": "2ecaf23122d50b0eafa42b8d6c544ab68002dbaf",
+  "run_id": 40089494911,
+  "url": "https://github.com/bensalcos/nanoclicker/actions/runs/40089494911",
+  "conclusion": "success",
+  "jobs": [
+    {"name": "Desktop / ubuntu-24.04", "id": 120859091460, "conclusion": "success", "rust_tests": 39},
+    {"name": "Desktop / windows-2025", "id": 120859091392, "conclusion": "success", "rust_tests": 41},
+    {"name": "Minimum Rust / 1.95", "id": 120859091284, "conclusion": "success"},
+    {"name": "Alternative renderer / Linux", "id": 120859091439, "conclusion": "success"}
+  ],
+  "artifact": {"name": "x11-evidence", "id": 12558507530, "size_bytes": 1055, "files_verified": ["x11.log", "ui-x11.log"]},
+  "scope": "Native Windows headless tests/release linking and isolated Linux X11; not Windows GUI/SendInput, screen-reader or Wayland acceptance."
+}
