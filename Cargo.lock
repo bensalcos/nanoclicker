@@ -1753,6 +1753,7 @@ dependencies = [
  "global-hotkey",
  "nanoclick-core",
  "rustix 1.1.5",
+ "serde_json",
  "windows-sys 0.61.2",
  "x11rb",
  "zbus",

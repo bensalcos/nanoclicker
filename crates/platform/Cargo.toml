@@ -29,6 +29,7 @@ x11-tests = []
 portal-tests = []
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
+serde_json = "1.0"
 zbus = { version = "5.19.0", default-features = false, features = ["async-io"] }
 
 [[example]]

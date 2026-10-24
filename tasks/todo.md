@@ -102,7 +102,7 @@ Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activat
 
 ### T13 — Persistir preferencias de forma recuperable [M]
 
-Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Native desktop Save/relaunch QA remains pending.
+Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch now also checks the restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Native Windows/Wayland desktop QA and other preference fields remain pending. See `docs/evidence/ui-preferences.md`.
 - [x] Tema, plan y atajo solicitado en esquema versionado, sin estado activo ni reanudación automática.
 - [ ] Escritura/reemplazo seguro en cada SO, recuperación de archivo inválido y directorios estándar.
 

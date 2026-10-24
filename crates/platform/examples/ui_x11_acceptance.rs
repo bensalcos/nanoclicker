@@ -16,6 +16,7 @@ use x11rb::{
 };
 mod support;
 mod ui_close;
+mod ui_preferences;
 mod ui_stress;
 use support::{Result, action_position, close, launch, pair, ready_button, scale_factor, wait};
 fn active_button(conn: &RustConnection, window: u32) -> bool {
@@ -241,6 +242,7 @@ fn main() -> Result<()> {
     close(&conn, window, &mut app)?;
     println!("PASS GUI: clean window shutdown");
     ui_close::run(&conn, root, target, key, &binary)?;
+    ui_preferences::run(&conn, root, target, key, &binary)?;
     Ok(())
 }
 
