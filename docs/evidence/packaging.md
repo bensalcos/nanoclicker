@@ -29,3 +29,15 @@ Base QA: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d7
 ## Pendiente
 
 Windows ZIP/PDB y ejecución nativa; Wayland GNOME/KDE; DPI/lectores de pantalla; presupuestos completos por backend. La auditoría no encontró vulnerabilidades conocidas y sí tres avisos de mantenimiento, descritos en dependency-audit.md. No publicar una release como aceptada hasta cerrar los hitos del plan.
+
+## Current preview verification (2026-10-24)
+
+Clean packaging checkout: `207f6362e7b1333748c03dadf800334aaff44a5d`. The default glow executable was rebuilt immediately before packaging; input SHA256 `731e6d3a5a48043b9a891587406a760f6bcde4a5adfc8cf4bc6792fc5a316a67`. Local output: `dist/preview-current/` (ignored, not published).
+
+- Application archive: 6,153,053 bytes; SHA256 `88e0d98a84285a931b3ca0d9d1b01237d523fd10aba690786ee44b8878e4ce1a`.
+- Separate symbols archive: 19,326,477 bytes; SHA256 `870aed326cd3610bdeaee74fa14f6d6cca82d58d80c5f9f09255d623f9fc5679`.
+- Both published checksums verified. No inventory entry lacks a notice.
+- A second complete packaging run into `dist/preview-current-repro/` produced identical archive checksums. This proves deterministic packaging of the same input binary and checkout, not reproducible compilation across machines.
+- The extracted application passed the full isolated Ubuntu 24.04 GUI flow again after the worker-wait and Wayland lifecycle changes. Container user/capability/network restrictions above were retained. The cached runtime image config was `sha256:304676374e4fe459b75c206cc40b5b48085860a523b51f580d509255bb8412c1`; BuildKit attestation/manifest-list hashes may vary between image exports.
+
+`build.json` deliberately separates the packaging commit from binary provenance, records the input binary hash and never infers a compiled commit from an arbitrary binary path. Packaging itself does not compile or certify the executable.
