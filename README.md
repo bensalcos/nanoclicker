@@ -40,9 +40,10 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 scripts/verify-x11.sh
+scripts/verify-ui-x11.sh
 ```
 
-The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop.
+The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation and window shutdown.
 
 For an isolated visual snapshot:
 
