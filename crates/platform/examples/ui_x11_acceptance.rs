@@ -15,12 +15,30 @@ use x11rb::{
     rust_connection::RustConnection,
 };
 mod support;
+mod ui_close;
+mod ui_stress;
 use support::{Result, action_position, close, launch, pair, ready_button, scale_factor, wait};
+fn active_button(conn: &RustConnection, window: u32) -> bool {
+    matches!(
+        support::button_color(conn, window),
+        Some(support::ButtonColor::Red)
+    )
+}
 fn drain(conn: &RustConnection, events: &mut Vec<bool>) -> Result<()> {
     while let Some(event) = conn.poll_for_event()? {
         match event {
-            Event::ButtonPress(event) if event.detail == 1 => events.push(true),
-            Event::ButtonRelease(event) if event.detail == 1 => events.push(false),
+            Event::ButtonPress(event) => {
+                if event.detail != 1 {
+                    return Err("GUI capture received the wrong button".into());
+                }
+                events.push(true);
+            }
+            Event::ButtonRelease(event) => {
+                if event.detail != 1 {
+                    return Err("GUI capture received the wrong button".into());
+                }
+                events.push(false);
+            }
             _ => {}
         }
     }
@@ -38,6 +56,13 @@ fn assert_pairs(events: &[bool]) -> Result<()> {
 fn main() -> Result<()> {
     if std::env::var("NANOCLICK_ISOLATED_X11").as_deref() != Ok("1") {
         return Err("Use scripts/verify-ui-x11.sh; requires an isolated display.".into());
+    }
+    let stress_cycles = std::env::var("NANOCLICK_UI_STRESS_CYCLES")
+        .ok()
+        .map(|value| value.parse::<u32>())
+        .transpose()?;
+    if stress_cycles.is_some_and(|cycles| !(1..=1000).contains(&cycles)) {
+        return Err("UI stress cycles must be 1..1000.".into());
     }
     let binary = std::env::args_os()
         .nth(1)
@@ -98,6 +123,10 @@ fn main() -> Result<()> {
     println!(
         "PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input"
     );
+
+    if let Some(cycles) = stress_cycles {
+        ui_stress::run(&conn, window, key, app.0.id(), &binary, cycles)?;
+    }
 
     // The main action must remain usable at the documented minimum size,
     // while secondary content may scroll. No input is active during resize.
@@ -181,6 +210,7 @@ fn main() -> Result<()> {
     );
     close(&conn, window, &mut app)?;
     println!("PASS GUI: clean window shutdown");
+    ui_close::run(&conn, root, target, key, &binary)?;
     Ok(())
 }
 

@@ -52,21 +52,32 @@ pub fn action_position(conn: &RustConnection, window: u32) -> Result<(i16, i16)>
         )?,
     ))
 }
+pub enum ButtonColor {
+    Blue,
+    Red,
+    Other,
+}
+pub fn button_color(conn: &RustConnection, window: u32) -> Option<ButtonColor> {
+    let (x, y) = action_position(conn, window).ok()?;
+    let image = conn
+        .get_image(ImageFormat::Z_PIXMAP, window, x, y, 1, 1, u32::MAX)
+        .ok()?
+        .reply()
+        .ok()?;
+    let pixel = image.data.get(..3)?;
+    // Xvfb's x86_64 ZPixmap is BGRX. Ready is blue; active states are red.
+    Some(
+        if pixel[0] > 140 && u16::from(pixel[0]) > u16::from(pixel[2]) * 2 {
+            ButtonColor::Blue
+        } else if pixel[2] > 140 && u16::from(pixel[2]) > u16::from(pixel[0]) * 2 {
+            ButtonColor::Red
+        } else {
+            ButtonColor::Other
+        },
+    )
+}
 pub fn ready_button(conn: &RustConnection, window: u32) -> bool {
-    let Ok((x, y)) = action_position(conn, window) else {
-        return false;
-    };
-    let Ok(cookie) = conn.get_image(ImageFormat::Z_PIXMAP, window, x, y, 1, 1, u32::MAX) else {
-        return false;
-    };
-    let Ok(image) = cookie.reply() else {
-        return false;
-    };
-    // Xvfb's x86_64 ZPixmap is BGRX. The idle primary action is blue,
-    // whereas Running/Preparing uses red and unavailable input is disabled.
-    image.data.len() >= 3
-        && image.data[0] > 140
-        && u16::from(image.data[0]) > u16::from(image.data[2]) * 2
+    matches!(button_color(conn, window), Some(ButtonColor::Blue))
 }
 pub fn pair(conn: &RustConnection, key: u8) -> Result<()> {
     conn.xtest_fake_input(2, key, 0, x11rb::NONE, 0, 0, 0)?
