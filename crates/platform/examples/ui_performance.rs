@@ -129,7 +129,10 @@ fn main() -> Result<()> {
     if !startup.is_empty() {
         println!("startup_p95_ms,{:.3}", startup[28]);
     }
-    let (mut app, window, _) = launch(&conn, root, &binary)?;
+    let diagnostics_path =
+        std::env::var_os("NANOCLICK_DIAGNOSTICS_PATH").map(std::path::PathBuf::from);
+    let (mut app, window, _) =
+        support::launch_with_diagnostics(&conn, root, &binary, diagnostics_path.as_deref())?;
     let pid = app.0.id();
     println!("phase,stabilizing,{}s", duration.as_secs());
     thread::sleep(duration);
@@ -236,6 +239,42 @@ fn main() -> Result<()> {
         jitter[(jitter.len() * 99).div_ceil(100) - 1]
     );
     println!("interval_abs_error_max_ms,{}", jitter[jitter.len() - 1]);
+    if let Some(path) = diagnostics_path {
+        let text = fs::read_to_string(path)?;
+        let records: Vec<serde_json::Value> = text
+            .lines()
+            .map(serde_json::from_str)
+            .collect::<std::result::Result<_, _>>()?;
+        if records.len() != 1 {
+            return Err("Expected one observed terminal diagnostics record".into());
+        }
+        let record = &records[0];
+        if record["schema_version"] != 1
+            || record["backend"] != "x11"
+            || record["reason"] != "stopped"
+            || record["sent"].as_u64() != Some(presses.len() as u64)
+            || record["failures"].as_u64() != Some(0)
+        {
+            return Err(format!("Diagnostics do not match captured input: {record}").into());
+        }
+        let mut previous = 0;
+        for field in [
+            "lateness_p50_ns",
+            "lateness_p95_ns",
+            "lateness_p99_ns",
+            "max_lateness_ns",
+        ] {
+            let value = record[field]
+                .as_u64()
+                .ok_or("Missing diagnostic lateness")?;
+            if value < previous {
+                return Err("Diagnostic quantiles are unordered".into());
+            }
+            previous = value;
+            println!("engine_{field},{value}");
+        }
+        println!("engine_skipped,{}", record["skipped"]);
+    }
     close(&conn, window, &mut app)?;
     Ok(())
 }

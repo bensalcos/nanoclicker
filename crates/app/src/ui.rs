@@ -1,6 +1,7 @@
 mod controls;
 use crate::{
     controller::Controller,
+    diagnostics::Diagnostics,
     hotkey::Shortcut,
     settings::{Preferences, PreferencesFile},
     theme,
@@ -14,6 +15,8 @@ use std::{
 };
 
 pub struct NanoClick {
+    diagnostics: Option<Diagnostics>,
+    diagnostics_message: Option<String>,
     preferences: Option<PreferencesFile>,
     preferences_message: Option<String>,
     control: Controller,
@@ -27,6 +30,7 @@ impl NanoClick {
     pub fn new(
         cc: &eframe::CreationContext<'_>,
         selected_theme: Option<egui::ThemePreference>,
+        diagnostics: Option<Diagnostics>,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let ctx = cc.egui_ctx.clone();
         theme::configure(&ctx);
@@ -57,6 +61,8 @@ impl NanoClick {
         let mut control = Controller::new(engine);
         control.draft = saved.draft();
         Ok(Self {
+            diagnostics,
+            diagnostics_message: None,
             preferences,
             preferences_message,
             control,
@@ -66,6 +72,14 @@ impl NanoClick {
             available: None,
             theme: selected_theme,
         })
+    }
+    fn observe_diagnostics(&mut self, snapshot: &Snapshot) {
+        if let Some(recorder) = self.diagnostics.as_mut()
+            && let Err(error) = recorder.observe(snapshot, self.desktop)
+        {
+            self.diagnostics_message = Some(format!("Diagnostics export stopped: {error}"));
+            self.diagnostics = None;
+        }
     }
     fn save_preferences(&mut self) {
         let saved =
@@ -131,6 +145,7 @@ impl NanoClick {
         self.show_snapshot(ui, &self.control.engine.snapshot());
     }
     fn show_snapshot(&mut self, ui: &mut egui::Ui, snapshot: &Snapshot) {
+        self.observe_diagnostics(snapshot);
         let (label, status) = session_action(snapshot);
         let progress = format!(
             "{} pairs sent · {} periods skipped",
@@ -156,6 +171,7 @@ impl NanoClick {
                             _ => {}
                         }
                         if let Some(message) = &self.preferences_message { ui.label(message); }
+                        if let Some(message) = &self.diagnostics_message { ui.colored_label(error_color(ui), message); }
                         if let Some(error) = self.control.error.as_ref().or(snapshot.error.as_ref()) {
                             ui.colored_label(error_color(ui), error);
                         }

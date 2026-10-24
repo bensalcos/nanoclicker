@@ -33,6 +33,8 @@ The default renderer is glow. The alternative wgpu build is available for compar
 
 Clicks are sent at the current pointer position. “Pairs sent” describes backend submission, not proof that the target application processed them. A 1 ms requested interval does not guarantee 1000 clicks per second. Windows may block input into applications running at higher integrity. Wayland requires the desktop's RemoteDesktop portal and pointer permission; no root daemon is required. XWayland is not a substitute for native Wayland support.
 
+Optional local aggregate timing export is available through `--diagnostics NEW_JSONL_PATH`; it never overwrites an existing path. See [diagnostic scope and benchmark use](docs/DIAGNOSTICS.md).
+
 ## Verify
 
 ```sh

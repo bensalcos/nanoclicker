@@ -1,6 +1,7 @@
 use std::{
     error::Error,
     ffi::OsStr,
+    path::Path,
     process::{Child, Command},
     thread,
     time::{Duration, Instant},
@@ -134,8 +135,21 @@ fn candidate_windows(conn: &RustConnection, root: u32) -> Result<Vec<u32>> {
     Ok(windows)
 }
 pub fn launch(conn: &RustConnection, root: u32, binary: &OsStr) -> Result<(App, u32, Duration)> {
+    launch_with_diagnostics(conn, root, binary, None)
+}
+pub fn launch_with_diagnostics(
+    conn: &RustConnection,
+    root: u32,
+    binary: &OsStr,
+    diagnostics: Option<&Path>,
+) -> Result<(App, u32, Duration)> {
     let began = Instant::now();
-    let mut app = App(Command::new(binary).args(["--theme", "dark"]).spawn()?);
+    let mut command = Command::new(binary);
+    command.args(["--theme", "dark"]);
+    if let Some(path) = diagnostics {
+        command.arg("--diagnostics").arg(path);
+    }
+    let mut app = App(command.spawn()?);
     let mut window = None;
     wait(
         || {

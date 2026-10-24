@@ -13,6 +13,8 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
     let mut control = Controller::new(engine);
     control.draft.finite = true;
     Ok(NanoClick {
+        diagnostics: None,
+        diagnostics_message: None,
         preferences: None,
         preferences_message: None,
         control,
