@@ -1,0 +1,13 @@
+mapping,rss_kib
+libLLVM.so.22.1,47796
+[heap],19732
+libgallium-26.2.2.so,11292
+nanoclick,11116
+[anonymous],7996
+libc.so.6,1732
+libstdc++.so.6.0.36,1572
+SYSV00000000 (deleted),1352
+libX11.so.6.4.0,852
+libm.so.6,672
+libzstd.so.1.5.7,440
+libGL.so.1.7.0,392

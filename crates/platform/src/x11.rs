@@ -1,7 +1,5 @@
 use nanoclick_core::{BackendError, InputSink, MouseButton};
-use x11rb::{
-    connection::Connection, protocol::xtest::ConnectionExt, rust_connection::RustConnection,
-};
+use x11rb::{protocol::xtest::ConnectionExt, rust_connection::RustConnection};
 
 /// XTEST connection owned by the worker, never shared with the GUI event loop.
 pub struct X11Input {
@@ -52,7 +50,8 @@ impl InputSink for X11Input {
             .connection
             .xtest_fake_input(5, button, 0, x11rb::NONE, 0, 0, 0)
             .map_err(error)?;
-        self.connection.flush().map_err(error)?;
+        // Checking the cookies flushes both requests together with the server
+        // synchronization. A preceding flush would split that into two writes.
         down.check().map_err(error)?;
         up.check().map_err(error)?;
         self.pressed = None;

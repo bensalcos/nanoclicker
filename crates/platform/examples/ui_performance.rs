@@ -42,6 +42,38 @@ fn rss_mib(pid: u32) -> Result<f64> {
         .parse::<f64>()?
         / 1024.0)
 }
+fn mapping_rss(pid: u32) -> Result<()> {
+    let content = fs::read_to_string(format!("/proc/{pid}/smaps"))?;
+    let mut mapping = String::new();
+    let mut totals = BTreeMap::<String, u64>::new();
+    for line in content.lines() {
+        let mut fields = line.split_whitespace();
+        let Some(first) = fields.next() else {
+            continue;
+        };
+        if first.contains('-') && first.chars().all(|c| c.is_ascii_hexdigit() || c == '-') {
+            let path = fields.skip(4).collect::<Vec<_>>().join(" ");
+            mapping = if path.is_empty() {
+                "[anonymous]".into()
+            } else {
+                std::path::Path::new(&path)
+                    .file_name()
+                    .ok_or("Invalid mapping path")?
+                    .to_string_lossy()
+                    .into_owned()
+            };
+        } else if first == "Rss:" {
+            *totals.entry(mapping.clone()).or_default() +=
+                fields.next().ok_or("Missing mapping RSS")?.parse::<u64>()?;
+        }
+    }
+    let mut totals: Vec<_> = totals.into_iter().collect();
+    totals.sort_by_key(|(_, rss)| std::cmp::Reverse(*rss));
+    for (name, rss) in totals.into_iter().take(12) {
+        println!("idle_mapping_rss_kib,{name},{rss}");
+    }
+    Ok(())
+}
 fn thread_ticks(pid: u32) -> Result<BTreeMap<String, (String, u64)>> {
     let mut result = BTreeMap::new();
     for entry in fs::read_dir(format!("/proc/{pid}/task"))? {
@@ -106,6 +138,7 @@ fn main() -> Result<()> {
         (ticks(pid)? - before) as f64 / clock_hz / began.elapsed().as_secs_f64() * 100.0
     );
     println!("idle_rss_mib,{:.3}", rss_mib(pid)?);
+    mapping_rss(pid)?;
     let target = conn.generate_id()?;
     conn.create_window(
         x11rb::COPY_DEPTH_FROM_PARENT,

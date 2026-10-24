@@ -1,0 +1,5 @@
+variant,trial,pairs,sendmsg,ppoll,poll,recvmsg
+baseline,1,1001,2169,6058,1992,9104
+baseline,2,1001,2169,6058,1993,9118
+noflush,1,1001,1169,5057,1994,8896
+noflush,2,1000,1168,5052,1992,8891
