@@ -1,4 +1,4 @@
-//! Controlled by verify-x11-stall.py on its own paused Xvfb only.
+//! Controlled by verify-x11-stall.py with its own Xvfb and authority FIFO.
 #![forbid(unsafe_code)]
 use nanoclick_core::{BackendError, ClickConfig, Engine, MouseButton, RunState, StopReason};
 use nanoclick_platform::{Desktop, NativeInput};
@@ -23,7 +23,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Use scripts/verify-x11-stall.py; a test-owned server is required".into());
     }
     let scenario = std::env::args().nth(1).ok_or("Pass a fixture scenario")?;
-    if scenario == "shortcut-registration" {
+    if matches!(
+        scenario.as_str(),
+        "shortcut-registration" | "authority-shortcut"
+    ) {
         println!("READY");
         io::stdout().flush()?;
         instruction("paused")?;
@@ -33,22 +36,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let result =
             nanoclick_platform::x11_shortcut::X11Shortcut::register("F6".parse()?, || {}, |_| {});
         if result.is_ok() {
-            return Err("Shortcut registered against a paused server".into());
+            return Err("Shortcut registered against a blocked setup or paused server".into());
         }
         println!(
-            "PASS shortcut-registration: returned in {:.3} ms",
+            "PASS {}: returned in {:.3} ms",
+            scenario,
             began.elapsed().as_secs_f64() * 1000.0
         );
         return Ok(());
     }
     let preparation = match scenario.as_str() {
-        "preparation" => true,
+        "preparation" | "authority" | "authority-timeout" => true,
         "input" | "input-no-stop" | "disconnect" => false,
         _ => {
-            return Err(
-                "Pass input, input-no-stop, preparation, disconnect or shortcut-registration"
-                    .into(),
-            );
+            return Err("Unknown isolated-server fixture scenario".into());
         }
     };
     let (ready, received) = mpsc::sync_channel(1);
@@ -81,21 +82,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     permit.send(())?;
     println!("ARMED");
     io::stdout().flush()?;
-    // The driver confirms this worker is blocked in the native poll before Stop.
-    instruction(if scenario == "input-no-stop" {
-        "observe"
-    } else {
-        "stop"
-    })?;
+    // The driver confirms a protocol poll or the setup helper's FIFO open wait.
+    instruction(
+        if matches!(scenario.as_str(), "input-no-stop" | "authority-timeout") {
+            "observe"
+        } else {
+            "stop"
+        },
+    )?;
     let began = Instant::now();
-    if scenario != "input-no-stop" {
+    if !matches!(scenario.as_str(), "input-no-stop" | "authority-timeout") {
         engine.stop();
     }
     loop {
         let snapshot = engine.snapshot();
         if !snapshot.state.is_active() {
             if preparation {
-                if snapshot.reason != Some(StopReason::Stopped) || snapshot.metrics.attempts != 0 {
+                if snapshot.metrics.attempts != 0
+                    || (scenario == "authority-timeout"
+                        && (snapshot.state != RunState::Faulted
+                            || snapshot.reason != Some(StopReason::Failed)
+                            || snapshot.error.is_none()))
+                    || (scenario != "authority-timeout"
+                        && snapshot.reason != Some(StopReason::Stopped))
+                {
                     return Err(
                         format!("Preparation cancellation was not clean: {snapshot:?}").into(),
                     );
@@ -119,11 +129,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
             return Ok(());
         }
-        if began.elapsed() > Duration::from_secs(2) {
+        if began.elapsed()
+            > Duration::from_secs(if scenario == "authority-timeout" {
+                5
+            } else {
+                2
+            })
+        {
             println!("FAIL terminal timeout");
             io::stdout().flush()?;
             return Err(
-                "The X11 protocol operation did not terminate while the private server was paused"
+                "The X11 operation did not terminate while the private resource remained blocked"
                     .into(),
             );
         }

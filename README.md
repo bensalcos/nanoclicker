@@ -50,7 +50,7 @@ scripts/verify-portal.sh
 
 The X11 script requires Xvfb and xauth. It starts a private display, captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size window shutdown, and explicit Save/relaunch without automatic Start. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
 
-The stalled-server script requires Linux /proc observation and pauses only its own Xvfb, covering protocol deadlines, cancellation and registration shutdown. See [failure-test scope](docs/evidence/x11-stalled-server.md).
+The stalled-server script requires Linux /proc observation and pauses only its own Xvfb, covering protocol deadlines, cancellation and registration shutdown. It also creates its own authority FIFO to verify setup cancellation/timeout without touching personal authentication files. See [failure-test scope](docs/evidence/x11-stalled-server.md).
 
 The portal script requires dbus-daemon and runs thirteen wire-level mock lifecycle scenarios on a private activation-disabled bus, without connecting to a compositor. It does not establish native GNOME/KDE acceptance.
 

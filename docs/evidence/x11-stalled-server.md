@@ -32,7 +32,7 @@ Two unit tests cover expired deadlines on an already-ready socket and cancellati
 
 ## Remaining scope
 
-These bounds cover X11 protocol exchanges. OS-managed DNS/socket establishment and Xauthority-file lookup remain outside the demonstrated bound and require further audit. The GUI toolkit's own display connection, native Windows/Wayland failures and other desktop/resource cases remain separate acceptance work. T15 remains open.
+These protocol bounds were subsequently extended with a bounded setup helper after reproducing an authority-FIFO hang. See [setup cancellation evidence and limitations](x11-setup-cancellation.md). The helper bounds caller waiting, not the underlying OS operation. The GUI toolkit's own display connection, native Windows/Wayland failures and other desktop/resource cases remain separate acceptance work. T15 remains open.
 
 Primary API evidence: installed, pinned x11rb 0.13.2 Stream documentation requires nonblocking read/write and permits custom readiness polling; DefaultStream delegates its poll with no timeout. The wrapper uses rustix 1.1.5 timed poll, retries interrupted polls against the same deadline, and borrows descriptors without unsafe code.
 

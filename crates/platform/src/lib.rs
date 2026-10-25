@@ -18,6 +18,8 @@ mod windows_waiter;
 #[cfg(target_os = "linux")]
 mod x11;
 #[cfg(target_os = "linux")]
+mod x11_setup;
+#[cfg(target_os = "linux")]
 pub mod x11_shortcut;
 #[cfg(target_os = "linux")]
 mod x11_stream;

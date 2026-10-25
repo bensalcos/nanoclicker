@@ -16,33 +16,40 @@ use x11rb::{
 
 pub type X11Connection = RustConnection<DeadlineStream>;
 
-/// Preserve x11rb's address/authentication semantics, bounding protocol I/O.
-/// DNS/socket establishment and authority lookup remain OS-managed here.
+/// Preserve upstream address/authentication semantics without blocking the caller
+/// on OS-managed setup. Only this caller owns protocol handshake and input.
 pub fn connect(cancel: &Cancellation) -> Result<(X11Connection, usize), ConnectError> {
-    let display = parse_display::parse_display(None)?;
-    let screen = usize::from(display.screen);
-    let mut last_error = None;
-    for address in display.connect_instruction() {
-        match DefaultStream::connect(&address) {
-            Ok((stream, (family, peer))) => {
-                let (name, data) = xauth::get_auth(family, &peer, display.display)
-                    .ok()
-                    .flatten()
-                    .unwrap_or_default();
-                return RustConnection::connect_to_stream_with_auth_info(
-                    DeadlineStream::new(stream, cancel.clone()),
-                    screen,
-                    name,
-                    data,
-                )
-                .map(|connection| (connection, screen));
+    let request = cancel.clone();
+    let (stream, screen, name, data) = super::x11_setup::prepare(cancel, move |deadline| {
+        let display = parse_display::parse_display(None)?;
+        let screen = usize::from(display.screen);
+        let mut last_error = None;
+        for address in display.connect_instruction() {
+            super::x11_setup::check(&request, deadline)?;
+            match DefaultStream::connect(&address) {
+                Ok((stream, (family, peer))) => {
+                    super::x11_setup::check(&request, deadline)?;
+                    let (name, data) = xauth::get_auth(family, &peer, display.display)
+                        .ok()
+                        .flatten()
+                        .unwrap_or_default();
+                    super::x11_setup::check(&request, deadline)?;
+                    return Ok((stream, screen, name, data));
+                }
+                Err(error) => last_error = Some(error),
             }
-            Err(error) => last_error = Some(error),
         }
-    }
-    Err(ConnectError::IoError(last_error.unwrap_or_else(|| {
-        io::Error::new(io::ErrorKind::NotFound, "No usable X11 display address")
-    })))
+        Err(ConnectError::IoError(last_error.unwrap_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "No usable X11 display address")
+        })))
+    })?;
+    RustConnection::connect_to_stream_with_auth_info(
+        DeadlineStream::new(stream, cancel.clone()),
+        screen,
+        name,
+        data,
+    )
+    .map(|connection| (connection, screen))
 }
 
 pub struct DeadlineStream {

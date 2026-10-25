@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pause/resume only the Xvfb process created by this driver; never host input."""
+"""Block only owned Xvfb/FIFO resources; never connect to the host display."""
 import os
 from pathlib import Path
 import selectors
@@ -7,6 +7,7 @@ import shutil
 import stat
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -25,21 +26,21 @@ def line(child, timeout=8):
         return value
 
 
-def blocked_poll(child, prefix):
+def blocked_poll(child, prefix, authority=False):
     deadline = time.monotonic() + 2
     while time.monotonic() < deadline:
         for task in Path(f"/proc/{child.pid}/task").glob("*"):
             try:
                 if (task / "comm").read_text().startswith(prefix):
                     channel = (task / "wchan").read_text().strip()
-                    if "poll" in channel:
+                    if "poll" in channel or (authority and "wait_for_partner" in channel):
                         return channel
             except FileNotFoundError:
                 pass
         if child.poll() is not None:
             raise RuntimeError("Fixture exited before native poll")
         time.sleep(0.005)
-    raise RuntimeError("Native blocked-poll observation unavailable; case is not accepted")
+    raise RuntimeError("Native blocked-wait observation unavailable; case is not accepted")
 
 
 def pause_owned_server(server):
@@ -109,29 +110,37 @@ def case(name):
             env = os.environ.copy()
             env.pop("WAYLAND_DISPLAY", None)
             authority = Path(directory) / "Xauthority"
-            authority.touch(mode=0o600)
+            if name.startswith("authority"):
+                os.mkfifo(authority, mode=0o600)
+            else:
+                authority.touch(mode=0o600)
             env["XAUTHORITY"] = str(authority)
             env.update(DISPLAY=":" + number, XDG_CONFIG_HOME=directory, NANOCLICK_ISOLATED_X11="1", NANOCLICK_X11_STALL_DRIVER="1")
             child = subprocess.Popen([str(ROOT / "target/debug/examples/x11_stall"), name], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             if line(child) != "READY":
                 raise RuntimeError("Fixture not prepared")
-            pause_owned_server(server)
+            if not name.startswith("authority"):
+                pause_owned_server(server)
             child.stdin.write("paused\n")
             child.stdin.flush()
             if line(child) != "ARMED":
                 raise RuntimeError("Fixture not armed")
-            prefix = "nanoclick-x11" if name == "shortcut-registration" else "nanoclick-work"
-            print("observed_worker_wait," + blocked_poll(child, prefix), flush=True)
+            prefix = "nanoclick-setup" if name.startswith("authority") else ("nanoclick-x11" if name == "shortcut-registration" else "nanoclick-work")
+            print("observed_worker_wait," + blocked_poll(child, prefix, name.startswith("authority")), flush=True)
             if name == "disconnect":
                 server.kill()
                 server.wait(timeout=3)
-            child.stdin.write("observe\n" if name == "input-no-stop" else "stop\n")
+            child.stdin.write("observe\n" if name in ("input-no-stop", "authority-timeout") else "stop\n")
             child.stdin.flush()
             result = line(child, 5)
             # Resume even on the red regression, allowing old blocking Drop to finish.
             if not result.startswith("PASS "):
                 server.send_signal(signal.SIGCONT)
-            # Success also requires process shutdown while the server stays paused.
+                if name.startswith("authority"):
+                    # Release only our FIFO so the unfixed worker can exit.
+                    descriptor = os.open(authority, os.O_WRONLY | os.O_NONBLOCK)
+                    os.close(descriptor)
+            # Success requires shutdown while the server/FIFO remains blocked.
             stdout, stderr = child.communicate(timeout=5)
             if child.returncode or not result.startswith("PASS "):
                 raise RuntimeError(result + "\n" + stdout + stderr)
@@ -164,7 +173,7 @@ def case(name):
 
 def main():
     subprocess.run(["cargo", "build", "--locked", "-p", "nanoclick-platform", "--example", "x11_stall", "--features", "x11-tests"], cwd=ROOT, check=True)
-    for name in ("input", "input-no-stop", "preparation", "disconnect", "shortcut-registration"):
+    for name in (sys.argv[1:] or ("input", "input-no-stop", "preparation", "disconnect", "shortcut-registration", "authority", "authority-timeout", "authority-shortcut")):
         case(name)
 
 
