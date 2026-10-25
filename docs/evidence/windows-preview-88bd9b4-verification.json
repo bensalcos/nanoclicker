@@ -1,0 +1,8 @@
+{
+  "packaging_commit": "88bd9b49bd94f977e21143f87b40e6a8ca8b5c28",
+  "files": {
+    "nanoclick-0.1.0-windows-x86_64-preview.zip": "c5e1c5abfd15cb257b3d3ac53f943d9c4d870d88469b4318e7a675205a4b4504",
+    "nanoclick-0.1.0-windows-x86_64-preview-symbols.zip": "0006ea0cd32764236f032a0e6631dc40e3aa1e8d637de006442171eb2de3fee2"
+  },
+  "scope": "Preview structure, checksums, PE architecture and PDB signature; no desktop acceptance."
+}

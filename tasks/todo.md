@@ -69,7 +69,7 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 ### T09 — Automate platform checks [S]
 
 Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; follow-up run 40121663794 at e244efd also passes all jobs and the expanded GUI/portal cases. Downloaded X11 logs and Windows preview archives were inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
-Follow-up: owned Xvfb launcher/authentication checks and adoption by local wrappers/CI fix the reproduced concurrent display-number selection race. Two real fixture tests and concurrent full GUI checks pass locally; hosted validation of the launcher is pending. See `docs/evidence/x11-owned-display.md`.
+Follow-up: owned Xvfb launcher/authentication checks and adoption by local wrappers/CI fix the reproduced concurrent display-number selection race. Two real fixture tests and concurrent full GUI checks pass locally; hosted run 40146929746 at 88bd9b4 also passes all four jobs, and its fixture/GUI logs are independently downloaded. See `docs/evidence/x11-owned-display.md`.
 - [x] Windows/Linux CI with fmt, Clippy, tests, release build and valid features.
 - [x] Failure artifacts and isolated X11 integration; distinguish these checks from native QA.
 
@@ -142,7 +142,7 @@ Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers soft
 
 ### T17 — Package and verify clean installation [M]
 
-Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archives, checksums and separate symbols passes expanded isolated Ubuntu 24.04 GUI execution, including all three finite button plans; a second packaging pass has identical archive hashes and GNU debuglink CRC matches the supplied symbols. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded 9051e65 archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
+Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archives, checksums and separate symbols passes expanded isolated Ubuntu 24.04 GUI execution, including all three finite button plans; a second packaging pass has identical archive hashes and GNU debuglink CRC matches the supplied symbols. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded 88bd9b4 archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
 - [ ] Windows ZIP and Linux tar.gz with icons, licenses, checksums, requirements and separate symbols.
 - [ ] Run on clean reference installations; review features, dependencies/licenses and glibc baseline.
 

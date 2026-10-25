@@ -1,0 +1,28 @@
+owned_x11_display,:0; server_pid,14732
+   Compiling nanoclick-platform v0.1.0 (/home/runner/work/nanoclicker/nanoclicker/crates/platform)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s
+     Running `target/debug/examples/ui_x11_acceptance target/release/nanoclick`
+PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input
+scope,completed_cycles,rss_kib,descriptors,threads,captured_pairs
+ui_x11_stress,0,126108,16,15,10
+ui_x11_stress,20,126108,16,15,30
+PASS GUI stress: 10 warm-up and 20 measured Start/Stop cycles; ordered pairs, no post-stop input and stable descriptors
+PASS GUI: Start remains visible at 420x520 logical units, scale 1
+PASS GUI: manual Start delays input for preparation and then sends pairs to the target
+PASS GUI: clean window shutdown
+PASS GUI close: preparing; clean exit, no held pair and no post-exit input
+PASS GUI close: running; clean exit, no held pair and no post-exit input
+PASS GUI close: stop-request-race; clean exit, no held pair and no post-exit input
+finite_terminal,left,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":170,"lateness_p95_ns":170,"lateness_p99_ns":170,"max_lateness_ns":170,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: left, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,left,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":110097,"lateness_p99_ns":110097,"max_lateness_ns":110097,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: left, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":181,"lateness_p95_ns":181,"lateness_p99_ns":181,"max_lateness_ns":181,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: right, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":109659,"lateness_p95_ns":109659,"lateness_p99_ns":109659,"max_lateness_ns":109659,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: right, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":160,"lateness_p95_ns":160,"lateness_p99_ns":160,"max_lateness_ns":160,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: middle, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":113744,"lateness_p99_ns":113744,"max_lateness_ns":113744,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: middle, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+PASS GUI preferences: explicit Save, unsaved edit discarded, saved interval restored, no automatic Start; captured median interval 37 ms

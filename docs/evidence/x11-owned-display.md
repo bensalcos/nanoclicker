@@ -16,6 +16,6 @@ Local GUI, capture, software benchmark, native input/deadline/Stop scripts now u
 
 ## Verification
 
-Two real private-Xvfb unit tests pass: concurrent contexts have distinct verified displays and terminate their servers; the correct private cookie completes X11 setup while missing/incorrect cookies are rejected. Hosted Linux CI now runs these tests and preserves their log. Hosted execution of the new launcher is pending.
+Two real private-Xvfb unit tests pass: concurrent contexts have distinct verified displays and terminate their servers; the correct private cookie completes X11 setup while missing/incorrect cookies are rejected. Hosted Linux CI now runs these tests and preserves their log. Hosted run [40146929746](https://github.com/bensalcos/nanoclicker/actions/runs/40146929746), source 88bd9b4, passes all four jobs. The downloaded [fixture output](x11-owned-display-hosted.txt) confirms both real-Xvfb tests; its GUI, paused-resource and portal logs also pass.
 
 The complete GUI checks also pass concurrently at 150% and 200% with the new launcher, recording different owned displays (`:2`/`:3`) and server PIDs (7338/7347). These runs used the working GUI harness with additional finite-count assertions; production executable source is 9051e65. See [finite GUI evidence](ui-finite-counts.md). Normal three-button/shortcut checks and all eight paused-server/FIFO cases pass with authenticated owned displays. This demonstrates the reproduced test race is removed for these paths; native desktop validation remains open.

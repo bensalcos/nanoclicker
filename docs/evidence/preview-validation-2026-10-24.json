@@ -31,24 +31,24 @@
     ]
   },
   "windows": {
-    "source_run": 40146057324,
-    "artifact_id": 12580961927,
-    "packaging_commit": "9051e65a23a8f5bf8d40025f87b5667c3bb9de58",
-    "directory": "dist/preview-windows-9051e65",
+    "source_run": 40146929746,
+    "artifact_id": 12581028582,
+    "packaging_commit": "88bd9b49bd94f977e21143f87b40e6a8ca8b5c28",
+    "directory": "dist/preview-windows-88bd9b4",
     "packaging_tree_dirty": false,
-    "input_binary_sha256": "44cebe60db1fd4875907b6953c7ad518fb68b884e44c5b5cb7a0eaf765dcd541",
+    "input_binary_sha256": "580e7ad542b55dcaccef9cf57aac0ac3b173c069b27654c0245b2ad473f05a8a",
     "unresolved_notices": 0,
     "validation_scope": "Archive structure/checksums/provenance, PE architecture and PDB signature only; no execution or PE/PDB debug-identity match.",
     "archives": [
       {
         "file": "nanoclick-0.1.0-windows-x86_64-preview-symbols.zip",
-        "bytes": 8324785,
-        "sha256": "afbaae3fd95cdcfd0f83e55473d1d5aba24775641497136d8a70f3e1f8969c2b"
+        "bytes": 8313413,
+        "sha256": "0006ea0cd32764236f032a0e6631dc40e3aa1e8d637de006442171eb2de3fee2"
       },
       {
         "file": "nanoclick-0.1.0-windows-x86_64-preview.zip",
-        "bytes": 3538516,
-        "sha256": "aa9aecf85521b5f2ea2e487b048f52edec086fa14ae75aaf39628670d4b35612"
+        "bytes": 3538514,
+        "sha256": "c5e1c5abfd15cb257b3d3ac53f943d9c4d870d88469b4318e7a675205a4b4504"
       }
     ]
   },

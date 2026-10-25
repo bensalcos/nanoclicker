@@ -92,10 +92,18 @@ The latest local Linux preview is `dist/preview-88bd9b4/`, rebuilt and packaged 
 
 The metadata conservatively marks the packaging tree dirty because of the unrelated untracked workspace entry. That entry is not read or included: packaging inputs remain explicit. The CLI help also runs from the extracted artifact. No install or autostart registration was performed.
 
-The latest independently downloaded Windows preview is from all-green run [40146057324](https://github.com/bensalcos/nanoclicker/actions/runs/40146057324), source `9051e65a23a8f5bf8d40025f87b5667c3bb9de58`, artifact 12580961927. Local directory: `dist/preview-windows-9051e65/`.
+An independently downloaded Windows preview is from all-green run [40146057324](https://github.com/bensalcos/nanoclicker/actions/runs/40146057324), source `9051e65a23a8f5bf8d40025f87b5667c3bb9de58`, artifact 12580961927. Local directory: `dist/preview-windows-9051e65/`.
 
 - Executable ZIP: 3,538,516 bytes; SHA-256 `aa9aecf85521b5f2ea2e487b048f52edec086fa14ae75aaf39628670d4b35612`.
 - PDB ZIP: 8,324,785 bytes; SHA-256 `afbaae3fd95cdcfd0f83e55473d1d5aba24775641497136d8a70f3e1f8969c2b`.
 - Input executable SHA-256: `44cebe60db1fd4875907b6953c7ad518fb68b884e44c5b5cb7a0eaf765dcd541`; clean packaging metadata, zero unresolved notices. The independent verifier passes checksums/provenance, required archive structure, PE architecture and the PDB signature. [Verifier output](windows-preview-9051e65-verification.json).
 
 The two previews have different recorded checkout commits. Windows verification did not execute the executable or prove its PDB debug identity. Both archives are previews; native desktop, reader, monitor and broader timing/resource gates remain open. [Combined provenance/checksum record](preview-validation-2026-10-24.json).
+
+### Matching-checkout Windows preview and hosted validation
+
+Run [40146929746](https://github.com/bensalcos/nanoclicker/actions/runs/40146929746) at `88bd9b49bd94f977e21143f87b40e6a8ca8b5c28` passes all four jobs. Downloaded logs confirm the owned-display unit tests, six actual finite GUI runs, twenty measured GUI stress cycles, eight blocked-resource cases and thirteen portal mock scenarios. The stress sample has unchanged RSS 126108 KiB, 16 descriptors and 15 threads; stable RSS still exceeds the 100 MiB budget and does not accept memory performance.
+
+The Windows preview from this same checkout is now downloaded in `dist/preview-windows-88bd9b4/`, artifact 12581028582, and passes the independent verifier. Application ZIP: 3,538,514 bytes, SHA-256 `c5e1c5abfd15cb257b3d3ac53f943d9c4d870d88469b4318e7a675205a4b4504`. Separate PDB ZIP: 8,313,413 bytes, SHA-256 `0006ea0cd32764236f032a0e6631dc40e3aa1e8d637de006442171eb2de3fee2`. Input executable SHA-256: `580e7ad542b55dcaccef9cf57aac0ac3b173c069b27654c0245b2ad473f05a8a`. Metadata is clean and reports zero unresolved notices. [Verifier output](windows-preview-88bd9b4-verification.json); the combined provenance record above now points to this preview. The preceding 9051e65 record remains historical evidence.
+
+Linux and Windows previews now share checkout 88bd9b4. The hosted GUI/input capture remains Linux/Xvfb; native Windows desktop execution and all other release gates remain separate.
