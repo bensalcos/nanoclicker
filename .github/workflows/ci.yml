@@ -59,6 +59,7 @@ jobs:
         run: |
           mkdir -p artifacts
           python3 -m unittest discover -s scripts -p test_x11_fixture.py -v 2>&1 | tee artifacts/x11-fixture.log
+          cargo clippy -p nanoclick-platform --example ui_x11_acceptance --features x11-tests --locked -- -D warnings
           scripts/verify-x11.sh 2>&1 | tee artifacts/x11.log
           NANOCLICK_UI_STRESS_CYCLES=20 scripts/verify-ui-x11.sh target/release/nanoclick 2>&1 | tee artifacts/ui-x11.log
       - name: Isolated X11 stalled-server cancellation

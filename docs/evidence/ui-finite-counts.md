@@ -1,0 +1,19 @@
+# Finite counts through the release GUI
+
+Date: 2026-10-24. Production executable source: `9051e65a23a8f5bf8d40025f87b5667c3bb9de58`, release default glow. SHA-256: `f5565bf1e5ef6f2cc9fc3a084bffacb64472693ff2f506d8ea620590de7ec413`. The harness additions are introduced with this evidence. Final 100% harness executable SHA-256: `7293de3e19fc76a2925ee70f3fd2c2d51e25f397b9315612048fd6494e4cde88`.
+
+## Actual GUI protocol
+
+The private X11 fixture launches a fresh actual application for each mouse button. It edits the interval to 25 ms, selects the button in the visible combo box, clicks Count, and edits N through the real text field. It moves focus/pointer to its empty capture target and presses the registered F6 once. It never constructs an engine plan or seeds finite preferences behind the UI.
+
+For N=1 and then N=7 in the same process, it requires exactly N ordered press/release pairs for the selected native button (left=1, right=3, middle=2), a ready primary action and a terminal diagnostics record. The terminal run identity advances from 1 to 2; attempts/sent match N, failures are zero and the reason is Completed. The second edit and differing exact count verify controls are editable again and counters do not carry over. A further 250 ms observation must show no late input. This is an observed quiet window, not a universal temporal guarantee. No Stop shortcut is sent to end these runs.
+
+All three buttons pass both counts at 100%, 150% and 200% synthetic X11 scaling: eighteen finite runs in total. [100% output](ui-finite-100.txt), [150% output](ui-finite-150.txt), [200% output](ui-finite-200.txt). The final 100% log also includes the six terminal JSON records. The 150%/200% harness checked the same fields internally before its pass markers; those runs preceded the stdout-only addition that prints the records.
+
+The 150%/200% checks ran concurrently on distinct verified, authenticated private displays; see [owned display isolation](x11-owned-display.md). Their full existing prelude and Save/relaunch checks also pass. An earlier attempt with xvfb-run exposed a launcher race; that failure is documented rather than counted as product acceptance. The 100% run used the final owned launcher and terminal-output harness.
+
+## Scope
+
+These tests exercise real form editing, global Start, automatic completion, per-run identity/counters and subsequent editing on private Xvfb. The existing manual-start test separately covers the three-second countdown; finite runs use the immediate shortcut. The diagnostics exporter records the terminal snapshot observed by the UI, rather than an OCR assertion of footer wording. The fixture reads the actual primary-action ready color after completion.
+
+The 25 ms / short-run samples do not establish timing budgets or no skipped periods under all loads. Very large N, restart during Stopping, other interval boundaries, native Windows/Wayland, real monitor transitions and screen readers remain separate acceptance work. T10 remains open for its full matrix. Hosted execution of this expanded finite GUI fixture is pending.

@@ -16,6 +16,7 @@ use x11rb::{
 };
 mod support;
 mod ui_close;
+mod ui_finite;
 mod ui_preferences;
 mod ui_stress;
 use support::{Result, action_position, close, launch, pair, ready_button, scale_factor, wait};
@@ -111,6 +112,7 @@ fn main() -> Result<()> {
         Duration::from_secs(3),
     )
     .map_err(|error| {
+        let _ = capture(window, "NANOCLICK_FAILURE_CAPTURE");
         format!(
             "Outside-focus Start failed: {error}; received {} target events, ready={}, active={}",
             events.len(),
@@ -242,6 +244,7 @@ fn main() -> Result<()> {
     close(&conn, window, &mut app)?;
     println!("PASS GUI: clean window shutdown");
     ui_close::run(&conn, root, target, key, &binary)?;
+    ui_finite::run(&conn, root, target, key, &binary)?;
     ui_preferences::run(&conn, root, target, key, &binary)?;
     Ok(())
 }
