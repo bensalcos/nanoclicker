@@ -1,31 +1,31 @@
 # Resume handoff
 
-## State at handoff — 2026-10-25
+## Current state — 2026-10-25
 
-The migration goal has resumed. The earlier pause snapshot is superseded.
+The migration goal is active. Branch: `feature/rust-migration-preview`. Last pushed commit is `8bde30f51400e6d4c6de00b894b74051f73d0b03`; latest application change is `23aba0d9d3956629ba08d4c8146a10a424c03160` (Windows WGPU default and shared renderer selection). Static CRT fix is `441e679`. All four jobs pass in run `40232606248`; reuse this result and its downloaded artifacts instead of rebuilding unchanged source.
 
-- Branch: `feature/rust-migration-preview`.
-- Last development commit before this guidance update: `2842c7d7b45e514b36053bc332d4af98b9182483` (large finite-count fixture/evidence).
-- Latest producer change: `42abf7dac1f9b7ddb728b940fad2c543f516ba38` (queued shortcut delivery and explicit Stop priority).
-- All four hosted jobs pass for producer source 42abf7d in run 40177331385. The subsequent test-only run 40178377214 also passed all four jobs.
-- Local checks: 63 Rust tests, release GUI flows and N=1000 for all three buttons pass. Numeric budgets and native gates remain as recorded in `VALIDATION.md` and `ACCEPTANCE.md`.
-- Available producer previews: `dist/preview-shortcut-queue/` (Linux) and `dist/preview-windows-42abf7d/` (Windows). Provenance/checksum scope is in `evidence/preview-shortcut-queue.json`.
-- The approved draft PR remains uncreated because GitHub rejected `CreatePullRequest` permission. Its prepared body is `/tmp/nanoclick-rust-migration-pr.md`; that temporary file may not survive a host restart.
+Read `AGENTS.md`, `STATUS.md`, `ACCEPTANCE.md` and `evidence/windows-vm-functional.md`. The last file records exact hashes, successful sessions, failed probes and remaining gates. Do not restart completed architecture/core/X11 work or treat the available Windows VM as unavailable.
 
-## Next work on resume
+## Windows lab
 
-1. Use the existing Windows VM documented in `~/Git/ModelO_1-0-9/docs/windows-vm.md`. The lab directory is `~/Git/ModelO_1-0-9/artifacts/vm/windows11-lab/`; do not treat Windows testing as blocked by lack of a machine.
-2. Inspect current VM/process state and preserve the existing Model O lab. Prepare an isolated NanoClick working overlay/configuration under this project's ignored artifacts directory, following `AGENTS.md`. Do not boot or mutate the source lab blindly.
-3. Transfer the matching Windows preview and required QA assets through separate read-only media, keeping the guest offline and without physical USB/proxy access. Do not replace the Model O tools media or run its firmware/software for these tests.
-4. Run the Windows functional/GUI cases in `NATIVE_QA.md`: startup/runtime dependencies, actual SendInput delivery and paired counts, F6 outside focus, finite/infinite modes, Stop/restart/close, preferences and scaling/accessibility. Check the virtual graphics backend before diagnosing renderer failures. Record actual Windows/VM versions and limitations.
-5. Use the VM results to fix concrete defects and update the acceptance matrix. Keep physical-GPU/performance, Linux Wayland and other unverified gates separate; do not lower their budgets or accept them from VM/CI results alone.
+The source Model O lab was preserved. NanoClick has its own working overlay, UEFI/TPM state and read-only QA media at `artifacts/vm/windows11-lab/`. Source guidance/controller remain in `~/Git/ModelO_1-0-9/docs/windows-vm.md` and `scripts/vm/windows_lab.py`. The NanoClick VM was running at the last check; recheck QMP/process state rather than launching another instance. No network, shared folders, physical USB or Model O proxy is connected. The virtual USB tablet is permitted.
 
-The last read-only VM inspection found no QMP socket or QEMU process. That is a past observation, not a guarantee of its state at resume. No VM was started or changed during this handoff update. The unrelated `.aws` entry remains untouched.
+Windows 11 Pro build 26300.9457, two vCPU, 4 GiB RAM, Basic Display Adapter, 1280×800 at 100% were observed. Preview and capture target execute with WGPU; the VC++ redistributable remains absent. No reference-hardware performance acceptance is inferred.
 
-## Windows VM continuation
+The app and capture windows were closed after testing. Guest data is under `C:\NanoClickLab\NativeGraphics2`; the ready administrative PowerShell window is at approximately (25,27), with its title bar at y=50. Recheck a screenshot before typing. The guest logs and local screenshots are listed in the functional evidence. Fresh output filenames/directories are required on relaunch; diagnostics and capture logs are never overwritten.
 
-The isolated NanoClick lab now exists at `artifacts/vm/windows11-lab/`, with its own overlay, UEFI/TPM state and read-only QA media. Recheck its live status before continuing. Windows 11 Pro build 26300.9457, two vCPU, 4 GiB RAM and Microsoft Basic Display Adapter were observed. No physical USB or network was attached. The source Model O lab was preserved.
+Downloaded preview: `dist/preview-windows-8bde30f/`, including `qa/input_capture.exe` and commit/hash metadata. Read-only media `tools-wgpu-2.iso` is mounted in the second virtual optical drive, E: during this session. Probe scripts and helper commands are ignored artifacts, not production code. The corrected probe selects the exact preview path, not a recursive first executable (the media also contains a legacy executable).
 
-Producer 42abf7d executable SHA-256 `ef2feacca2028f4644468e10217a6bf25992a63b6e2b114ae6f2cd0692d5ed10` fails before Rust main: `--help` exits with -1073741515 (0xC0000135); VCRUNTIME140.dll is missing. Evidence: ignored `artifacts/vm/windows11-lab/probe-console-02.png` and `pe-imports.txt`. The replacement build must use static CRT linkage and pass the new PE import check, then repeat startup in this VM before input/GUI acceptance. Do not install a redistributable to mask the portable-package defect.
+Guest input uses QMP only. Absolute coordinates use 0..32767; a center move was verified through the guest Cursor.Position as (640,400). The ignored `guest_pointer.py` is fixed to the observed 1280×800 display: update its mapping if resolution changes. Prefer explicit foreground activation by PID/title, then a fresh in-client pointer move and a visible Recording/reset-counter check before F6. Send commands without a trailing newline and use one explicit Return; inspect guest readiness at focus transitions. Do not assume rapid batched input or a producer counter proves target receipt.
 
-Update: all four jobs in run 40231110831 passed for 441e679. The corrected executable (SHA-256 `0975a1608494ff9c6d7a7cd2ba8b0195404fc47c94b6597c27ce95b135e50c26`) returned 0 for `--help` in the unchanged-runtime guest. GUI startup then returned 1 with OpenGL 1.1 incompatibility. The next producer uses platform defaults (Linux glow, Windows wgpu) and includes the passive capture executable in Windows QA artifacts. Rebuild/guest GUI validation is the immediate next step. See `evidence/windows-vm-startup.md`.
+## Next work
+
+1. Isolate zero-event capture sessions 2/3 against producer runs reporting ten. Later controlled sessions received all three buttons correctly, but those repeats do not explain the mismatch. Keep the original logs/sessions; do not mark robust native delivery accepted until understood.
+2. Continue Windows QA: N=1/large counts, manual preparation/cancellation, shortcuts/layout/conflicts, preferences/error flows, DPI/NVDA, resource stability and native timing protocols. Use this VM for functional tests and retain physical performance limits separately.
+3. Native GNOME/KDE permission/input/accessibility and the remaining per-backend performance gates remain open. Preserve budgets and the C++ reference until the full matrix is accepted.
+
+## Git and publication
+
+The user authorized this feature branch and a draft PR, but no merge/release. Draft creation remains blocked by the previously rejected GitHub CreatePullRequest permission; do not repeatedly retry it or request authorization already granted. The prepared body is `/tmp/nanoclick-rust-migration-pr.md` if still present. Avoid full hosted runs for documentation-only updates.
+
+The unrelated untracked `.aws` entry remains outside scope: never read, modify, remove, stage or commit it. Stage explicit project paths only. Documentation following the VM session may be committed locally without a documentation-only CI push.

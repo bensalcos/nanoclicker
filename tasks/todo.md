@@ -124,6 +124,8 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 
 ### T15 — Harden lifecycle and failure handling [M]
 
+Windows VM update (2026-10-25): native Count=10 per button and long-wait Stop/restart/active close now have evidence, but two earlier zero-event capture discrepancies remain unresolved. Isolate them before accepting robust delivery across focus transitions. See `docs/evidence/windows-vm-functional.md`.
+
 Partial evidence: five private-Xvfb failure cases now cover stalled input with/without Stop, cancellation during protocol preparation, disconnection and shortcut registration timeout; see `docs/evidence/x11-stalled-server.md`. Three additional private-authority-FIFO cases verify Stop, setup timeout and shortcut shutdown. A four-slot helper contains OS-managed setup without unbounded thread accumulation; underlying blocked-OS recovery remains open. See `docs/evidence/x11-setup-cancellation.md`. Private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Actual X11 release UI also passes 1000 measured Start/Stop cycles with stable sampled resources and graceful close during preparation/running/Stop-request races at 100/200% scale. Windows/Wayland desktop/resource stability and other failure variants remain open. See `docs/evidence/ui-lifecycle-stress.md`.
 - [ ] Cover closing in Preparing/Running/Stopping, disconnected backend, revoked permissions and failed release.
 - [ ] Ensure observable terminal state and closed resources; repeat cycles and verify memory stability.

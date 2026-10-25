@@ -6,7 +6,7 @@ Reviewed against the repository plan on 2026-10-25. The Rust implementation and 
 |---|---|---|
 | Architecture, modules, phases and tasks | [Architecture](architecture/RUST.md), [plan](../tasks/plan.md), [backlog](../tasks/todo.md) | Final decisions remain subject to native results |
 | Core correctness and cancellation | Deterministic scheduling/concurrency tests; retained run identities; finite counts; overflow/error handling | Adapter-specific native acceptance below |
-| Windows 11 | MSVC hosted build/unit tests; independently verified preview ZIP/PDB; [VM loader failure fixed, graphics failure reproduced](evidence/windows-vm-startup.md) | Actual SendInput capture, shortcuts/layout/conflicts, close/resource stability, timers, GUI/DPI/NVDA and clean reference execution |
+| Windows 11 | MSVC build/unit/package checks; [Windows 11 VM startup, Count=10 per button, F6 outside focus, long-wait Stop/restart/active close](evidence/windows-vm-functional.md) | Isolate two zero-event probe discrepancies; broader counts/preparation/preferences/failures, shortcut layouts/conflicts, resource/timing budgets and DPI/NVDA |
 | Ubuntu X11 | Actual product GUI and capture on private Xvfb; restricted Ubuntu container; three buttons, finite plans, shortcuts, preferences and lifecycle cases | Reference desktop/layout behavior, Orca, real monitor transitions and complete native performance protocol |
 | GNOME Wayland | Production portal adapters; thirteen private-D-Bus lifecycle cases; passive native capture target prepared | Real consent/denial/revocation, desktop-assigned trigger, native Wayland target delivery, resource/timing and reader/DPI checks |
 | KDE Wayland | Linux adapter/contract checks | Distribution/backend versions and the same native flows as GNOME |
