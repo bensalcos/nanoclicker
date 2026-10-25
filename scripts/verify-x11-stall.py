@@ -34,7 +34,7 @@ def blocked_poll(child, prefix, authority=False):
                     channel = (task / "wchan").read_text().strip()
                     if "poll" in channel or (authority and "wait_for_partner" in channel):
                         return channel
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):
                 pass
         if child.poll() is not None:
             raise RuntimeError("Fixture exited before native poll")

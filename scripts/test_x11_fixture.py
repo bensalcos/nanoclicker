@@ -1,5 +1,6 @@
 """Real private-Xvfb checks; no input injection and no host display access."""
 from concurrent.futures import ThreadPoolExecutor
+import importlib.util
 from pathlib import Path
 import socket
 import struct
@@ -10,6 +11,38 @@ from unittest import mock
 import x11_fixture
 
 from x11_fixture import OwnedX11, STARTUP_TIMEOUT
+
+spec = importlib.util.spec_from_file_location("x11_stall_observer", Path(__file__).with_name("verify-x11-stall.py"))
+stall = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(stall)
+
+
+class WorkerObservationTests(unittest.TestCase):
+    def test_disappearing_thread_does_not_hide_live_blocked_worker(self):
+        for vanished in (FileNotFoundError, ProcessLookupError):
+            for field in ("comm", "wchan"):
+                with self.subTest(error=vanished.__name__, field=field):
+                    departing, live = mock.MagicMock(), mock.MagicMock()
+                    for task in (departing, live):
+                        files = {"comm": mock.Mock(), "wchan": mock.Mock()}
+                        files["comm"].read_text.return_value = "nanoclick-worker"
+                        files["wchan"].read_text.return_value = "do_poll"
+                        if task is departing:
+                            files[field].read_text.side_effect = vanished("Thread exited")
+                        task.__truediv__.side_effect = files.__getitem__
+                    root = mock.Mock()
+                    root.glob.return_value = [departing, live]
+                    with mock.patch.object(stall, "Path", return_value=root):
+                        self.assertEqual(stall.blocked_poll(mock.Mock(pid=123), "nanoclick-work"), "do_poll")
+
+    def test_permission_errors_remain_failures(self):
+        task = mock.MagicMock()
+        task.__truediv__.return_value.read_text.side_effect = PermissionError("Observation denied")
+        root = mock.Mock()
+        root.glob.return_value = [task]
+        with mock.patch.object(stall, "Path", return_value=root):
+            with self.assertRaises(PermissionError):
+                stall.blocked_poll(mock.Mock(pid=123), "nanoclick-work")
 
 
 class OwnedDisplayTests(unittest.TestCase):

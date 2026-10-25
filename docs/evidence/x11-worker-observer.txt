@@ -1,0 +1,11 @@
+test_concurrent_servers_have_distinct_verified_displays (test_x11_fixture.OwnedDisplayTests.test_concurrent_servers_have_distinct_verified_displays) ... ok
+test_empty_readiness_observation_keeps_waiting_for_same_server (test_x11_fixture.OwnedDisplayTests.test_empty_readiness_observation_keeps_waiting_for_same_server) ... ok
+test_server_requires_its_private_cookie (test_x11_fixture.OwnedDisplayTests.test_server_requires_its_private_cookie) ... ok
+test_startup_failure_retains_server_diagnostics (test_x11_fixture.OwnedDisplayTests.test_startup_failure_retains_server_diagnostics) ... ok
+test_disappearing_thread_does_not_hide_live_blocked_worker (test_x11_fixture.WorkerObservationTests.test_disappearing_thread_does_not_hide_live_blocked_worker) ... ok
+test_permission_errors_remain_failures (test_x11_fixture.WorkerObservationTests.test_permission_errors_remain_failures) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.276s
+
+OK
