@@ -21,9 +21,12 @@ struct CaptureWindow {
     capture: session::Capture,
     output: BufWriter<File>,
     backend: &'static str,
-    started: Option<(Instant, f32)>,
+    started: Option<(Instant, f32, u64, u64)>,
     message: Option<String>,
     output_failed: Arc<AtomicBool>,
+    pointer_position: Option<egui::Pos2>,
+    pointer_move_events: u64,
+    pointer_button_events: u64,
 }
 impl CaptureWindow {
     fn toggle(&mut self, scale: f32) {
@@ -32,7 +35,12 @@ impl CaptureWindow {
         } else if !self.output_failed.load(Ordering::Acquire) {
             match self.capture.start() {
                 Ok(()) => {
-                    self.started = Some((Instant::now(), scale));
+                    self.started = Some((
+                        Instant::now(),
+                        scale,
+                        self.pointer_move_events,
+                        self.pointer_button_events,
+                    ));
                     self.message = None;
                 }
                 Err(error) => self.message = Some(error.into()),
@@ -43,7 +51,7 @@ impl CaptureWindow {
         let Some(report) = self.capture.stop() else {
             return;
         };
-        let Some((began, start_scale)) = self.started.take() else {
+        let Some((began, start_scale, start_moves, start_buttons)) = self.started.take() else {
             self.fail("Capture session start was not recorded".into());
             return;
         };
@@ -51,6 +59,8 @@ impl CaptureWindow {
             "record_type":"session", "schema_version":1, "backend":self.backend,
             "finish_reason":reason, "elapsed_gui_ms":began.elapsed().as_millis(),
             "pixels_per_point_start":start_scale, "pixels_per_point_end":scale,
+            "egui_pointer_move_events":self.pointer_move_events.saturating_sub(start_moves),
+            "egui_pointer_button_events":self.pointer_button_events.saturating_sub(start_buttons),
             "report":report,
         });
         if let Err(error) = session::write_record(&mut self.output, &record) {
@@ -69,12 +79,19 @@ impl eframe::App for CaptureWindow {
         let scale = ctx.pixels_per_point();
         let mut closing = false;
         ctx.input(|input| {
+            self.pointer_position = input.pointer.hover_pos();
             // Preserve event order: a Space and a mouse event may share a frame.
             for event in &input.raw.events {
                 match event {
+                    egui::Event::PointerMoved { .. } => {
+                        self.pointer_move_events = self.pointer_move_events.saturating_add(1);
+                    }
                     egui::Event::PointerButton {
                         button, pressed, ..
-                    } => self.capture.push(*button, *pressed),
+                    } => {
+                        self.pointer_button_events = self.pointer_button_events.saturating_add(1);
+                        self.capture.push(*button, *pressed);
+                    }
                     egui::Event::Key {
                         key,
                         pressed: true,
@@ -103,6 +120,11 @@ impl eframe::App for CaptureWindow {
             egui::ScrollArea::vertical().show(ui, |ui| {
             ui.heading("Input capture");
             ui.label(format!("Native backend: {} · scale {:.2}", self.backend, ui.ctx().pixels_per_point()));
+            match self.pointer_position {
+                Some(position) => ui.label(format!("Cursor in client: yes · ({:.1}, {:.1})", position.x, position.y)),
+                None => ui.label("Cursor in client: no known position"),
+            };
+            ui.label(format!("egui mouse events: {} moves · {} button edges", self.pointer_move_events, self.pointer_button_events));
             ui.add_space(12.0);
             ui.colored_label(if self.capture.active() { egui::Color32::LIGHT_GREEN } else { egui::Color32::LIGHT_BLUE },
                 if self.capture.active() { "Recording · Space ends this session" } else { "Ready · Space begins a new session" });
@@ -196,6 +218,9 @@ fn main() -> eframe::Result {
                 started: None,
                 message: None,
                 output_failed: failure,
+                pointer_position: None,
+                pointer_move_events: 0,
+                pointer_button_events: 0,
             }))
         }),
     )?;
