@@ -2,6 +2,8 @@
 
 Updated: 2026-10-24.
 
+Windows lab decision (2026-10-25): use the user's existing Windows 11 QEMU/KVM lab from `~/Git/ModelO_1-0-9` as the primary functional/GUI test environment, with an isolated NanoClick working overlay and unchanged physical-device boundaries. CI is complementary. No VM test has been executed for NanoClick yet. See [resume handoff](RESUME.md) and project `AGENTS.md`; the migration goal remains paused at this handoff.
+
 - **Plan:** architecture, UI specification, phases and backlog are documented. T01 is complete with the unavailable C++ Windows baseline explicitly pending. Platform milestones remain open.
 - **Language:** the new application uses English throughout.
 - **Implemented:** three-crate Rust workspace; validated plans, monotonic scheduling, cancelable worker, terminal snapshots; light/dark/system themes, three mouse buttons, infinite/count modes, manual countdown, native Windows/X11 shortcuts and Wayland portal adapters.
