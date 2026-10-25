@@ -1,0 +1,10 @@
+{
+  "packaging_commit": "88bd9b49bd94f977e21143f87b40e6a8ca8b5c28",
+  "input_binary_sha256": "f5565bf1e5ef6f2cc9fc3a084bffacb64472693ff2f506d8ea620590de7ec413",
+  "packaged_binary_sha256": "6c3e3f04946d126219ff22524358782f844d32302da86a9466e8321af5231546",
+  "debuglink": "nanoclick.debug",
+  "debuglink_crc32": "a957bcff",
+  "debug_sha256": "c9344f63299ad7c8a76fcd31fc18590c7d60c97e0e8940dfc1ac7dcc984d5595",
+  "inventory_entries": 211,
+  "reproducible_archives": true
+}

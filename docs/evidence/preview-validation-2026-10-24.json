@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-24",
+  "linux": {
+    "packaging_commit": "88bd9b49bd94f977e21143f87b40e6a8ca8b5c28",
+    "directory": "dist/preview-88bd9b4",
+    "packaging_tree_dirty": true,
+    "unresolved_notices": 0,
+    "maximum_glibc_symbol_version": "2.28",
+    "ubuntu_image_config": "sha256:810d30b8438c3e2ead0c55ca62cf98c5b9d2326955ee23a1bdc31b5b0a80c9bf",
+    "validation": {
+      "packaging_commit": "88bd9b49bd94f977e21143f87b40e6a8ca8b5c28",
+      "input_binary_sha256": "f5565bf1e5ef6f2cc9fc3a084bffacb64472693ff2f506d8ea620590de7ec413",
+      "packaged_binary_sha256": "6c3e3f04946d126219ff22524358782f844d32302da86a9466e8321af5231546",
+      "debuglink": "nanoclick.debug",
+      "debuglink_crc32": "a957bcff",
+      "debug_sha256": "c9344f63299ad7c8a76fcd31fc18590c7d60c97e0e8940dfc1ac7dcc984d5595",
+      "inventory_entries": 211,
+      "reproducible_archives": true
+    },
+    "archives": [
+      {
+        "file": "nanoclick-0.1.0-linux-x86_64-preview-symbols.tar.gz",
+        "bytes": 19375685,
+        "sha256": "1b254877f30b36cc3eda65f88522be48daeee5c917f11803d86931604204e1e4"
+      },
+      {
+        "file": "nanoclick-0.1.0-linux-x86_64-preview.tar.gz",
+        "bytes": 6166394,
+        "sha256": "4872ec7f00d40bc2441ae138d60d9d3912468d9f885497b432dbc23e36194ab6"
+      }
+    ]
+  },
+  "windows": {
+    "source_run": 40146057324,
+    "artifact_id": 12580961927,
+    "packaging_commit": "9051e65a23a8f5bf8d40025f87b5667c3bb9de58",
+    "directory": "dist/preview-windows-9051e65",
+    "packaging_tree_dirty": false,
+    "input_binary_sha256": "44cebe60db1fd4875907b6953c7ad518fb68b884e44c5b5cb7a0eaf765dcd541",
+    "unresolved_notices": 0,
+    "validation_scope": "Archive structure/checksums/provenance, PE architecture and PDB signature only; no execution or PE/PDB debug-identity match.",
+    "archives": [
+      {
+        "file": "nanoclick-0.1.0-windows-x86_64-preview-symbols.zip",
+        "bytes": 8324785,
+        "sha256": "afbaae3fd95cdcfd0f83e55473d1d5aba24775641497136d8a70f3e1f8969c2b"
+      },
+      {
+        "file": "nanoclick-0.1.0-windows-x86_64-preview.zip",
+        "bytes": 3538516,
+        "sha256": "aa9aecf85521b5f2ea2e487b048f52edec086fa14ae75aaf39628670d4b35612"
+      }
+    ]
+  },
+  "accepted_release": false,
+  "remaining": "Native desktop matrix, accessibility, broader performance budgets and final migration acceptance remain open."
+}

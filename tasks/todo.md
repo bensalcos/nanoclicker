@@ -142,7 +142,7 @@ Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers soft
 
 ### T17 — Package and verify clean installation [M]
 
-Partial evidence: Linux preview with notices, source archives, checksums and separate symbols passed isolated Ubuntu 24.04 execution. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
+Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archives, checksums and separate symbols passes expanded isolated Ubuntu 24.04 GUI execution, including all three finite button plans; a second packaging pass has identical archive hashes and GNU debuglink CRC matches the supplied symbols. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded 9051e65 archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
 - [ ] Windows ZIP and Linux tar.gz with icons, licenses, checksums, requirements and separate symbols.
 - [ ] Run on clean reference installations; review features, dependencies/licenses and glibc baseline.
 

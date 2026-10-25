@@ -79,3 +79,23 @@ A Windows-target notice preflight then found one unresolved crate, `accesskit_wi
 Run 40092934864 at `acc817c9f11714d8a74576d1dedda4512e237963` passes all four jobs, including native Windows packaging. Artifact `windows-preview` (id 12560216356) was downloaded and independently checked on Linux. The executable ZIP is 3,532,360 bytes, SHA-256 `7572265011ca1e17185a995631929f817bc35eaf66b20197bbadb1e06064f153`; separate PDB ZIP is 8,294,819 bytes, SHA-256 `2a29950a02a1bbe3f902e183ee74b766c8429df2f81bf1376630263ad066ea4b`. The input executable hash is `0b62af96a6437133a97e0c86a2fd708af33f4fa15d41259a643d834034a7926c`. Metadata reports a clean packaging tree, preview=true, 128 dependency inventory entries and no unresolved notices.
 
 Archive hashes, provenance, PE architecture, required files and the separate PDB signature pass. This is not proof of executable/PDB debug-identity matching, desktop execution, installer behavior or Windows 11 GUI/input acceptance. The hosted artifact has a 14-day retention policy and is not a published release.
+
+## Refreshed setup/diagnostics preview
+
+The latest local Linux preview is `dist/preview-88bd9b4/`, rebuilt and packaged at source `88bd9b49bd94f977e21143f87b40e6a8ca8b5c28`. It includes the terminal diagnostics exporter and X11 protocol/setup cancellation fixes. Input executable SHA-256: `f5565bf1e5ef6f2cc9fc3a084bffacb64472693ff2f506d8ea620590de7ec413`.
+
+- Application archive: 6,166,394 bytes; SHA-256 `4872ec7f00d40bc2441ae138d60d9d3912468d9f885497b432dbc23e36194ab6`.
+- Symbols archive: 19,375,685 bytes; SHA-256 `1b254877f30b36cc3eda65f88522be48daeee5c917f11803d86931604204e1e4`.
+- Both checksums verify, all 211 inventory entries have resolved notices, and a second packaging pass in `dist/preview-88bd9b4-repro/` produces identical archive hashes. This remains deterministic packaging of one input, rather than independent reproducible compilation.
+- Independent extraction verifies the GNU debuglink filename and CRC32 against the supplied `nanoclick.debug` (`a957bcff`); [validation record](preview-88bd9b4-validation.json). The stripped executable's maximum referenced GLIBC symbol version is still 2.28; this is not proof of support for every glibc 2.28 distribution.
+- The extracted executable passes the expanded full GUI harness in the restricted Ubuntu 24.04 container: outside-focus shortcut, minimum size, manual countdown, close cases, all three finite N=1/7 plans, and Save/relaunch. [Runtime log](preview-88bd9b4-ubuntu.txt), [package versions](preview-88bd9b4-ubuntu-packages.txt). Image config is `sha256:810d30b8438c3e2ead0c55ca62cf98c5b9d2326955ee23a1bdc31b5b0a80c9bf`; the same pinned base and non-root/read-only/no-network/no-capabilities protocol are retained.
+
+The metadata conservatively marks the packaging tree dirty because of the unrelated untracked workspace entry. That entry is not read or included: packaging inputs remain explicit. The CLI help also runs from the extracted artifact. No install or autostart registration was performed.
+
+The latest independently downloaded Windows preview is from all-green run [40146057324](https://github.com/bensalcos/nanoclicker/actions/runs/40146057324), source `9051e65a23a8f5bf8d40025f87b5667c3bb9de58`, artifact 12580961927. Local directory: `dist/preview-windows-9051e65/`.
+
+- Executable ZIP: 3,538,516 bytes; SHA-256 `aa9aecf85521b5f2ea2e487b048f52edec086fa14ae75aaf39628670d4b35612`.
+- PDB ZIP: 8,324,785 bytes; SHA-256 `afbaae3fd95cdcfd0f83e55473d1d5aba24775641497136d8a70f3e1f8969c2b`.
+- Input executable SHA-256: `44cebe60db1fd4875907b6953c7ad518fb68b884e44c5b5cb7a0eaf765dcd541`; clean packaging metadata, zero unresolved notices. The independent verifier passes checksums/provenance, required archive structure, PE architecture and the PDB signature. [Verifier output](windows-preview-9051e65-verification.json).
+
+The two previews have different recorded checkout commits. Windows verification did not execute the executable or prove its PDB debug identity. Both archives are previews; native desktop, reader, monitor and broader timing/resource gates remain open. [Combined provenance/checksum record](preview-validation-2026-10-24.json).

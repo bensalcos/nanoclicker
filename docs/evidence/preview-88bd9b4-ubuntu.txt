@@ -1,0 +1,51 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 600B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+#4 resolve docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac 0.0s done
+#4 DONE 0.0s
+
+#5 [2/2] RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends     xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl1 libxkbcommon0 libxkbcommon-x11-0 libx11-6 libxi6 libxrandr2     libxcursor1 libxinerama1 libvulkan1 mesa-vulkan-drivers dbus-x11     && rm -rf /var/lib/apt/lists/*
+#5 CACHED
+
+#6 exporting to image
+#6 exporting layers done
+#6 exporting manifest sha256:5604a07bc31952099f1e237241d1f9a0d7b447641dc403e4ed45a34679ab63f2 done
+#6 exporting config sha256:304676374e4fe459b75c206cc40b5b48085860a523b51f580d509255bb8412c1 done
+#6 exporting attestation manifest sha256:1e00d03c2b4baf6af32a3a7e0847763794e17b8362130d850c0be7f7b8ae0fc6
+#6 exporting attestation manifest sha256:1e00d03c2b4baf6af32a3a7e0847763794e17b8362130d850c0be7f7b8ae0fc6 0.0s done
+#6 exporting manifest list sha256:810d30b8438c3e2ead0c55ca62cf98c5b9d2326955ee23a1bdc31b5b0a80c9bf 0.0s done
+#6 naming to docker.io/library/nanoclick-qa:ubuntu24.04 done
+#6 unpacking to docker.io/library/nanoclick-qa:ubuntu24.04 0.0s done
+#6 DONE 0.1s
+PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input
+PASS GUI: Start remains visible at 420x520 logical units, scale 1
+PASS GUI: manual Start delays input for preparation and then sends pairs to the target
+PASS GUI: clean window shutdown
+PASS GUI close: preparing; clean exit, no held pair and no post-exit input
+PASS GUI close: running; clean exit, no held pair and no post-exit input
+PASS GUI close: stop-request-race; clean exit, no held pair and no post-exit input
+finite_terminal,left,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":191,"lateness_p95_ns":191,"lateness_p99_ns":191,"max_lateness_ns":191,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: left, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,left,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":200000,"lateness_p95_ns":342475,"lateness_p99_ns":342475,"max_lateness_ns":342475,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: left, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":241,"lateness_p95_ns":241,"lateness_p99_ns":241,"max_lateness_ns":241,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: right, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":295967,"lateness_p99_ns":295967,"max_lateness_ns":295967,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: right, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":160,"lateness_p95_ns":160,"lateness_p99_ns":160,"max_lateness_ns":160,"reason":"completed","renderer":"glow","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: middle, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":200000,"lateness_p95_ns":314320,"lateness_p99_ns":314320,"max_lateness_ns":314320,"reason":"completed","renderer":"glow","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: middle, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+PASS GUI preferences: explicit Save, unsaved edit discarded, saved interval restored, no automatic Start; captured median interval 37 ms
