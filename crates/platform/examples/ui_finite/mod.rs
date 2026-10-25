@@ -96,7 +96,9 @@ pub fn run(
             click(conn, window, 180.0, 206.0 + index as f64 * 36.0)?;
         }
         click(conn, window, 40.0, 283.0)?;
-        for (run, count) in [1usize, 7].into_iter().enumerate() {
+        for (run, count) in [1usize, 7, 1000].into_iter().enumerate() {
+            let interval = if count == 1000 { "1" } else { "25" };
+            edit(conn, window, 145.0, 134.0, interval)?;
             edit(conn, window, 145.0, 283.0, &count.to_string())?;
             if !ready_button(conn, window) {
                 return Err("Finite plan was not ready after editing".into());
@@ -115,7 +117,7 @@ pub fn run(
                         && ready_button(conn, window)
                         && records(&path)?.len() == run + 1)
                 },
-                Duration::from_secs(4),
+                Duration::from_secs(if count == 1000 { 15 } else { 4 }),
             )
             .map_err(|error| {
                 format!("Finite {name} N={count} did not complete: {error}; events={events:?}")

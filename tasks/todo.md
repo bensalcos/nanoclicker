@@ -77,7 +77,7 @@ Follow-up: owned Xvfb launcher/authentication checks and adoption by local wrapp
 
 ### T10 — Complete buttons and repetition [M]
 
-Partial GUI evidence: actual form editing now verifies left/right/middle N=1 and N=7 at 100/150/200% private-X11 scaling, exact captured pairs, Completed, fresh run IDs/counters, unlocked editing and a 250 ms quiet window. See `docs/evidence/ui-finite-counts.md`. Large counts, restart during Stopping and native Windows/Wayland remain open.
+Partial GUI evidence: actual form editing now verifies left/right/middle N=1 and N=7 at 100/150/200% private-X11 scaling, exact captured pairs, Completed, fresh run IDs/counters, unlocked editing and a 250 ms quiet window. See `docs/evidence/ui-finite-counts.md`. An additional 100%-scale run now verifies N=1000 for all three buttons at a requested 1 ms interval, with exact complete pairs. Deterministic tests also cover queued restart during Stopping; native Windows/Wayland and native rapid-sequence acceptance remain open.
 
 - [ ] Three buttons, infinite mode and N validated through the UI; snapshots show count and stop reason.
 - [ ] Automatic completion unlocks controls; active editing is disabled and rapid restart does not reuse previous state.

@@ -107,3 +107,9 @@ Run [40146929746](https://github.com/bensalcos/nanoclicker/actions/runs/40146929
 The Windows preview from this same checkout is now downloaded in `dist/preview-windows-88bd9b4/`, artifact 12581028582, and passes the independent verifier. Application ZIP: 3,538,514 bytes, SHA-256 `c5e1c5abfd15cb257b3d3ac53f943d9c4d870d88469b4318e7a675205a4b4504`. Separate PDB ZIP: 8,313,413 bytes, SHA-256 `0006ea0cd32764236f032a0e6631dc40e3aa1e8d637de006442171eb2de3fee2`. Input executable SHA-256: `580e7ad542b55dcaccef9cf57aac0ac3b173c069b27654c0245b2ad473f05a8a`. Metadata is clean and reports zero unresolved notices. [Verifier output](windows-preview-88bd9b4-verification.json); the combined provenance record above now points to this preview. The preceding 9051e65 record remains historical evidence.
 
 Linux and Windows previews now share checkout 88bd9b4. The hosted GUI/input capture remains Linux/Xvfb; native Windows desktop execution and all other release gates remain separate.
+
+## Shortcut delivery fix previews
+
+Producer source `42abf7dac1f9b7ddb728b940fad2c543f516ba38` passes all four hosted jobs in run 40177331385. Linux output `dist/preview-shortcut-queue/` includes the shortcut queue/Stop-priority fix; its input executable is `ce31f3f2ebd14ed3c97534d99aca3aec341ba84c8189870d3b592f6705e64ced`. Both archive hashes verify, notices have no unresolved entries, and extracted CLI help runs. The matching unstripped release passes the expanded product GUI checks. This preview has not repeated the restricted-container GUI or full performance protocol.
+
+The matching Windows preview is independently downloaded into `dist/preview-windows-42abf7d/` and passes the existing archive verifier. [Verifier output](windows-preview-42abf7d-verification.json). It is not native Windows desktop acceptance. [Archive sizes, hashes and scope](preview-shortcut-queue.json). The earlier 88bd9b4 previews remain historical artifacts; these directories contain the shortcut fix.

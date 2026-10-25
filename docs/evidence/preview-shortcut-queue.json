@@ -1,0 +1,38 @@
+{
+  "producer_commit": "42abf7dac1f9b7ddb728b940fad2c543f516ba38",
+  "linux": {
+    "directory": "dist/preview-shortcut-queue",
+    "input_binary_sha256": "ce31f3f2ebd14ed3c97534d99aca3aec341ba84c8189870d3b592f6705e64ced",
+    "scope": "Archive checksums, no unresolved notices and extracted help verified; matching unstripped release GUI passed. No new clean-container or full performance acceptance.",
+    "archives": [
+      {
+        "file": "nanoclick-0.1.0-linux-x86_64-preview-symbols.tar.gz",
+        "bytes": 19378271,
+        "sha256": "0893923708ebe0325a3d89a6d2aaba1b12bcaf5d23ced50c2d1e0781eaae5185"
+      },
+      {
+        "file": "nanoclick-0.1.0-linux-x86_64-preview.tar.gz",
+        "bytes": 6168289,
+        "sha256": "ae5fb12d7201de369beca8dbe5897b74a7de946be8ead76a38f7aadb14bd1c2f"
+      }
+    ]
+  },
+  "windows": {
+    "directory": "dist/preview-windows-42abf7d",
+    "source_run": 40177331385,
+    "scope": "Independent archive checksums/provenance/PE/PDB structure; no native desktop execution or PDB debug-identity match.",
+    "archives": [
+      {
+        "file": "nanoclick-0.1.0-windows-x86_64-preview-symbols.zip",
+        "bytes": 8303886,
+        "sha256": "bdf08b446caa87475d83b21b993e298d4e85b971178d6cb02aff47d207cbf5a7"
+      },
+      {
+        "file": "nanoclick-0.1.0-windows-x86_64-preview.zip",
+        "bytes": 3541090,
+        "sha256": "3855a72efcaa34cbe6160f00ed0f2f2ccca7f05ced572c432c46cf3e5eb9cf1f"
+      }
+    ]
+  },
+  "accepted_release": false
+}

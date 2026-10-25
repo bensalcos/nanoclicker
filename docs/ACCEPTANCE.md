@@ -19,7 +19,7 @@ The [validation contract](VALIDATION.md) defines unchanged numeric budgets and c
 
 ## Current next actions
 
-1. Confirm the batched-shortcut delivery fix in hosted CI. All four jobs pass at source `360a108` (run 40176196682); downloaded logs confirm the observer fixes and passive target. The later product fix passes three focused regressions, the 63-test local suite and the existing release GUI flow; see [shortcut evidence](evidence/shortcut-queue.md).
+1. The shortcut product fix is confirmed by all-green hosted run 40177331385 at 42abf7d. The subsequent existing-fixture expansion verifies N=1000 per button locally at 100%; its hosted confirmation remains pending. This test-only change does not modify the producer. See [shortcut evidence](evidence/shortcut-queue.md) and [finite-count evidence](evidence/ui-finite-counts.md).
 2. Run the [native QA protocol](NATIVE_QA.md) on an available real desktop. Windows 11 and GNOME/KDE results cannot be supplied by Xvfb, D-Bus mocks or Windows Server unit tests.
 3. Use those results to close reproducible defects and the renderer/per-backend budget decision. Do not lower budgets or remove functionality to turn missing evidence into acceptance.
 4. Verify final artifacts on the reference installations, then complete migration review and legacy retirement. Until then retain the C++ reference and label bundles as previews.
