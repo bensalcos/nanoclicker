@@ -108,7 +108,7 @@ Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activat
 
 ### T13 — Persist recoverable preferences [M]
 
-Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch now also checks the restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Native Windows/Wayland desktop QA and other preference fields remain pending. See `docs/evidence/ui-preferences.md`.
+Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. The Windows 11 VM now verifies Save/relaunch for theme, interval, button, count and shortcut, unsaved interval discard, and idle startup; default preferences were restored afterward. Invalid-file GUI recovery and native Wayland desktop QA remain pending. See `docs/evidence/ui-preferences.md`.
 - [x] Theme, plan and requested shortcut in a versioned schema, without active state or automatic resumption.
 - [ ] Safe writing/replacement on each OS, invalid-file recovery and standard directories.
 
