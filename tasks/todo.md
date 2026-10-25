@@ -69,12 +69,14 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 ### T09 — Automate platform checks [S]
 
 Accepted CI evidence: run 40092934864 at acc817c passed all four jobs; follow-up run 40121663794 at e244efd also passes all jobs and the expanded GUI/portal cases. Downloaded X11 logs and Windows preview archives were inspected. Native GUI/input/reader gates remain separate. See `docs/evidence/ci.md`.
+Follow-up: owned Xvfb launcher/authentication checks and adoption by local wrappers/CI fix the reproduced concurrent display-number selection race. Two real fixture tests and concurrent full GUI checks pass locally; hosted validation of the launcher is pending. See `docs/evidence/x11-owned-display.md`.
 - [x] Windows/Linux CI with fmt, Clippy, tests, release build and valid features.
 - [x] Failure artifacts and isolated X11 integration; distinguish these checks from native QA.
 
 **Dependencies:** T08. **Verification:** successful hosted runs and logs; local YAML is not accepted CI evidence. **Files:** `.github/workflows/`, scripts if needed.
 
 ### T10 — Complete buttons and repetition [M]
+
 - [ ] Three buttons, infinite mode and N validated through the UI; snapshots show count and stop reason.
 - [ ] Automatic completion unlocks controls; active editing is disabled and rapid restart does not reuse previous state.
 
