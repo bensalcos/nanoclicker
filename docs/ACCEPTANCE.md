@@ -19,7 +19,7 @@ The [validation contract](VALIDATION.md) defines unchanged numeric budgets and c
 
 ## Current next actions
 
-1. Confirm the narrow ESRCH observer fix in hosted CI. Source `d7230ce` passed Windows/renderer/MSRV and the Linux product GUI, capture target and startup checks, then failed on a disappearing `/proc` thread. Earlier source `88bd9b4` passed all four jobs. Both observer follow-ups are recorded in [fixture evidence](evidence/x11-owned-display.md).
+1. Confirm the batched-shortcut delivery fix in hosted CI. All four jobs pass at source `360a108` (run 40176196682); downloaded logs confirm the observer fixes and passive target. The later product fix passes three focused regressions, the 63-test local suite and the existing release GUI flow; see [shortcut evidence](evidence/shortcut-queue.md).
 2. Run the [native QA protocol](NATIVE_QA.md) on an available real desktop. Windows 11 and GNOME/KDE results cannot be supplied by Xvfb, D-Bus mocks or Windows Server unit tests.
 3. Use those results to close reproducible defects and the renderer/per-backend budget decision. Do not lower budgets or remove functionality to turn missing evidence into acceptance.
 4. Verify final artifacts on the reference installations, then complete migration review and legacy retirement. Until then retain the C++ reference and label bundles as previews.

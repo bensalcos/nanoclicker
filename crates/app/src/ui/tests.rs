@@ -25,6 +25,77 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
         theme: egui::ThemePreference::Dark,
     })
 }
+
+#[test]
+fn shortcut_restart_waits_for_stop_acknowledgement() -> Result<(), Box<dyn std::error::Error>> {
+    use std::{
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        },
+        thread,
+        time::{Duration, Instant},
+    };
+    struct Release(mpsc::SyncSender<()>);
+    impl Drop for Release {
+        fn drop(&mut self) {
+            let _ = self.0.try_send(());
+        }
+    }
+    let ctx = egui::Context::default();
+    let mut app = fixture(&ctx)?;
+    let (entered, ready) = mpsc::sync_channel(1);
+    let (permit, blocked) = mpsc::sync_channel(1);
+    let first = AtomicBool::new(true);
+    app.control = Controller::new(Engine::new(
+        move |_| {
+            if first.swap(false, Ordering::AcqRel) {
+                entered
+                    .send(())
+                    .map_err(|error| BackendError::new(error.to_string()))?;
+                blocked
+                    .recv()
+                    .map_err(|error| BackendError::new(error.to_string()))?;
+            }
+            Ok(NoInput)
+        },
+        || {},
+    )?);
+    // Release before the engine is dropped, including assertion/error unwinding.
+    let release = Release(permit);
+    app.control.toggle(false);
+    ready.recv_timeout(Duration::from_secs(1))?;
+    app.control.stop();
+    app.shortcut.activation()();
+    app.process_shortcuts(&ctx);
+    let retained = app.shortcut.has_pending();
+    release.0.send(())?;
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while app.control.engine.snapshot().state.is_active() && Instant::now() < deadline {
+        thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        retained,
+        "Restart must remain queued while cleanup is blocked"
+    );
+    assert!(!app.control.engine.snapshot().state.is_active());
+    app.process_shortcuts(&ctx);
+    assert_eq!(app.control.engine.snapshot().run_id, 2);
+    assert!(!app.shortcut.has_pending());
+    Ok(())
+}
+
+#[test]
+fn explicit_stop_discards_pending_shortcut_starts() -> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    let mut app = fixture(&ctx)?;
+    app.shortcut.activation()();
+    app.stop();
+    app.process_shortcuts(&ctx);
+    assert_eq!(app.control.engine.snapshot().run_id, 0);
+    assert!(!app.shortcut.has_pending());
+    Ok(())
+}
 fn frame(app: &mut NanoClick, ctx: &egui::Context, events: Vec<egui::Event>) -> egui::FullOutput {
     let mut output = ctx.run_ui(
         egui::RawInput {

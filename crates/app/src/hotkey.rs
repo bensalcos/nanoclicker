@@ -52,7 +52,7 @@ impl Shortcut {
             events: Arc::new(AtomicUsize::new(0)),
         }
     }
-    fn activation(&self) -> impl Fn() + Send + Sync + 'static + use<> {
+    pub(crate) fn activation(&self) -> impl Fn() + Send + Sync + 'static + use<> {
         let events = self.events.clone();
         let ctx = self.ctx.clone();
         move || {
@@ -172,6 +172,42 @@ impl Shortcut {
         }
     }
     pub fn take_toggle(&self) -> bool {
-        self.events.swap(0, Ordering::AcqRel) % 2 == 1
+        self.events
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |pending| {
+                pending.checked_sub(1)
+            })
+            .is_ok()
+    }
+    pub fn has_pending(&self) -> bool {
+        self.events.load(Ordering::Acquire) != 0
+    }
+    pub fn clear_pending(&self) {
+        self.events.store(0, Ordering::Release);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn two_queued_shortcut_presses_are_delivered_once_each() {
+        let ctx = egui::Context::default();
+        let shortcut = Shortcut::unregistered(Desktop::X11, &ctx, "F6".into());
+        let activate = shortcut.activation();
+        activate();
+        activate();
+        assert!(
+            shortcut.take_toggle(),
+            "The first activation must survive a batch"
+        );
+        assert!(
+            shortcut.take_toggle(),
+            "The second activation must remain queued"
+        );
+        assert!(
+            !shortcut.take_toggle(),
+            "A consumed activation must not be replayed"
+        );
     }
 }

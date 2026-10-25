@@ -86,6 +86,8 @@ Partial GUI evidence: actual form editing now verifies left/right/middle N=1 and
 
 ### T11 — Integrate Windows/X11 shortcuts [M]
 
+A reproduced frontend parity bug is fixed: queued activations are delivered individually, restart waits for Stop acknowledgement, and explicit Stop/Close supersedes older pending requests. Three deterministic regressions and the existing actual X11 GUI suite pass. Native burst/layout acceptance remains open; see `docs/evidence/shortcut-queue.md`.
+
 Additional X11 evidence: pointer-only map changes preserve the binding, actual keyboard-map changes invalidate it, and unchanged XKB master-device transitions retain it. Native layout/group and Windows/Wayland acceptance remain open. See `docs/evidence/x11-shortcut-mapping.md`.
 - [ ] Default F6 and rebinding without losing a valid binding on conflict; one press produces one transition.
 - [ ] The English UI shows the effective shortcut and allows outside-focus Stop.

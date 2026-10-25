@@ -1,0 +1,11 @@
+   Compiling nanoclick v0.1.0 (/home/bensalcos/Git/nanoclicker/crates/app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.98s
+     Running unittests src/main.rs (target/debug/deps/nanoclick-a0f1b05cde2d5750)
+
+running 3 tests
+test hotkey::tests::two_queued_shortcut_presses_are_delivered_once_each ... ok
+test ui::tests::explicit_stop_discards_pending_shortcut_starts ... ok
+test ui::tests::shortcut_restart_waits_for_stop_acknowledgement ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.00s
+

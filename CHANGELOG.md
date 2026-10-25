@@ -13,6 +13,8 @@
 
 ### Fixed
 
+- Batched shortcut presses no longer cancel each other out; queued restarts wait for Stop acknowledgement, and explicit Stop/Close clears older requests.
+
 - Windows preference-directory replacement and cancellation-event reuse between runs.
 - X11 shortcut invalidation after pointer-only mapping changes and handling of real keyboard-map changes.
 - Unbounded X11 protocol waits and caller waits during connection/authentication setup; blocked OS work is contained by a fixed helper limit.

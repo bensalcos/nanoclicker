@@ -119,21 +119,19 @@ impl NanoClick {
 }
 impl eframe::App for NanoClick {
     fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        if ctx.input(|input| {
+            input.key_pressed(egui::Key::Escape) || input.viewport().close_requested()
+        }) {
+            self.stop();
+            return;
+        }
         if let Ok(result) = self.probe.try_recv() {
             self.available = Some(result);
         }
-        if self.shortcut.take_toggle() && matches!(self.available, Some(Ok(()))) {
-            self.control.toggle(false);
-        }
+        self.process_shortcuts(ctx);
         self.shortcut.refresh();
         if self.control.engine.snapshot().ready_at.is_some() {
             ctx.request_repaint_after(Duration::from_millis(100));
-        }
-        if ctx.input(|input| input.key_pressed(egui::Key::Escape)) {
-            self.control.stop();
-        }
-        if ctx.input(|input| input.viewport().close_requested()) {
-            self.control.stop();
         }
     }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
@@ -141,6 +139,27 @@ impl eframe::App for NanoClick {
     }
 }
 impl NanoClick {
+    fn process_shortcuts(&mut self, ctx: &egui::Context) {
+        if !matches!(self.available, Some(Ok(()))) {
+            return;
+        }
+        let state = self.control.engine.snapshot().state;
+        // Keep a later Start queued until the preceding Stop is acknowledged.
+        // The engine's terminal wake resumes handling; never poll while stopping.
+        if state == RunState::Stopping {
+            return;
+        }
+        if self.shortcut.take_toggle() {
+            self.control.toggle(false);
+        }
+        if self.shortcut.has_pending() {
+            ctx.request_repaint();
+        }
+    }
+    fn stop(&mut self) {
+        self.shortcut.clear_pending();
+        self.control.stop();
+    }
     fn show(&mut self, ui: &mut egui::Ui) {
         self.show_snapshot(ui, &self.control.engine.snapshot());
     }
@@ -258,6 +277,7 @@ impl NanoClick {
                     )
                     .clicked()
                 {
+                    self.shortcut.clear_pending();
                     self.control.toggle(true);
                 }
             });
