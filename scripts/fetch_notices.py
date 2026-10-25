@@ -11,7 +11,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / 'assets' / 'third-party'
-NAMES = {'accesskit', 'accesskit_atspi_common', 'accesskit_consumer', 'accesskit_unix', 'accesskit_winit', 'accesskit_windows', 'ecolor', 'eframe', 'egui', 'egui-wgpu', 'egui-winit', 'egui_glow', 'emath', 'epaint', 'epaint_default_fonts', 'gl_generator', 'khronos_api', 'profiling'}
+NAMES = {'accesskit', 'accesskit_atspi_common', 'accesskit_consumer', 'accesskit_unix', 'accesskit_winit', 'accesskit_windows', 'ecolor', 'eframe', 'egui', 'egui-wgpu', 'egui-winit', 'egui_glow', 'emath', 'epaint', 'epaint_default_fonts', 'gl_generator', 'khronos_api', 'profiling', 'spirv'}
 
 def main():
     metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version', '1'], cwd=ROOT))

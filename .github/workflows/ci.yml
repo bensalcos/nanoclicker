@@ -54,12 +54,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           @{commit=$env:GITHUB_SHA;sha256=(Get-FileHash dist/ci-windows/qa/input_capture.exe -Algorithm SHA256).Hash;scope='Passive QA target; use notices and license from the accompanying preview ZIP'} | ConvertTo-Json | Set-Content dist/ci-windows/qa/build.json
       - name: Preserve Windows preview and separate symbols
-        if: runner.os == 'Windows'
+        if: always() && runner.os == 'Windows'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-preview
           path: dist/ci-windows/
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 14
       - name: Isolated X11 events and shortcuts
         if: runner.os == 'Linux'
