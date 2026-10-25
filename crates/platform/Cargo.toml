@@ -51,3 +51,7 @@ required-features = ["x11-tests"]
 [[example]]
 name = "x11_stall"
 required-features = ["x11-tests"]
+
+[[example]]
+name = "capture_window"
+required-features = ["x11-tests"]

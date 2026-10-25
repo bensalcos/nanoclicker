@@ -48,7 +48,7 @@ scripts/verify-ui-x11.sh target/debug/nanoclick 2
 scripts/verify-portal.sh
 ```
 
-The local X11 scripts require Python 3, Xvfb and Linux /proc. Their shared launcher obtains a new display through Xvfb's descriptor, verifies ownership of both socket transports and supplies a private authentication cookie. It never selects a display by a free-number guess. The input script captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size, shutdown, finite N=1/7 plans for all three buttons, and explicit Save/relaunch without automatic Start. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
+The local X11 scripts require Python 3.11+, Xvfb and Linux /proc. Their shared launcher obtains a new display through Xvfb's descriptor, verifies ownership of both socket transports and supplies a private authentication cookie. It never selects a display by a free-number guess. The input script captures the three mouse buttons, and checks shortcut activation, held-key suppression and conflicts. It never sends test input to the user's desktop. The UI script also starts the actual executable and verifies outside-focus shortcuts, manual preparation, input cessation, the 420×520 logical minimum size, shutdown, finite N=1/7 plans for all three buttons, and explicit Save/relaunch without automatic Start. Its optional second argument selects 100%, 150% or 200% X11 scaling (`1`, `1.5`, `2`).
 
 The stalled-server script uses the same owned-display helper and pauses only its own Xvfb, covering protocol deadlines, cancellation and registration shutdown. It also creates its own authority FIFO to verify setup cancellation/timeout without touching personal authentication files. See [failure-test scope](docs/evidence/x11-stalled-server.md).
 
@@ -73,3 +73,5 @@ The screenshot feature is for verification, not release packaging.
 - [Accessibility checks](docs/evidence/ui-accessibility.md), [scaling captures](docs/evidence/ui-scaling.md) and [current release performance](docs/evidence/ui-polish-performance.md)
 
 The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice attributes the project to bensalcos (2026). Platform acceptance and the dependency maintenance warnings remain separate release checks.
+
+Native desktop validation can use the passive capture target described in [Native QA](docs/NATIVE_QA.md). It receives window events without injecting input.

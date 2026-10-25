@@ -20,7 +20,7 @@ Partial evidence: matched-source release glow/wgpu runs on software X11 recorded
 
 ### T03 — Test Windows/X11 input and waiting [M]
 
-Implementation: Windows high-resolution timer and per-run cancellation event compile; Linux condition-variable and X11 tests pass. Native Windows timing remains pending. See `docs/evidence/native-waiter.md`.
+Implementation: Windows high-resolution timer and per-run cancellation event compile; Linux condition-variable and X11 tests pass. Native Windows timing remains pending. The passive native capture target and manual protocol are prepared; nine unit tests and an actual private-X11 target check pass, while real Windows/Wayland capture runs and a downloadable Windows target bundle remain pending. See `docs/NATIVE_QA.md`, `docs/evidence/input-capture.md` and `docs/evidence/native-waiter.md`.
 - [ ] Inject pairs into an isolated capture fixture, detect errors and release the button after partial failure; test shortcut registration/conflicts.
 - [ ] Select cancelable native waiting and check Stop during a long interval without busy waiting.
 

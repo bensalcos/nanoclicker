@@ -24,3 +24,6 @@ workspace = true
 default = ["glow"]
 glow = ["eframe/glow"]
 wgpu = ["eframe/wgpu"]
+
+[dev-dependencies]
+raw-window-handle = "0.6.2"

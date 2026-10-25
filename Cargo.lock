@@ -1729,6 +1729,7 @@ dependencies = [
  "global-hotkey",
  "nanoclick-core",
  "nanoclick-platform",
+ "raw-window-handle",
  "serde",
  "serde_json",
  "tempfile",

@@ -1,0 +1,17 @@
+   Compiling nanoclick v0.1.0 (/home/bensalcos/Git/nanoclicker/crates/app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.61s
+     Running unittests examples/input_capture.rs (target/debug/examples/input_capture-79511af76600bcf5)
+
+running 9 tests
+test session::tests::counter_overflow_is_visible ... ok
+test session::tests::counts_only_armed_events_and_distinguishes_buttons ... ok
+test session::tests::duplicate_press_and_unmatched_release_are_reported ... ok
+test session::tests::extra_buttons_remain_distinct_from_supported_buttons ... ok
+test session::tests::held_button_prevents_arming ... ok
+test session::tests::output_failure_is_returned ... ok
+test session::tests::overlapping_different_buttons_are_not_balanced ... ok
+test session::tests::stop_preserves_unreleased_state_and_next_session_starts_fresh ... ok
+test session::tests::output_never_overwrites_and_has_private_unix_permissions ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
