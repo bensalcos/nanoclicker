@@ -2,7 +2,7 @@
 
 Updated: 2026-10-24.
 
-Windows lab decision (2026-10-25): use the user's existing Windows 11 QEMU/KVM lab from `~/Git/ModelO_1-0-9` as the primary functional/GUI test environment, with an isolated NanoClick working overlay and unchanged physical-device boundaries. CI is complementary. No VM test has been executed for NanoClick yet. See [resume handoff](RESUME.md) and project `AGENTS.md`; the migration goal remains paused at this handoff.
+Windows lab decision (2026-10-25): use the user's existing Windows 11 QEMU/KVM lab from `~/Git/ModelO_1-0-9` as the primary functional/GUI test environment, with an isolated NanoClick working overlay and unchanged physical-device boundaries. CI is complementary. The isolated NanoClick VM has now executed the preview: even `--help` exits with `0xC0000135` because `VCRUNTIME140.dll` is absent. The preview imports that DLL. Static CRT linkage and an import-table packaging check are being added; a rebuilt artifact still needs guest verification. See [resume handoff](RESUME.md) and project `AGENTS.md`; the migration goal has resumed.
 
 - **Plan:** architecture, UI specification, phases and backlog are documented. T01 is complete with the unavailable C++ Windows baseline explicitly pending. Platform milestones remain open.
 - **Language:** the new application uses English throughout.

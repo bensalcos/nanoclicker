@@ -8,6 +8,7 @@ import tempfile
 import zipfile
 
 from package import verify_binary
+from windows_imports import verify_portable_runtime
 
 
 def verify(directory: Path, commit: str) -> dict:
@@ -38,6 +39,7 @@ def verify(directory: Path, commit: str) -> dict:
                 or build["packaging_commit"] != commit or build["unresolved_dependency_notices"]):
             raise ValueError("Unexpected build provenance or unresolved dependency notices.")
         binary = archive.read(root + "nanoclick.exe")
+        verify_portable_runtime(binary)
         if hashlib.sha256(binary).hexdigest() != build["input_binary_sha256"]:
             raise ValueError("Packaged executable differs from the build input.")
         with tempfile.TemporaryDirectory() as temporary:

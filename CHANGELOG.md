@@ -13,6 +13,8 @@
 
 ### Fixed
 
+- Windows builds select the static C runtime to avoid requiring a separately installed Visual C++ redistributable; rebuilt VM validation remains pending.
+
 - Batched shortcut presses no longer cancel each other out; queued restarts wait for Stop acknowledgement, and explicit Stop/Close clears older requests.
 
 - Windows preference-directory replacement and cancellation-event reuse between runs.
