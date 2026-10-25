@@ -1,6 +1,7 @@
 //! Event-driven X11 shortcut listener with a shutdown pipe, without polling.
+use crate::x11_stream::{self, X11Connection};
 use global_hotkey::hotkey::{HotKey, Modifiers};
-use nanoclick_core::BackendError;
+use nanoclick_core::{BackendError, Cancellation};
 use rustix::event::{PollFd, PollFlags, poll};
 use std::{
     io::{Read, Write},
@@ -18,6 +19,7 @@ use x11rb::{
 
 pub struct X11Shortcut {
     shutdown: UnixStream,
+    cancel: Cancellation,
     worker: Option<JoinHandle<()>>,
 }
 fn error(error: impl std::fmt::Display) -> BackendError {
@@ -29,9 +31,7 @@ struct KeyboardMapping {
     keysyms: Vec<u32>,
     modifiers: Vec<u8>,
 }
-fn keyboard_mapping(
-    conn: &x11rb::rust_connection::RustConnection,
-) -> Result<KeyboardMapping, BackendError> {
+fn keyboard_mapping(conn: &X11Connection) -> Result<KeyboardMapping, BackendError> {
     let first = conn.setup().min_keycode;
     let count = conn.setup().max_keycode - first + 1;
     let symbols = conn
@@ -60,11 +60,13 @@ impl X11Shortcut {
     ) -> Result<Self, BackendError> {
         let (shutdown, mut interrupted) = UnixStream::pair().map_err(error)?;
         let (ready, response) = mpsc::sync_channel(1);
+        let cancel = Cancellation::default();
+        let listener_cancel = cancel.clone();
         let worker = std::thread::Builder::new()
             .name("nanoclick-x11-shortcut".into())
             .spawn(move || {
                 let setup = (|| {
-                    let (conn, screen) = x11rb::connect(None).map_err(error)?;
+                    let (conn, screen) = x11_stream::connect(&listener_cancel).map_err(error)?;
                     let root = conn.setup().roots[screen].root;
                     let symbol = keysym(hotkey)?;
                     xkb::ConnectionExt::xkb_use_extension(&conn, 1, 0)
@@ -172,6 +174,7 @@ impl X11Shortcut {
                 let result = (|| -> Result<(), BackendError> {
                     let mut held = false;
                     loop {
+                        conn.stream().begin_request();
                         while let Some(event) = conn.poll_for_event().map_err(error)? {
                             match event {
                                 Event::KeyPress(event) if event.detail == keycode && !held => {
@@ -233,7 +236,9 @@ impl X11Shortcut {
                         }
                     }
                 })();
-                if let Err(error) = result {
+                if let Err(error) = result
+                    && !listener_cancel.is_cancelled()
+                {
                     failed(error.to_string());
                 }
             })
@@ -241,6 +246,7 @@ impl X11Shortcut {
         match response.recv_timeout(std::time::Duration::from_secs(3)) {
             Ok(Ok(())) => Ok(Self {
                 shutdown,
+                cancel,
                 worker: Some(worker),
             }),
             Ok(Err(error)) => {
@@ -248,6 +254,7 @@ impl X11Shortcut {
                 Err(error)
             }
             Err(error) => {
+                cancel.fail(BackendError::new("Shortcut registration cancelled."));
                 let _ = shutdown.shutdown(std::net::Shutdown::Both);
                 let _ = worker.join();
                 Err(BackendError::new(format!(
@@ -259,6 +266,8 @@ impl X11Shortcut {
 }
 impl Drop for X11Shortcut {
     fn drop(&mut self) {
+        self.cancel
+            .fail(BackendError::new("Shortcut listener stopped."));
         let _ = self.shutdown.write_all(&[1]);
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();

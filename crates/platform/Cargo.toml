@@ -47,3 +47,7 @@ required-features = ["x11-tests"]
 [[example]]
 name = "ui_performance"
 required-features = ["x11-tests"]
+
+[[example]]
+name = "x11_stall"
+required-features = ["x11-tests"]

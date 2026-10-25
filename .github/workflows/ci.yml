@@ -60,6 +60,13 @@ jobs:
           mkdir -p artifacts
           scripts/verify-x11.sh 2>&1 | tee artifacts/x11.log
           NANOCLICK_UI_STRESS_CYCLES=20 scripts/verify-ui-x11.sh target/release/nanoclick 2>&1 | tee artifacts/ui-x11.log
+      - name: Isolated X11 stalled-server cancellation
+        if: runner.os == 'Linux'
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          cargo clippy -p nanoclick-platform --example x11_stall --features x11-tests --locked -- -D warnings
+          python3 scripts/verify-x11-stall.py 2>&1 | tee artifacts/x11-stall.log
       - name: Isolated portal lifecycle
         if: runner.os == 'Linux'
         shell: bash

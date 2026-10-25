@@ -19,6 +19,8 @@ mod windows_waiter;
 mod x11;
 #[cfg(target_os = "linux")]
 pub mod x11_shortcut;
+#[cfg(target_os = "linux")]
+mod x11_stream;
 
 /// Selected transport; capability probes still verify the actual connection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,7 +59,7 @@ impl Desktop {
             #[cfg(target_os = "windows")]
             Self::Windows => Ok(()),
             #[cfg(target_os = "linux")]
-            Self::X11 => x11::X11Input::open().map(|_| ()),
+            Self::X11 => x11::X11Input::open(&Cancellation::default()).map(|_| ()),
             #[cfg(target_os = "linux")]
             Self::Wayland => wayland::probe(),
             #[allow(unreachable_patterns)]
@@ -86,7 +88,7 @@ impl NativeInput {
             #[cfg(target_os = "windows")]
             Desktop::Windows => Ok(Self::Windows(windows::WindowsInput::open())),
             #[cfg(target_os = "linux")]
-            Desktop::X11 => x11::X11Input::open().map(Box::new).map(Self::X11),
+            Desktop::X11 => x11::X11Input::open(cancel).map(Box::new).map(Self::X11),
             #[cfg(target_os = "linux")]
             Desktop::Wayland => wayland::WaylandInput::open(cancel)
                 .map(Box::new)
