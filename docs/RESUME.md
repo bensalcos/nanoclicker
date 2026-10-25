@@ -1,8 +1,8 @@
 # Resume handoff
 
-## Current state — 2026-10-25
+## Current state — 2026-10-26
 
-The migration goal is active. Branch: `feature/rust-migration-preview`. Last pushed commit is `8bde30f51400e6d4c6de00b894b74051f73d0b03`; latest application change is `23aba0d9d3956629ba08d4c8146a10a424c03160` (Windows WGPU default and shared renderer selection). Static CRT fix is `441e679`. All four jobs pass in run `40232606248`; reuse this result and its downloaded artifacts instead of rebuilding unchanged source.
+The migration goal is active. Branch: `feature/rust-migration-preview`. Last pushed commit is `b8908e7b42b4b4a8f6fbd89c449dda3203ad883a`; latest product change is `23aba0d9d3956629ba08d4c8146a10a424c03160` (Windows WGPU default and shared renderer selection). Commit `b8908e7` instruments the passive QA target. All four jobs pass in run `40236185840`; its Windows preview is downloaded under `dist/preview-windows-b8908e7/` and its QA target was executed in the VM.
 
 Read `AGENTS.md`, `STATUS.md`, `ACCEPTANCE.md` and `evidence/windows-vm-functional.md`. The last file records exact hashes, successful sessions, failed probes and remaining gates. Do not restart completed architecture/core/X11 work or treat the available Windows VM as unavailable.
 
@@ -12,15 +12,15 @@ The source Model O lab was preserved. NanoClick has its own working overlay, UEF
 
 Windows 11 Pro build 26300.9457, two vCPU, 4 GiB RAM, Basic Display Adapter, 1280×800 at 100% were observed. Preview and capture target execute with WGPU; the VC++ redistributable remains absent. No reference-hardware performance acceptance is inferred.
 
-The current app and capture processes remain open in the guest; NanoClick PID 6992 and capture PID 4136 were last observed, with PowerShell minimized and capture Ready. Recheck a screenshot and process state before continuing. The guest data is under `C:\NanoClickLab\FocusRepro1`; diagnostics and capture logs are never overwritten. A low-level Windows trace confirmed injected pairs at (650,350) with both target-under-pointer and foreground PID 4136, while the capture session still recorded zero. See the follow-up section in [Windows functional evidence](evidence/windows-vm-functional.md). This narrows the discrepancy to delivery past the low-level hook or the Winit/egui capture path; it does not yet identify a product defect.
+The NanoClick window and the instrumented passive capture target are open in the guest; the target is Ready, and PowerShell remains behind the app windows. Recheck a screenshot and process state before continuing. The latest guest data is under `C:\NanoClickLab\PointerDiag1`; diagnostics and capture logs use new paths. A matching zero-event failure mode was reproduced: without a known in-window pointer position egui-winit discarded mouse-button events; after moving inside the focused target, a QEMU-tablet click registered and Count=10 produced ten complete left pairs with no anomalies. The exact cursor state of the two original sessions was not recorded. See [Windows functional evidence](evidence/windows-vm-functional.md).
 
-Downloaded preview: `dist/preview-windows-8bde30f/`, including `qa/input_capture.exe` and commit/hash metadata. Read-only media `tools-wgpu-trace.iso` is mounted in the second virtual optical drive, E: during this session. Probe scripts and helper commands are ignored artifacts, not production code. The corrected probe selects the exact preview path, not a recursive first executable (the media also contains a legacy executable).
+Downloaded preview: `dist/preview-windows-b8908e7/`, including the instrumented `qa/input_capture.exe` and commit/hash metadata. Read-only media `tools-wgpu-diag-b8908e7.iso` is mounted in the second virtual optical drive, E: during this session. Probe scripts and helper commands are ignored artifacts, not production code. The corrected probe selects the exact preview path, not a recursive first executable (the media also contains a legacy executable).
 
 Guest input uses QMP only. Absolute coordinates use 0..32767; a center move was verified through the guest Cursor.Position as (640,400). The ignored `guest_pointer.py` is fixed to the observed 1280×800 display: update its mapping if resolution changes. Prefer explicit foreground activation by PID/title, then a fresh in-client pointer move and a visible Recording/reset-counter check before F6. Send commands without a trailing newline and use one explicit Return; inspect guest readiness at focus transitions. Do not assume rapid batched input or a producer counter proves target receipt.
 
 ## Next work
 
-1. Continue isolating zero-event capture sessions against producer runs reporting ten. The temporary hook confirms injected events reach Windows while capture PID 4136 is foreground and under the pointer, yet the GUI counter remains zero. Confirm `CursorMoved` and native `WM_MOUSE*` delivery after focus. Minimize PowerShell before focusing the capture window. Keep all original logs/sessions; do not mark robust native delivery accepted until understood.
+1. Continue Windows QA using the instrumented target. Always focus the capture window, move the guest cursor into its client, and verify the visible position and event counters before the run. A matching zero-event failure was reproduced when egui had no pointer position; the exact state of the original sessions was not recorded. Keep their records and continue the all-button and lifecycle matrix.
 2. Continue Windows QA: N=1/large counts, manual preparation/cancellation, shortcuts/layout/conflicts, preferences/error flows, DPI/NVDA, resource stability and native timing protocols. Use this VM for functional tests and retain physical performance limits separately.
 3. Native GNOME/KDE permission/input/accessibility and the remaining per-backend performance gates remain open. Preserve budgets and the C++ reference until the full matrix is accepted.
 
