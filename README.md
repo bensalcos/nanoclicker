@@ -67,10 +67,11 @@ The screenshot feature is for verification, not release packaging.
 ## Project documentation
 
 - [Current status](docs/STATUS.md)
+- [Changelog](CHANGELOG.md), [acceptance matrix](docs/ACCEPTANCE.md) and [rollback guide](docs/ROLLBACK.md)
 - [Architecture](docs/architecture/RUST.md), [UI specification](docs/UI.md) and [validation budgets](docs/VALIDATION.md)
 - [Migration phases](tasks/plan.md) and [task acceptance criteria](tasks/todo.md)
 - [Implementation evidence](docs/evidence/implementation.md)
-- [Accessibility checks](docs/evidence/ui-accessibility.md), [scaling captures](docs/evidence/ui-scaling.md) and [current release performance](docs/evidence/ui-polish-performance.md)
+- [Accessibility checks](docs/evidence/ui-accessibility.md), [scaling captures](docs/evidence/ui-scaling.md) and [software-rendered UI measurements](docs/evidence/ui-polish-performance.md)
 
 The C++/Win32 sources remain as the migration reference at commit `3fd5cd8`. They use C++20 and Visual Studio toolset v145 through `Autoclicker.slnx`; they will be removed only after platform acceptance. The MIT notice attributes the project to bensalcos (2026). Platform acceptance and the dependency maintenance warnings remain separate release checks.
 

@@ -149,6 +149,8 @@ Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archiv
 **Dependencies:** T16. **Verification:** execute the final artifact, not only `cargo run`; record the audit and resources used. **Files:** packaging scripts, artifact workflow, documentation.
 
 ### T18 — Close the migration and update documentation [M]
+
+Prepared documentation: README, `CHANGELOG.md`, `docs/ACCEPTANCE.md` and `docs/ROLLBACK.md` now describe the implemented preview, evidence boundaries and preserved C++ reference. Final acceptance and legacy retirement remain gated by the native/performance matrix; no checkbox is narrowed to documentation alone.
 - [ ] Rust README with build, usage, permissions and actual limitations; changelog and final evidence matrix.
 - [ ] Remove C++/Visual Studio in a separate change after acceptance; preserve a historical reference and review MIT/icon ownership before distribution.
 
