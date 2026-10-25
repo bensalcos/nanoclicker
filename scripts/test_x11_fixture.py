@@ -5,25 +5,79 @@ import socket
 import struct
 import threading
 import unittest
+from unittest import mock
 
-from x11_fixture import OwnedX11
+import x11_fixture
+
+from x11_fixture import OwnedX11, STARTUP_TIMEOUT
 
 
 class OwnedDisplayTests(unittest.TestCase):
+    def test_empty_readiness_observation_keeps_waiting_for_same_server(self):
+        selector_type = x11_fixture.selectors.DefaultSelector
+
+        class EmptyFirstObservation:
+            def __init__(self):
+                self.selector = selector_type()
+                self.first = True
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return self.selector.__exit__(*args)
+
+            def register(self, *args):
+                return self.selector.register(*args)
+
+            def select(self, timeout):
+                if self.first:
+                    self.first = False
+                    return []
+                return self.selector.select(timeout)
+
+        with mock.patch.object(x11_fixture.selectors, "DefaultSelector", EmptyFirstObservation):
+            with OwnedX11("640x480x24") as fixture:
+                self.assertIsNone(fixture.process.poll())
+
+    def test_startup_failure_retains_server_diagnostics(self):
+        popen = x11_fixture.subprocess.Popen
+
+        def invalid_server(arguments, **kwargs):
+            return popen([*arguments, "-nanoclick-invalid-fixture-option"], **kwargs)
+
+        with mock.patch.object(x11_fixture.subprocess, "Popen", invalid_server):
+            with self.assertRaisesRegex(RuntimeError, "nanoclick-invalid-fixture-option"):
+                with OwnedX11("640x480x24"):
+                    self.fail("The invalid Xvfb invocation must not become usable")
+
     def test_concurrent_servers_have_distinct_verified_displays(self):
-        barrier = threading.Barrier(2, timeout=5)
+        barrier = threading.Barrier(2, timeout=STARTUP_TIMEOUT + 5)
 
         def own():
-            with OwnedX11("640x480x24") as fixture:
-                process = fixture.process
-                barrier.wait()
-                self.assertIsNone(process.poll())
-                identity = fixture.display, process.pid
-            self.assertIsNotNone(process.poll())
-            return identity
+            try:
+                with OwnedX11("640x480x24") as fixture:
+                    process = fixture.process
+                    barrier.wait()
+                    self.assertIsNone(process.poll())
+                    identity = fixture.display, process.pid
+                self.assertIsNotNone(process.poll())
+                return identity
+            except BaseException:
+                barrier.abort()
+                raise
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            first, second = list(executor.map(lambda _: own(), range(2)))
+            futures = [executor.submit(own) for _ in range(2)]
+            results, errors = [], []
+            for future in futures:
+                try:
+                    results.append(future.result())
+                except Exception as error:
+                    errors.append(error)
+            if errors:
+                raise ExceptionGroup("Owned Xvfb startup failures", errors)
+            first, second = results
         self.assertNotEqual(first[0], second[0])
         self.assertNotEqual(first[1], second[1])
 

@@ -8,6 +8,9 @@ import stat
 import struct
 import subprocess
 import tempfile
+import time
+
+STARTUP_TIMEOUT = 30
 
 
 class OwnedX11:
@@ -32,21 +35,29 @@ class OwnedX11:
                 authority.write(struct.pack(">H", len(field)) + field)
         read_fd, write_fd = os.pipe()
         try:
-            self.process = subprocess.Popen(
-                ["Xvfb", "-displayfd", str(write_fd), "-auth", str(self.authority),
-                 "-nolisten", "tcp", "-screen", "0", self.screen],
-                pass_fds=(write_fd,), stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            self.server_log = self.directory / "server.log"
+            with self.server_log.open("wb") as log:
+                self.process = subprocess.Popen(
+                    ["Xvfb", "-displayfd", str(write_fd), "-auth", str(self.authority),
+                     "-nolisten", "tcp", "-screen", "0", self.screen],
+                    pass_fds=(write_fd,), stdout=subprocess.DEVNULL, stderr=log,
+                )
             os.close(write_fd)
             write_fd = None
             with selectors.DefaultSelector() as selector:
                 selector.register(read_fd, selectors.EVENT_READ)
-                if not selector.select(5):
-                    raise RuntimeError("Owned Xvfb did not become ready")
+                deadline = time.monotonic() + STARTUP_TIMEOUT
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise self._startup_error("Owned Xvfb readiness deadline exceeded")
+                    if selector.select(min(1, remaining)):
+                        break
+                    if self.process.poll() is not None:
+                        raise self._startup_error("Owned Xvfb exited before readiness")
             number = os.read(read_fd, 64).decode().strip()
             if not number.isdecimal() or self.process.poll() is not None:
-                raise RuntimeError("Invalid owned display")
+                raise self._startup_error("Invalid owned display")
             executable = shutil.which("Xvfb")
             if executable is None or Path(f"/proc/{self.process.pid}/exe").resolve() != Path(executable).resolve():
                 raise RuntimeError("Owned server executable was not Xvfb")
@@ -82,6 +93,13 @@ class OwnedX11:
             os.close(read_fd)
             if write_fd is not None:
                 os.close(write_fd)
+
+    def _startup_error(self, message):
+        status = self.process.poll()
+        state = "running" if status is None else f"exited ({status})"
+        with self.server_log.open("rb") as log:
+            diagnostic = log.read(8192).decode(errors="replace")
+        return RuntimeError(f"{message}; process={state}; owned server stderr:\n{diagnostic}")
 
     def _remember(self, path, expected_type):
         info = path.lstat()
