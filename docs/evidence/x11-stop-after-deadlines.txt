@@ -1,0 +1,18 @@
+   Compiling nanoclick-platform v0.1.0 (/home/bensalcos/Git/nanoclicker/crates/platform)
+warning: linker stderr: ignoring deprecated linker optimization setting '1'
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `nanoclick-platform` (example "x11_acceptance") generated 1 warning
+    Finished `release` profile [optimized + debuginfo] target(s) in 4.37s
+     Running `target/release/examples/x11_acceptance --stop-latency`
+PASS Left: 10 complete pairs received in order
+PASS Middle: 10 complete pairs received in order
+PASS Right: 10 complete pairs received in order
+PASS X11 shortcut: outside-focus activation, held-key suppression, conflict and pointer-map changes preserve binding
+PASS X11 shortcut: keyboard mapping changes invalidate the binding explicitly
+scope,interval_ms,samples,p50_us,p95_us,p99_us,max_us,captured_pairs
+x11_native_input,1,1000,181.501,683.353,1838.764,3729.665,1721
+x11_native_input,10,1000,176.401,888.298,1923.433,3145.168,1000
+x11_native_input,100,1000,173.506,862.359,2121.525,3019.071,1000
+x11_native_input,999999,1000,170.731,812.346,1869.601,3986.879,1000

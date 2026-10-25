@@ -1,0 +1,22 @@
+   Compiling nanoclick-platform v0.1.0 (/home/runner/work/nanoclicker/nanoclicker/crates/platform)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.75s
+READY
+ARMED
+observed_worker_wait,poll_schedule_timeout.constprop.0
+PASS input: terminal in 80.616 ms; error=Some("X11: The X server response timed out. Input delivery or release could not be verified. Cleanup: X11: The X server response timed out. Input delivery or release could not be verified.")
+READY
+ARMED
+observed_worker_wait,poll_schedule_timeout.constprop.0
+PASS input-no-stop: terminal in 750.901 ms; error=Some("X11: The X server response timed out. Input delivery or release could not be verified. Cleanup: X11: The X server response timed out. Input delivery or release could not be verified.")
+READY
+ARMED
+observed_worker_wait,poll_schedule_timeout.constprop.0
+PASS preparation: terminal in 10.591 ms; error=None
+READY
+ARMED
+observed_worker_wait,poll_schedule_timeout.constprop.0
+PASS disconnect: terminal in 0.002 ms; error=Some("X11: Connection reset by peer (os error 104). Input delivery or release could not be verified. Cleanup: X11: Broken pipe (os error 32). Input delivery or release could not be verified.")
+READY
+ARMED
+observed_worker_wait,poll_schedule_timeout.constprop.0
+PASS shortcut-registration: returned in 3000.497 ms
