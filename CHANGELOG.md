@@ -13,7 +13,9 @@
 
 ### Fixed
 
-- Windows builds select the static C runtime to avoid requiring a separately installed Visual C++ redistributable; rebuilt VM validation remains pending.
+- Windows selects wgpu by default to support the inbox display driver that exposed OpenGL 1.1 in the VM; GUI verification of the replacement remains pending.
+
+- Windows builds select the static C runtime to avoid requiring a separately installed Visual C++ redistributable; the rebuilt preview now passes `--help` in the Windows 11 VM without the redistributable.
 
 - Batched shortcut presses no longer cancel each other out; queued restarts wait for Stop acknowledgement, and explicit Stop/Close clears older requests.
 

@@ -1,5 +1,7 @@
 //! Passive native input capture for desktop QA. No input injection.
 #![forbid(unsafe_code)]
+#[path = "../src/renderer.rs"]
+mod renderer;
 #[path = "input_capture/session.rs"]
 mod session;
 use eframe::egui;
@@ -150,15 +152,8 @@ fn main() -> eframe::Result {
             .with_min_inner_size([640.0, 420.0]),
         ..Default::default()
     };
-    #[cfg(feature = "glow")]
-    {
-        options.renderer = eframe::Renderer::Glow;
-    }
-    #[cfg(all(feature = "wgpu", not(feature = "glow")))]
-    {
-        options.renderer = eframe::Renderer::Wgpu;
-    }
-    let renderer = options.renderer.to_string();
+    options.renderer = renderer::selected();
+    let renderer = renderer::name();
     eframe::run_native(
         "NanoClick input capture",
         options,

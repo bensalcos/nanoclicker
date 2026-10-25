@@ -63,11 +63,7 @@ impl<W: Write> Diagnostics<W> {
                 Desktop::X11 => "x11",
                 Desktop::Wayland => "wayland",
             },
-            renderer: if cfg!(feature = "glow") {
-                "glow"
-            } else {
-                "wgpu"
-            },
+            renderer: crate::renderer::name(),
             run_id: snapshot.run_id,
             reason: match reason {
                 StopReason::Stopped => "stopped",

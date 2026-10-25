@@ -4,6 +4,7 @@ mod cli;
 mod controller;
 mod diagnostics;
 mod hotkey;
+mod renderer;
 mod settings;
 mod theme;
 mod ui;
@@ -33,14 +34,7 @@ fn main() -> eframe::Result {
             .with_app_id("io.github.bensalcos.NanoClick"),
         ..Default::default()
     };
-    #[cfg(feature = "glow")]
-    {
-        options.renderer = eframe::Renderer::Glow;
-    }
-    #[cfg(all(feature = "wgpu", not(feature = "glow")))]
-    {
-        options.renderer = eframe::Renderer::Wgpu;
-    }
+    options.renderer = renderer::selected();
     eframe::run_native(
         "NanoClick",
         options,

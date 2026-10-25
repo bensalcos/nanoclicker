@@ -4,6 +4,8 @@ NanoClick previews are available; native acceptance still needs real Windows 11 
 
 Build the target from the same checkout as the app:
 
+New Windows CI preview artifacts also include `qa/input_capture.exe` and its commit/hash metadata. Use the license and dependency notices in the accompanying preview ZIP. The target uses the same platform renderer selection as NanoClick.
+
 ```sh
 cargo build --release --locked -p nanoclick --example input_capture
 ```

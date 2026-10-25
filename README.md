@@ -20,7 +20,7 @@ cargo run --locked -p nanoclick -- --theme dark
 cargo build --release --locked -p nanoclick
 ```
 
-The default renderer is glow. The alternative wgpu build is available for comparison with `--no-default-features --features wgpu`; its native acceptance is pending.
+The platform default is glow on Linux and wgpu on Windows. Windows uses wgpu because the inbox display driver can expose only OpenGL 1.1, below glow's requirements. Explicit `--features glow` or `--features wgpu` builds remain available for comparison (glow wins if both are enabled). Native renderer and performance acceptance remain pending.
 
 ## Use
 

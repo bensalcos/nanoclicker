@@ -20,8 +20,14 @@ thiserror.workspace = true
 [lints]
 workspace = true
 
+[target.'cfg(windows)'.dependencies]
+eframe = { version = "0.37.0", default-features = false, features = ["wgpu"] }
+
+[target.'cfg(not(windows))'.dependencies]
+eframe = { version = "0.37.0", default-features = false, features = ["glow"] }
+
 [features]
-default = ["glow"]
+default = []
 glow = ["eframe/glow"]
 wgpu = ["eframe/wgpu"]
 
