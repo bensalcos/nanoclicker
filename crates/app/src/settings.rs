@@ -138,6 +138,8 @@ impl Preferences {
 
 #[derive(Debug, thiserror::Error)]
 pub enum SettingsError {
+    #[error("Preferences version {0} is not supported. The file was preserved.")]
+    UnsupportedVersion(u32),
     #[error("Preferences could not be read or saved: {0}")]
     Io(#[from] std::io::Error),
     #[error("Preferences are invalid; the original file was preserved: {0}")]
@@ -205,6 +207,20 @@ impl PreferencesFile {
             return Err(SettingsError::Invalid(
                 "The preferences file exceeds 64 KiB. It was preserved.".into(),
             ));
+        }
+        #[derive(Deserialize)]
+        struct Version {
+            version: u32,
+        }
+        let version: Version = match serde_json::from_slice(&bytes) {
+            Ok(version) => version,
+            Err(error) => {
+                self.recovery_available = true;
+                return Err(error.into());
+            }
+        };
+        if version.version != 1 {
+            return Err(SettingsError::UnsupportedVersion(version.version));
         }
         let preferences: Preferences = match serde_json::from_slice(&bytes) {
             Ok(preferences) => preferences,
@@ -337,14 +353,49 @@ mod tests {
     fn corrupt_and_future_files_are_preserved() -> Result<(), Box<dyn std::error::Error>> {
         let dir = tempfile::tempdir()?;
         let path = dir.path().join("preferences.json");
-        for bytes in [b"broken".as_slice(), br#"{"version":99,"interval_ms":100,"button":"left","count":null,"theme":"system","shortcut":"F6"}"#.as_slice()] {
+        for bytes in [
+            b"broken".as_slice(),
+            br#"{"version":99,"future_field":true}"#.as_slice(),
+        ] {
             std::fs::write(&path, bytes)?;
             let mut file = PreferencesFile::new(path.clone());
             assert!(file.load().is_err());
-            assert!(file.can_recover());
+            assert_eq!(file.can_recover(), bytes == b"broken");
             assert!(file.save(&Preferences::default()).is_err());
             assert_eq!(std::fs::read(&path)?, bytes);
         }
+        Ok(())
+    }
+    #[test]
+    fn future_schema_is_protected_before_parsing_current_fields()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let path = dir.path().join("preferences.json");
+        let bytes = br#"{"version":2,"interval_ms":"a future representation","extra":true}"#;
+        std::fs::write(&path, bytes)?;
+        let mut file = PreferencesFile::new(path.clone());
+        assert!(matches!(
+            file.load(),
+            Err(SettingsError::UnsupportedVersion(2))
+        ));
+        assert!(!file.can_recover());
+        assert!(matches!(
+            file.recover_and_save(&Preferences::default()),
+            Err(SettingsError::Protected)
+        ));
+        assert_eq!(std::fs::read(path)?, bytes);
+        Ok(())
+    }
+    #[test]
+    fn unknown_fields_in_current_schema_still_allow_explicit_recovery()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let path = dir.path().join("preferences.json");
+        let text = serde_json::to_string(&Preferences::default())?;
+        std::fs::write(&path, text.replacen('{', "{\"unexpected\":true,", 1))?;
+        let mut file = PreferencesFile::new(path);
+        assert!(matches!(file.load(), Err(SettingsError::Json(_))));
+        assert!(file.can_recover());
         Ok(())
     }
     #[test]

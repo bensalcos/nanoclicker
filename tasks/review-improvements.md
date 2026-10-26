@@ -131,3 +131,4 @@ Status legend: **Spot-checked** = the cited code was looked at and matches the d
 ## Implementation record
 
 - **Item 2 — implemented:** shortcut activations are cleared while the capability probe is pending or failed. The regression test confirms that becoming available does not replay Start. `cargo test --locked -p nanoclick shortcuts_received_while_unavailable_are_not_replayed` passes on Linux. Native Windows verification remains pending for the final reviewed artifact.
+- **Item 3 — implemented:** a minimal version probe runs before strict schema decoding. Unsupported versions expose no recovery action and cannot be replaced through Save/recovery; malformed current-version files remain recoverable. Nine settings tests pass, including future fields with a changed field representation. This supersedes the earlier preview behavior that allowed replacing version-99 files.
