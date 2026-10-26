@@ -39,12 +39,15 @@ impl NanoClick {
             match PreferencesFile::discover() {
                 Ok(mut file) => match file.load() {
                     Ok(saved) => (Some(file), saved, None, false),
-                    Err(error) => (
-                        Some(file),
-                        Preferences::default(),
-                        Some(error.to_string()),
-                        true,
-                    ),
+                    Err(error) => {
+                        let recovery_available = file.can_recover();
+                        (
+                            Some(file),
+                            Preferences::default(),
+                            Some(error.to_string()),
+                            recovery_available,
+                        )
+                    }
                 },
                 Err(error) => (None, Preferences::default(), Some(error.to_string()), false),
             };
@@ -126,7 +129,10 @@ impl NanoClick {
                     .preferences
                     .as_ref()
                     .is_some_and(PreferencesFile::can_replace);
-                self.preferences_recovery_available = !backup_exists;
+                self.preferences_recovery_available = self
+                    .preferences
+                    .as_ref()
+                    .is_some_and(PreferencesFile::can_recover);
                 self.preferences_message = Some(if backup_exists {
                     format!(
                         "The original file is backed up, but saving failed: {error}. Use Save to retry."

@@ -153,6 +153,7 @@ pub enum SettingsError {
 pub struct PreferencesFile {
     path: PathBuf,
     can_replace: bool,
+    recovery_available: bool,
 }
 impl PreferencesFile {
     pub fn discover() -> Result<Self, SettingsError> {
@@ -166,13 +167,18 @@ impl PreferencesFile {
         Self {
             path,
             can_replace: false,
+            recovery_available: false,
         }
     }
     pub fn can_replace(&self) -> bool {
         self.can_replace
     }
+    pub fn can_recover(&self) -> bool {
+        self.recovery_available
+    }
     pub fn load(&mut self) -> Result<Preferences, SettingsError> {
         self.can_replace = false;
+        self.recovery_available = false;
         let file = match File::open(&self.path) {
             Ok(file) => file,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -200,8 +206,17 @@ impl PreferencesFile {
                 "The preferences file exceeds 64 KiB. It was preserved.".into(),
             ));
         }
-        let preferences: Preferences = serde_json::from_slice(&bytes)?;
-        preferences.validate()?;
+        let preferences: Preferences = match serde_json::from_slice(&bytes) {
+            Ok(preferences) => preferences,
+            Err(error) => {
+                self.recovery_available = true;
+                return Err(error.into());
+            }
+        };
+        if let Err(error) = preferences.validate() {
+            self.recovery_available = true;
+            return Err(error);
+        }
         self.can_replace = true;
         Ok(preferences)
     }
@@ -239,6 +254,9 @@ impl PreferencesFile {
                 "The preferences file does not need recovery.".into(),
             ));
         }
+        if !self.recovery_available {
+            return Err(SettingsError::Protected);
+        }
 
         let parent = self.path.parent().ok_or_else(|| {
             SettingsError::Invalid("No preferences directory is available.".into())
@@ -255,6 +273,7 @@ impl PreferencesFile {
         let mut bytes = Vec::new();
         source.take(65_537).read_to_end(&mut bytes)?;
         if bytes.len() > 65_536 {
+            self.recovery_available = false;
             return Err(SettingsError::Invalid(
                 "The preferences file exceeds 64 KiB and was left untouched. Move it aside manually before saving new preferences.".into(),
             ));
@@ -286,10 +305,11 @@ impl PreferencesFile {
             SettingsError::Invalid("Could not create a unique preferences backup.".into())
         })?;
 
+        self.can_replace = true;
+        self.recovery_available = false;
         #[cfg(unix)]
         File::open(parent)?.sync_all()?;
 
-        self.can_replace = true;
         self.save(preferences)?;
         Ok(backup_path)
     }
@@ -321,6 +341,7 @@ mod tests {
             std::fs::write(&path, bytes)?;
             let mut file = PreferencesFile::new(path.clone());
             assert!(file.load().is_err());
+            assert!(file.can_recover());
             assert!(file.save(&Preferences::default()).is_err());
             assert_eq!(std::fs::read(&path)?, bytes);
         }
@@ -343,8 +364,13 @@ mod tests {
         std::fs::write(&path, b"keep me")?;
         let mut file = PreferencesFile::new(path.join("preferences.json"));
         assert!(file.load().is_err());
+        assert!(!file.can_recover());
         assert!(matches!(
             file.save(&Preferences::default()),
+            Err(SettingsError::Protected)
+        ));
+        assert!(matches!(
+            file.recover_and_save(&Preferences::default()),
             Err(SettingsError::Protected)
         ));
         assert_eq!(std::fs::read(path)?, b"keep me");
