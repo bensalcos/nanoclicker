@@ -20,7 +20,7 @@ Partial evidence: matched-source glow/wgpu runs on software X11 and a private GP
 
 ### T03 — Test Windows/X11 input and waiting [M]
 
-Implementation and evidence: Linux condition-variable waiting and Windows high-resolution timer/cancellation event are implemented. The Windows 11 VM has received exact Count=1/10/1000 sessions for all three buttons, and long-interval Stop/restart/close flows; large-count skipped slots remain functional evidence only. Native Windows timing, partial-insertion error injection and the shortcut conflict/layout matrix remain open. The passive capture target is included in the Windows preview. Manual countdown cancellation passed; a matching manual-start capture remains unresolved. See `docs/NATIVE_QA.md`, `docs/evidence/input-capture.md`, `docs/evidence/windows-vm-functional.md` and `docs/evidence/native-waiter.md`.
+Implementation and evidence: Linux condition-variable waiting and Windows high-resolution timer/cancellation event are implemented. The Windows 11 VM has received exact Count=1/10/1000 sessions for all three buttons, long-interval Stop/restart/close flows, and a current-source manual Start Count=10 receipt; large-count skipped slots remain functional evidence only. Native Windows timing, partial-insertion error injection and the shortcut conflict/layout matrix remain open. The passive capture target is included in the Windows preview. Manual countdown cancellation passed. See `docs/NATIVE_QA.md`, `docs/evidence/input-capture.md`, `docs/evidence/windows-vm-functional.md` and `docs/evidence/native-waiter.md`.
 - [x] Select cancelable native waiting and verify cancellation/Stop paths without busy waiting in the implemented backends and available harnesses.
 - [ ] Complete native partial-failure/release and timing acceptance on reference Windows/Linux systems.
 
@@ -63,8 +63,7 @@ Implementation and evidence: Linux condition-variable waiting and Windows high-r
 ### T08 — Deliver UI Start/Stop on Linux X11 [M]
 - [x] Implement the XTEST backend and UI/controller composition; connect the Windows backend through the shared contracts.
 - [x] Verify Linux X11 manual countdown, acknowledged Stop and shutdown in the isolated release GUI harness; verify Windows F6 Start/Stop and long-wait cancellation in the user's VM.
-- Current-source receipt: exact `c2f21a1` artifact passed one Windows 11 F6 Count=10 Left run with a matching receiver record (10 balanced pairs, no other-button events, no anomalies or overflow). The app displayed 10 pairs sent; this does not close the separate manual-countdown requirement below. See `docs/evidence/windows-vm-functional.md`.
-- [ ] Obtain a matching Windows manual countdown completion and capture receipt; cancellation is verified, but recent completion probes are inconclusive.
+- Current-source receipts: exact `c2f21a1` passed both Windows F6 and accessible manual Start Count=10 Left runs with matching receiver records (ten balanced pairs, no other-button events, anomalies or overflow). Manual Start invoked the three-second countdown path; its intermediate frame was not captured. See `docs/evidence/windows-vm-functional.md`.
 
 **Dependencies:** T02, T03, T07. **Verification:** outside-UI clicks, Stop and shutdown on both systems. **Files:** `platform/src/x11/`, `app/src/{main,controller,ui}.rs`.
 
@@ -172,7 +171,7 @@ The documented LLVMpipe `LP_NUM_THREADS=1` setting was also sampled on the WGPU 
 
 ### T17 — Package and verify clean installation [M]
 
-Partial evidence: Linux and Windows preview archives include notices/checksums and separate symbols; the current WGPU-default Linux bundle passes the restricted Ubuntu 24.04 GUI flow, and the Windows README is generated with Windows-specific WGPU guidance. Renderer-aware packaging now emits an isolated Glow dependency/license inventory and correct OpenGL/EGL runtime README; the local Glow package passes the full X11 GUI flow. The exact `0a3380c` Windows preview executes in the user's Windows 11 VM; its manual Start UIA probe remains inconclusive because the receiver had no known in-client pointer and logged no events. Native clean-reference installation and final artifact acceptance remain pending. See `docs/evidence/packaging.md` and `docs/evidence/windows-vm-functional.md`.
+Partial evidence: Linux and Windows preview archives include notices/checksums and separate symbols; the current WGPU-default Linux bundle passes the restricted Ubuntu 24.04 GUI flow, and the Windows README is generated with Windows-specific WGPU guidance. Renderer-aware packaging now emits an isolated Glow dependency/license inventory and correct OpenGL/EGL runtime README; the local Glow package passes the full X11 GUI flow. The exact `c2f21a1` Windows preview executes in the user's Windows 11 VM with matching F6 and manual Start delivery receipts. Native clean-reference installation and final artifact acceptance remain pending. See `docs/evidence/packaging.md` and `docs/evidence/windows-vm-functional.md`.
 - [x] Produce and verify Windows ZIP/PDB and Linux tar.gz/symbol previews with icons/notices/checksums and recorded runtime requirements.
 - [ ] Run on clean reference installations; review features, dependencies/licenses and glibc baseline.
 
