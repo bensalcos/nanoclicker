@@ -2,7 +2,7 @@
 
 Date: 2026-10-26. Environment and isolation are recorded in [startup evidence](windows-vm-startup.md). This uses the user's Windows 11 lab through a separate NanoClick overlay, with no network, shared folders or physical USB. The VM is below the performance reference specification; these results do not accept hardware performance budgets.
 
-Current exact-source package and invalid-preferences recovery evidence are recorded in [GUI preferences evidence](ui-preferences.md#windows-11-invalid-preferences-recovery--2026-10-26). The Windows 11 VM test passed on commit `cfd4a64`; it does not replace the older functional receipts below or close the remaining native matrix.
+Current exact-source package and invalid-preferences/protected-path recovery evidence are recorded in [GUI preferences evidence](ui-preferences.md#windows-11-recovery-and-protected-path-regression--2026-10-26). The latest preferences regression test passed on commit `fe80737`; earlier functional receipts below remain tied to their recorded source commits and the full native matrix remains open.
 
 ## Artifact and startup
 
@@ -73,7 +73,7 @@ The first screenshot taken while NanoClick was occluded still showed its old zer
 
 A second current-artifact run used global F6 while the passive target was focused and recording. Producer run 2 reports `completed`, 10 attempted/sent, zero failures and zero skipped periods; p50 lateness was 40.7 ms and p95/p99/maximum were 98.36115 ms. Capture session 2 independently reports Left=10, Right=0, Middle=0, balanced, with no unexpected buttons or overflow. This strengthens the functional global-shortcut receipt only; VM lateness remains informational, and the three-second UI Start countdown is still not accepted. The session summary and producer/capture rows were read back in the guest PowerShell console. Local ignored screenshots include `manual-current-armed-01.png`, `manual-current-ended-01.png`, `manual-current-producer-log.png` and `manual-current-capture-log-screen2.png`.
 
-Still open: matching Windows manual-countdown completion receipt, partial-insertion/release error flows, shortcut conflicts/held keys/layouts, invalid-file preference GUI recovery, multiple-monitor and other-DPI configurations, NVDA, lifecycle/resource stability and full timing/CPU/RSS protocols. Count=1/10/1000 per button and normal preference Save/relaunch/discard are evidenced. No Windows milestone or final migration acceptance is marked complete from this subset.
+Still open: partial-insertion/release error flows, shortcut conflicts/held keys/layouts, multiple-monitor and other-DPI configurations, NVDA, lifecycle/resource stability and full timing/CPU/RSS protocols. Corrupt/future-version recovery, blocked-path behavior and backup-creation failure preservation are evidenced on exact commit `fe80737`; Count=1/10/1000 per button, normal preference Save/relaunch/discard and manual-countdown delivery are evidenced on their respective recorded commits. Native Linux/Wayland write-error acceptance remains open. No Windows milestone or final migration acceptance is marked complete from this subset.
 
 
 ### Current-source 0a3380c manual Start probe — 2026-10-26

@@ -116,11 +116,12 @@ Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activat
 
 ### T13 — Persist recoverable preferences [M]
 
-Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Windows 11 VM verifies saved fields, unsaved-edit discard, idle startup and `cfd4a64` invalid-file recovery with exact backup and relaunch. A temporary Linux X11-only build from the same source verifies the invalid-file recovery GUI and relaunch in private Xvfb; it omits Wayland and AccessKit because host development metadata is missing. Native Wayland, unsupported-version and write-error GUI acceptance remain pending. See `docs/evidence/ui-preferences.md`.
+Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Windows 11 VM verifies saved fields, unsaved-edit discard, idle startup, `fe80737` corrupt/future-version recovery with exact backups, blocked-parent protection and backup-creation failure with source preservation. A temporary Linux X11-only build verifies invalid-file recovery and relaunch in private Xvfb; it omits Wayland and AccessKit because host development metadata is missing. Native Linux/Wayland write-error GUI acceptance remains pending. See `docs/evidence/ui-preferences.md`.
 - [x] Theme, plan and requested shortcut in a versioned schema, without active state or automatic resumption.
 - [x] Verify versioned preferences, safe replacement, protected-path behavior and standard config directories through Linux tests and Windows CI/VM Save/relaunch.
 - [x] Verify invalid-file recovery and exact backup preservation in the Windows 11 GUI.
-- [ ] Verify unsupported-version recovery and backup/save write-error presentation in native Windows/Linux GUI flows.
+- [x] Verify unsupported-version recovery and backup-creation failure with source preservation in the native Windows GUI.
+- [ ] Verify backup/save write-error presentation in native Linux/Wayland GUI flows.
 - [x] Verify invalid-file recovery and post-recovery relaunch in the Linux X11 GUI on isolated Xvfb.
 - [ ] Verify recovery in native Wayland and full-feature Linux builds; keep portal consent and desktop acceptance separate.
 
