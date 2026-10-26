@@ -17,6 +17,7 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
         diagnostics_message: None,
         preferences: None,
         preferences_message: None,
+        preferences_recovery_available: false,
         control,
         shortcut: Shortcut::unregistered(Desktop::X11, ctx, "F6".into()),
         desktop: Desktop::X11,
