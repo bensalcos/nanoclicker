@@ -25,12 +25,20 @@ impl PortalShortcut {
         update: impl Fn(ShortcutUpdate) + Send + Sync + 'static,
         activated: impl Fn() + Send + Sync + 'static,
     ) -> Result<Self, BackendError> {
+        Self::configure_with_context(crate::wayland::PortalContext::default(), update, activated)
+    }
+    /// Binds a shortcut with the application's owned parent-window export.
+    pub fn configure_with_context(
+        context: crate::wayland::PortalContext,
+        update: impl Fn(ShortcutUpdate) + Send + Sync + 'static,
+        activated: impl Fn() + Send + Sync + 'static,
+    ) -> Result<Self, BackendError> {
         let (stop, stopped) = async_channel::bounded(1);
         let update = Arc::new(update);
         let worker = std::thread::Builder::new()
             .name("nanoclick-portal-shortcut".into())
             .spawn(move || {
-                let result = block_on(run(stopped, update.clone(), activated));
+                let result = block_on(run(stopped, update.clone(), activated, context));
                 if let Err(error) = result {
                     update(ShortcutUpdate::Unavailable(error.to_string()));
                 }
@@ -79,6 +87,7 @@ async fn run(
     stopped: async_channel::Receiver<()>,
     update: Arc<impl Fn(ShortcutUpdate)>,
     activated: impl Fn(),
+    context: crate::wayland::PortalContext,
 ) -> Result<(), BackendError> {
     let proxy = operation(GlobalShortcuts::new(), &stopped).await?;
     let session = operation(proxy.create_session(Default::default()), &stopped).await?;
@@ -102,7 +111,7 @@ async fn run(
             [NewShortcut::new("toggle", "Start or stop NanoClick").preferred_trigger("F6")];
         let bound = race(
             operation(
-                proxy.bind_shortcuts(&session, &shortcuts, None, Default::default()),
+                proxy.bind_shortcuts(&session, &shortcuts, context.parent(), Default::default()),
                 &stopped,
             ),
             async {

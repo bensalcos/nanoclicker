@@ -5,7 +5,7 @@ use futures_lite::future::block_on;
 use nanoclick_core::{ClickConfig, Engine, MouseButton, RunState, Snapshot, StopReason};
 use nanoclick_platform::{
     portal_shortcut::{PortalShortcut, ShortcutUpdate},
-    wayland::WaylandInput,
+    wayland::{PortalContext, WaylandInput},
 };
 use portal_mock::{Mode, NAME, lock};
 use std::{
@@ -48,6 +48,28 @@ fn main() -> Result<()> {
         }
         Ok::<(), Box<dyn Error>>(())
     })?;
+    {
+        let (service, state) = block_on(portal_mock::serve(Mode::Allow))?;
+        let context = PortalContext::default();
+        let engine = Engine::new(move |cancel| context.open(cancel), || {})?;
+        for _ in 0..2 {
+            engine.start(ClickConfig::new(10, MouseButton::Left, Some(1))?)?;
+            await_state(&engine, |snapshot| {
+                snapshot.reason == Some(StopReason::Completed)
+            })?;
+        }
+        if lock(&state).persist_modes != [2, 2]
+            || lock(&state).restore_tokens != [None, Some("mock-token-1".into())]
+            || lock(&state).closes != 2
+        {
+            return Err(
+                "RemoteDesktop did not renew/consume restoration tokens across runs".into(),
+            );
+        }
+        drop(engine);
+        block_on(service.release_name(NAME))?;
+        println!("PASS portal lifecycle: restored-second-run");
+    }
     for (name, mode, count) in [
         ("stalled-press", Mode::HoldPress, 1),
         ("stalled-release", Mode::HoldRelease, 2),

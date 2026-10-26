@@ -27,6 +27,8 @@ pub struct State {
     pub buttons: Vec<(i32, u32)>,
     pub closes: usize,
     pub starts: usize,
+    pub persist_modes: Vec<u32>,
+    pub restore_tokens: Vec<Option<String>>,
     release_failed: bool,
 }
 pub type Shared = Arc<Mutex<State>>;
@@ -141,6 +143,21 @@ impl Portal {
         #[zbus(header)] header: Header<'_>,
         #[zbus(connection)] connection: &Connection,
     ) -> fdo::Result<OwnedObjectPath> {
+        {
+            let mut state = lock(&self.state);
+            state.persist_modes.push(
+                options
+                    .get("persist_mode")
+                    .and_then(|value| u32::try_from(value).ok())
+                    .unwrap_or(0),
+            );
+            state.restore_tokens.push(
+                options
+                    .get("restore_token")
+                    .and_then(|value| <&str>::try_from(value).ok())
+                    .map(str::to_owned),
+            );
+        }
         if matches!(self.mode, Mode::CloseDuringSelect) {
             closed(connection, &session.into()).await.map_err(error)?;
         }
@@ -170,7 +187,16 @@ impl Portal {
             &header,
             &options,
             0,
-            HashMap::from([("devices".into(), OwnedValue::from(2u32))]),
+            HashMap::from([
+                ("devices".into(), OwnedValue::from(2u32)),
+                (
+                    "restore_token".into(),
+                    OwnedValue::from(Str::from(format!(
+                        "mock-token-{}",
+                        lock(&self.state).starts
+                    ))),
+                ),
+            ]),
         )
         .await
     }

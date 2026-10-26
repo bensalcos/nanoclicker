@@ -56,9 +56,36 @@ impl NanoClick {
         let selected_theme = selected_theme.unwrap_or_else(|| saved.theme.into());
         ctx.set_theme(selected_theme);
         let desktop = Desktop::detect();
+        #[cfg(target_os = "linux")]
+        let portal = {
+            use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+            if desktop == Desktop::Wayland {
+                match (cc.window_handle(), cc.display_handle()) {
+                    (Ok(window), Ok(display)) => {
+                        nanoclick_platform::wayland::PortalContext::from_window(
+                            window.as_raw(),
+                            display.as_raw(),
+                        )
+                    }
+                    _ => Default::default(),
+                }
+            } else {
+                Default::default()
+            }
+        };
+        #[cfg(target_os = "linux")]
+        let input_portal = portal.clone();
         let wake = ctx.clone();
         let engine = Engine::with_waiter(
-            move |cancel| NativeInput::open(desktop, cancel),
+            move |cancel| {
+                #[cfg(target_os = "linux")]
+                if desktop == Desktop::Wayland {
+                    return input_portal
+                        .open(cancel)
+                        .map(|input| NativeInput::Wayland(Box::new(input)));
+                }
+                NativeInput::open(desktop, cancel)
+            },
             nanoclick_platform::waiter()?,
             move || wake.request_repaint(),
         )?;
@@ -72,6 +99,13 @@ impl NanoClick {
             })?;
         let mut control = Controller::new(engine);
         control.draft = saved.draft();
+        let shortcut = Shortcut::new(desktop, &ctx, saved.shortcut);
+        #[cfg(target_os = "linux")]
+        let shortcut = {
+            let mut shortcut = shortcut;
+            shortcut.portal_context = portal;
+            shortcut
+        };
         Ok(Self {
             diagnostics,
             diagnostics_message: None,
@@ -79,7 +113,7 @@ impl NanoClick {
             preferences_message,
             preferences_recovery_available,
             control,
-            shortcut: Shortcut::new(desktop, &ctx, saved.shortcut),
+            shortcut,
             desktop,
             probe,
             available: None,

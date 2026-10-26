@@ -1,7 +1,7 @@
 //! Consent-based input through the XDG RemoteDesktop portal.
 //! API reference: https://docs.rs/ashpd/0.13.13/ashpd/desktop/remote_desktop/
 use ashpd::desktop::{
-    Session,
+    PersistMode, Session,
     remote_desktop::{DeviceType, KeyState, RemoteDesktop, SelectDevicesOptions},
 };
 use async_io::Timer;
@@ -10,7 +10,12 @@ use futures_lite::{
     future::{block_on, race},
 };
 use nanoclick_core::{BackendError, Cancellation, InputSink, MouseButton};
-use std::{future::Future, sync::Arc, thread::JoinHandle, time::Duration};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+    thread::JoinHandle,
+    time::Duration,
+};
 
 fn error(error: impl std::fmt::Display) -> BackendError {
     BackendError::new(format!("Wayland portal: {error}"))
@@ -65,6 +70,43 @@ pub fn probe() -> Result<(), BackendError> {
     )
 }
 
+/// Process-local restoration token and an owned exported parent-window handle.
+/// A token is a hint to the portal, never proof of a current permission grant.
+#[derive(Clone, Default)]
+pub struct PortalContext {
+    restore_token: Arc<Mutex<Option<String>>>,
+    parent: Option<Arc<ashpd::WindowIdentifier>>,
+}
+impl PortalContext {
+    /// Exports the live application window. The context must be dropped before
+    /// its native window/display are destroyed. Unsupported exporters fall back
+    /// to an unparented dialog; export waits at most one second.
+    pub fn from_window(
+        window: raw_window_handle::RawWindowHandle,
+        display: raw_window_handle::RawDisplayHandle,
+    ) -> Self {
+        let parent = block_on(race(
+            ashpd::WindowIdentifier::from_raw_handle(&window, Some(&display)),
+            async {
+                Timer::after(Duration::from_secs(1)).await;
+                None
+            },
+        ))
+        .map(Arc::new);
+        Self {
+            parent,
+            ..Default::default()
+        }
+    }
+    pub(crate) fn parent(&self) -> Option<&ashpd::WindowIdentifier> {
+        self.parent.as_deref()
+    }
+    /// Opens a fresh session, consuming the previous single-use restoration hint.
+    pub fn open(&self, cancel: &Cancellation) -> Result<WaylandInput, BackendError> {
+        WaylandInput::open_with_context(cancel, self)
+    }
+}
+
 pub struct WaylandInput {
     cancel: Cancellation,
     proxy: RemoteDesktop,
@@ -76,6 +118,12 @@ pub struct WaylandInput {
 }
 impl WaylandInput {
     pub fn open(cancel: &Cancellation) -> Result<Self, BackendError> {
+        Self::open_with_context(cancel, &PortalContext::default())
+    }
+    fn open_with_context(
+        cancel: &Cancellation,
+        context: &PortalContext,
+    ) -> Result<Self, BackendError> {
         let proxy = bounded(RemoteDesktop::new(), Duration::from_secs(3), Some(cancel))?;
         let session = Arc::new(bounded(
             proxy.create_session(Default::default()),
@@ -157,6 +205,11 @@ impl WaylandInput {
         };
         // Closed and service-owner subscriptions are ready before SelectDevices/Start can
         // expose a permission dialog or a revocable active session.
+        let restore_token = context
+            .restore_token
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
         let result = bounded(
             async {
                 input
@@ -164,18 +217,25 @@ impl WaylandInput {
                     .select_devices(
                         &input.session,
                         SelectDevicesOptions::default()
-                            .set_devices(Some(DeviceType::Pointer.into())),
+                            .set_devices(Some(DeviceType::Pointer.into()))
+                            .set_persist_mode(PersistMode::ExplicitlyRevoked)
+                            .set_restore_token(restore_token.as_deref()),
                     )
                     .await?
                     .response()?;
                 let response = input
                     .proxy
-                    .start(&input.session, None, Default::default())
+                    .start(&input.session, context.parent(), Default::default())
                     .await?
                     .response()?;
                 if !response.devices().contains(DeviceType::Pointer) {
                     return Err(ashpd::Error::NoResponse);
                 }
+                *context
+                    .restore_token
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                    response.restore_token().map(str::to_owned);
                 Ok(())
             },
             Duration::from_secs(120),

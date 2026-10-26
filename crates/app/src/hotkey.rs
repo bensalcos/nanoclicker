@@ -14,6 +14,8 @@ pub struct Shortcut {
     x11: Option<nanoclick_platform::x11_shortcut::X11Shortcut>,
     #[cfg(target_os = "linux")]
     portal: Option<nanoclick_platform::portal_shortcut::PortalShortcut>,
+    #[cfg(target_os = "linux")]
+    pub portal_context: nanoclick_platform::wayland::PortalContext,
     #[cfg(target_os = "windows")]
     windows: Option<nanoclick_platform::windows_shortcut::WindowsShortcut>,
     latest: Arc<Mutex<Option<RegistrationUpdate>>>,
@@ -42,6 +44,8 @@ impl Shortcut {
             x11: None,
             #[cfg(target_os = "linux")]
             portal: None,
+            #[cfg(target_os = "linux")]
+            portal_context: Default::default(),
             #[cfg(target_os = "windows")]
             windows: None,
             latest: Arc::new(Mutex::new(None)),
@@ -81,7 +85,8 @@ impl Shortcut {
             self.status = "Waiting for desktop shortcut configuration…".into();
             self.error = None;
             let report = self.reporter(self.latest.clone());
-            match nanoclick_platform::portal_shortcut::PortalShortcut::configure(
+            match nanoclick_platform::portal_shortcut::PortalShortcut::configure_with_context(
+                self.portal_context.clone(),
                 move |update| {
                     use nanoclick_platform::portal_shortcut::ShortcutUpdate;
                     report(match update {
