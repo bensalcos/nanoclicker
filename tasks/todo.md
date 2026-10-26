@@ -63,6 +63,7 @@ Implementation and evidence: Linux condition-variable waiting and Windows high-r
 ### T08 — Deliver UI Start/Stop on Linux X11 [M]
 - [x] Implement the XTEST backend and UI/controller composition; connect the Windows backend through the shared contracts.
 - [x] Verify Linux X11 manual countdown, acknowledged Stop and shutdown in the isolated release GUI harness; verify Windows F6 Start/Stop and long-wait cancellation in the user's VM.
+- Current-source receipt: exact `c2f21a1` artifact passed one Windows 11 F6 Count=10 Left run with a matching receiver record (10 balanced pairs, no other-button events, no anomalies or overflow). The app displayed 10 pairs sent; this does not close the separate manual-countdown requirement below. See `docs/evidence/windows-vm-functional.md`.
 - [ ] Obtain a matching Windows manual countdown completion and capture receipt; cancellation is verified, but recent completion probes are inconclusive.
 
 **Dependencies:** T02, T03, T07. **Verification:** outside-UI clicks, Stop and shutdown on both systems. **Files:** `platform/src/x11/`, `app/src/{main,controller,ui}.rs`.
@@ -125,7 +126,7 @@ Implementation: versioned explicit Save and seven recovery tests pass on Linux a
 
 ### T14 — Accept UI, DPI and accessibility [M]
 
-Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. Windows 11 VM testing at 125% showed both existing and fresh `0a3380c` windows clipped their lower controls at 1280×800. The first adaptive-size build still left Start clipped when a persisted frame position was low on screen; current source clamps both inner height and outer position. Rebuilt-artifact verification of Start visibility, 100% behavior, and monitor transitions remains open. Native DPI acceptance and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
+Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. The exact `c2f21a1` preview passes Windows 11 VM visual checks at 100% and 125% on 1280×800, including live scale changes in both directions with Start visible; the VM is restored to 100%. Multiple-monitor/other-display coverage, the wider minimum-size and 200% matrix, broader UI polish and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
 - [ ] Polish tokens, focus, errors, scaling and themes against UI.md with actual captures.
 - [ ] Complete keyboard and NVDA/Orca testing, without clipping at 420×520 and 200% DPI.
 
