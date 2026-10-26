@@ -192,6 +192,7 @@ impl eframe::App for NanoClick {
 impl NanoClick {
     fn process_shortcuts(&mut self, ctx: &egui::Context) {
         if !matches!(self.available, Some(Ok(()))) {
+            self.shortcut.clear_pending();
             return;
         }
         let state = self.control.engine.snapshot().state;

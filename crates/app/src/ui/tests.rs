@@ -28,6 +28,23 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
 }
 
 #[test]
+fn shortcuts_received_while_unavailable_are_not_replayed() -> Result<(), Box<dyn std::error::Error>>
+{
+    let ctx = egui::Context::default();
+    for availability in [None, Some(Err("Probe failed".into()))] {
+        let mut app = fixture(&ctx)?;
+        app.available = availability;
+        app.shortcut.activation()();
+        app.process_shortcuts(&ctx);
+        assert!(!app.shortcut.has_pending());
+        app.available = Some(Ok(()));
+        app.process_shortcuts(&ctx);
+        assert_eq!(app.control.engine.snapshot().state, RunState::Idle);
+    }
+    Ok(())
+}
+
+#[test]
 fn shortcut_restart_waits_for_stop_acknowledgement() -> Result<(), Box<dyn std::error::Error>> {
     use std::{
         sync::{
