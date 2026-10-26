@@ -15,6 +15,8 @@ pub mod windows_shortcut;
 mod windows_time;
 #[cfg(target_os = "windows")]
 mod windows_waiter;
+#[cfg(target_os = "windows")]
+pub mod windows_window;
 #[cfg(target_os = "linux")]
 mod x11;
 #[cfg(target_os = "linux")]

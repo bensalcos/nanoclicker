@@ -11,6 +11,7 @@ nanoclick-platform.workspace = true
 
 eframe = { version = "0.37.0", default-features = false, features = ["accesskit", "default_fonts", "wayland", "x11"] }
 global-hotkey = "0.9.0"
+raw-window-handle = "0.6.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.27.0"
@@ -32,5 +33,4 @@ default = ["wgpu"]
 glow = ["eframe/glow"]
 wgpu = ["dep:wgpu", "eframe/wgpu_no_default_features"]
 
-[dev-dependencies]
-raw-window-handle = "0.6.2"
+

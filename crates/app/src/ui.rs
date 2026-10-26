@@ -26,6 +26,8 @@ pub struct NanoClick {
     probe: Receiver<Result<(), String>>,
     available: Option<Result<(), String>>,
     theme: egui::ThemePreference,
+    #[cfg(target_os = "windows")]
+    window_fit: Option<([i32; 4], f32)>,
 }
 impl NanoClick {
     pub fn new(
@@ -82,6 +84,8 @@ impl NanoClick {
             probe,
             available: None,
             theme: selected_theme,
+            #[cfg(target_os = "windows")]
+            window_fit: None,
         })
     }
     fn observe_diagnostics(&mut self, snapshot: &Snapshot) {
@@ -166,9 +170,9 @@ impl NanoClick {
     }
 }
 impl eframe::App for NanoClick {
-    fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(target_os = "windows")]
-        fit_window_to_monitor(ctx);
+        fit_window_to_monitor(ctx, _frame, &mut self.window_fit);
 
         if ctx.input(|input| {
             input.key_pressed(egui::Key::Escape) || input.viewport().close_requested()
@@ -265,55 +269,53 @@ impl NanoClick {
     }
 }
 
-#[cfg(any(target_os = "windows", test))]
-fn constrained_window_size(
-    monitor_size: egui::Vec2,
-    inner_size: egui::Vec2,
-    scale_factor: f32,
-) -> Option<egui::Vec2> {
-    const MIN_WINDOW_HEIGHT: f32 = 520.0;
-
-    if !monitor_size.y.is_finite()
-        || !inner_size.x.is_finite()
-        || !inner_size.y.is_finite()
-        || !scale_factor.is_finite()
-        || monitor_size.y <= 0.0
-        || inner_size.x <= 0.0
-        || scale_factor <= 0.0
-    {
-        return None;
-    }
-
-    let max_inner_height =
-        (monitor_size.y - WINDOW_CHROME_RESERVE_PX / scale_factor).max(MIN_WINDOW_HEIGHT);
-    (inner_size.y > max_inner_height + 1.0).then(|| egui::vec2(inner_size.x, max_inner_height))
-}
-
 #[cfg(target_os = "windows")]
-fn fit_window_to_monitor(ctx: &egui::Context) {
-    let (monitor_size, inner_rect, outer_rect, scale_factor, maximized, fullscreen) =
-        ctx.input(|input| {
-            let viewport = input.viewport();
-            (
-                viewport.monitor_size,
-                viewport.inner_rect,
-                viewport.outer_rect,
-                viewport.native_pixels_per_point,
-                viewport.maximized,
-                viewport.fullscreen,
-            )
-        });
-    if maximized == Some(true) || fullscreen == Some(true) {
-        return;
-    }
-    let (Some(monitor_size), Some(inner_rect), Some(outer_rect), Some(scale_factor)) =
-        (monitor_size, inner_rect, outer_rect, scale_factor)
-    else {
+fn fit_window_to_monitor(
+    ctx: &egui::Context,
+    frame: &eframe::Frame,
+    last_fit: &mut Option<([i32; 4], f32)>,
+) {
+    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    let Ok(handle) = frame.window_handle() else {
         return;
     };
-
-    let (size, position) =
-        constrained_window_geometry(monitor_size, inner_rect.size(), outer_rect, scale_factor);
+    let RawWindowHandle::Win32(handle) = handle.as_raw() else {
+        return;
+    };
+    let Some(work) = nanoclick_platform::windows_window::work_area(handle.hwnd) else {
+        return;
+    };
+    let (inner, outer, scale, maximized, fullscreen) = ctx.input(|input| {
+        let viewport = input.viewport();
+        (
+            viewport.inner_rect,
+            viewport.outer_rect,
+            viewport.native_pixels_per_point,
+            viewport.maximized,
+            viewport.fullscreen,
+        )
+    });
+    let (Some(inner), Some(outer), Some(scale)) = (inner, outer, scale) else {
+        return;
+    };
+    if !scale.is_finite() || scale <= 0.0 || maximized == Some(true) || fullscreen == Some(true) {
+        return;
+    }
+    let signature = (work, scale);
+    if last_fit.as_ref() == Some(&signature) {
+        return;
+    }
+    *last_fit = Some(signature);
+    let work = egui::Rect::from_min_max(
+        egui::pos2(work[0] as f32 / scale, work[1] as f32 / scale),
+        egui::pos2(work[2] as f32 / scale, work[3] as f32 / scale),
+    );
+    let (size, position) = constrained_window_geometry(work, inner.size(), outer);
+    let available = (work.size() - (outer.size() - inner.size())).max(egui::Vec2::splat(1.0));
+    ctx.send_viewport_cmd(egui::ViewportCommand::MinInnerSize(egui::vec2(
+        420.0_f32.min(available.x),
+        520.0_f32.min(available.y),
+    )));
     if let Some(size) = size {
         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
     }
@@ -323,108 +325,66 @@ fn fit_window_to_monitor(ctx: &egui::Context) {
 }
 
 #[cfg(any(target_os = "windows", test))]
-const WINDOW_CHROME_RESERVE_PX: f32 = 112.0;
-
-#[cfg(any(target_os = "windows", test))]
 fn constrained_window_geometry(
-    monitor_size: egui::Vec2,
+    work: egui::Rect,
     inner_size: egui::Vec2,
-    outer_rect: egui::Rect,
-    scale_factor: f32,
+    outer: egui::Rect,
 ) -> (Option<egui::Vec2>, Option<egui::Pos2>) {
-    const TASKBAR_RESERVE_PX: f32 = 72.0;
-
-    let size = constrained_window_size(monitor_size, inner_size, scale_factor);
-    if !monitor_size.x.is_finite()
-        || !monitor_size.y.is_finite()
-        || !scale_factor.is_finite()
-        || scale_factor <= 0.0
-        || !inner_size.x.is_finite()
-        || !inner_size.y.is_finite()
-        || !outer_rect.size().x.is_finite()
-        || !outer_rect.size().y.is_finite()
-        || !outer_rect.min.x.is_finite()
-        || !outer_rect.min.y.is_finite()
+    if !work.is_finite()
+        || !outer.is_finite()
+        || !inner_size.is_finite()
+        || work.width() <= 0.0
+        || work.height() <= 0.0
+        || inner_size.x <= 0.0
+        || inner_size.y <= 0.0
     {
-        return (size, None);
+        return (None, None);
     }
-
-    let fitted_inner_size = size.unwrap_or(inner_size);
-    let non_client_size = outer_rect.size() - inner_size;
-    let fitted_outer_size = fitted_inner_size + non_client_size;
-    let available_width = monitor_size.x.max(0.0);
-    let available_height = (monitor_size.y - TASKBAR_RESERVE_PX / scale_factor).max(0.0);
-    let max_x = (available_width - fitted_outer_size.x).max(0.0);
-    let max_y = (available_height - fitted_outer_size.y).max(0.0);
-    let position = egui::pos2(
-        outer_rect.min.x.clamp(0.0, max_x),
-        outer_rect.min.y.clamp(0.0, max_y),
+    let chrome = (outer.size() - inner_size).max(egui::Vec2::ZERO);
+    let available = (work.size() - chrome).max(egui::Vec2::splat(1.0));
+    let fitted = inner_size.min(available);
+    let size = ((fitted - inner_size).length_sq() > 1.0).then_some(fitted);
+    let max = (work.max - fitted - chrome).max(work.min);
+    let fitted_position = egui::pos2(
+        outer.min.x.clamp(work.min.x, max.x),
+        outer.min.y.clamp(work.min.y, max.y),
     );
-    let position = ((position - outer_rect.min).length_sq() > 1.0).then_some(position);
-
+    let position = ((fitted_position - outer.min).length_sq() > 1.0).then_some(fitted_position);
     (size, position)
 }
 
 #[cfg(test)]
 mod window_size_tests {
-    use super::{constrained_window_geometry, constrained_window_size};
-    use eframe::egui::{self, pos2, vec2};
-
+    use super::constrained_window_geometry;
+    use eframe::egui::{Rect, pos2, vec2};
     #[test]
-    fn shrinks_default_window_for_small_high_dpi_monitor() {
-        let size = constrained_window_size(vec2(1024.0, 640.0), vec2(520.0, 600.0), 1.25);
-
-        let Some(size) = size else {
-            panic!("the initial window should fit within the usable monitor height");
-        };
-        assert!((size.y - 550.4).abs() < 0.1);
+    fn preserves_window_on_secondary_monitor_with_positive_or_negative_origin() {
+        for x in [1920.0, -1920.0] {
+            let work = Rect::from_min_size(pos2(x, 0.0), vec2(1920.0, 1040.0));
+            let outer = Rect::from_min_size(pos2(x + 100.0, 80.0), vec2(550.0, 630.0));
+            assert_eq!(
+                constrained_window_geometry(work, vec2(520.0, 600.0), outer),
+                (None, None)
+            );
+        }
     }
-
     #[test]
-    fn preserves_window_size_when_monitor_has_enough_space() {
-        let size = constrained_window_size(vec2(1280.0, 800.0), vec2(520.0, 600.0), 1.0);
-
-        assert_eq!(size, None);
-    }
-
-    #[test]
-    fn does_not_shrink_a_window_already_within_the_safe_area() {
-        let size = constrained_window_size(vec2(1024.0, 640.0), vec2(520.0, 540.0), 1.25);
-
-        assert_eq!(size, None);
-    }
-
-    #[test]
-    fn moves_high_dpi_window_above_the_taskbar_after_shrinking() {
-        let (size, position) = constrained_window_geometry(
-            vec2(1024.0, 640.0),
-            vec2(520.0, 600.0),
-            egui::Rect::from_min_size(pos2(80.0, 80.0), vec2(550.0, 630.0)),
-            1.25,
+    fn respects_top_and_left_taskbar_work_area() {
+        let work = Rect::from_min_max(pos2(-1840.0, 60.0), pos2(0.0, 1080.0));
+        let outer = Rect::from_min_size(pos2(-1900.0, 0.0), vec2(550.0, 630.0));
+        assert_eq!(
+            constrained_window_geometry(work, vec2(520.0, 600.0), outer),
+            (None, Some(work.min))
         );
-
-        let Some(size) = size else {
-            panic!("the inner window should shrink on a high-DPI monitor");
-        };
-        let Some(position) = position else {
-            panic!("the outer window should move above the taskbar");
-        };
-        assert!((size.y - 550.4).abs() < 0.1);
-        assert!((position.x - 80.0).abs() < 0.1);
-        assert!((position.y - 2.0).abs() < 0.1);
     }
-
     #[test]
-    fn preserves_geometry_that_fits_on_a_standard_monitor() {
-        let (size, position) = constrained_window_geometry(
-            vec2(1280.0, 800.0),
-            vec2(520.0, 600.0),
-            egui::Rect::from_min_size(pos2(100.0, 80.0), vec2(550.0, 630.0)),
-            1.0,
+    fn shrinks_to_actual_work_area_and_accounts_for_window_chrome() {
+        let work = Rect::from_min_size(pos2(1280.0, 40.0), vec2(1024.0, 560.0));
+        let outer = Rect::from_min_size(pos2(1360.0, 80.0), vec2(550.0, 630.0));
+        assert_eq!(
+            constrained_window_geometry(work, vec2(520.0, 600.0), outer),
+            (Some(vec2(520.0, 530.0)), Some(pos2(1360.0, 40.0)))
         );
-
-        assert_eq!(size, None);
-        assert_eq!(position, None);
     }
 }
 impl NanoClick {

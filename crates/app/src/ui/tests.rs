@@ -24,6 +24,8 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
         probe,
         available: Some(Ok(())),
         theme: egui::ThemePreference::Dark,
+        #[cfg(target_os = "windows")]
+        window_fit: None,
     })
 }
 
