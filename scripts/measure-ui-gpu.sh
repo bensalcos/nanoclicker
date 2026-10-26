@@ -48,7 +48,7 @@ if [[ "${1:-}" == --inside ]]; then
   result=$?
   if [[ "$result" == 0 && "$profile" != validate ]]; then
     mkdir -p "$XDG_CONFIG_HOME/nanoclick"
-    printf '%s\n' '{"version":1,"interval_ms":10,"button":"left","count":null,"theme":"dark","shortcut":"F6"}' >"$XDG_CONFIG_HOME/nanoclick/preferences.json"
+    printf '%s\n' '{"version":2,"interval_ms":10,"button":"left","count":10,"repeat_mode":"until_stopped","theme":"dark","shortcut":"F6"}' >"$XDG_CONFIG_HOME/nanoclick/preferences.json"
     arguments=("$binary")
     if [[ "$profile" == quick ]]; then arguments+=(--quick-profile); fi
     target/release/examples/ui_performance "${arguments[@]}" >"$session/measurement.log" 2>&1

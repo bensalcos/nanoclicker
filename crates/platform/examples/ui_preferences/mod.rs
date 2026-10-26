@@ -171,16 +171,17 @@ pub fn run(
     })?;
     let saved = fs::read(&path)?;
     let data = read(&path)?;
-    if data["version"] != 1
+    if data["version"] != 2
         || data["button"] != "left"
-        || !data["count"].is_null()
+        || data["count"] != 10
+        || data["repeat_mode"] != "until_stopped"
         || data["shortcut"] != "F6"
         || data["theme"] != "dark"
         || data
             .as_object()
             .ok_or("Preferences must be an object")?
             .len()
-            != 6
+            != 7
     {
         return Err(format!("Unexpected saved preferences: {data}").into());
     }

@@ -1,6 +1,6 @@
 use crate::controller::Draft;
 use eframe::egui;
-use nanoclick_core::{ClickConfig, MouseButton, StopCondition};
+use nanoclick_core::{ClickConfig, MouseButton};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -9,7 +9,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SavedTheme {
     #[default]
@@ -35,7 +35,7 @@ impl From<egui::ThemePreference> for SavedTheme {
         }
     }
 }
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SavedButton {
     #[default]
@@ -62,24 +62,62 @@ impl From<MouseButton> for SavedButton {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SavedRepeatMode {
+    UntilStopped,
+    Count,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PreferencesV1 {
+    version: u32,
+    interval_ms: u64,
+    button: SavedButton,
+    count: Option<u64>,
+    theme: SavedTheme,
+    shortcut: String,
+}
+impl From<PreferencesV1> for Preferences {
+    fn from(old: PreferencesV1) -> Self {
+        debug_assert_eq!(old.version, 1);
+        Self {
+            version: 2,
+            interval_ms: old.interval_ms,
+            button: old.button,
+            count: old.count.unwrap_or(10),
+            repeat_mode: if old.count.is_some() {
+                SavedRepeatMode::Count
+            } else {
+                SavedRepeatMode::UntilStopped
+            },
+            theme: old.theme,
+            shortcut: old.shortcut,
+        }
+    }
+}
+
 /// Only preferences are serializable. Run state and granted permissions are absent.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Preferences {
     pub version: u32,
     pub interval_ms: u64,
     pub button: SavedButton,
-    pub count: Option<u64>,
+    pub count: u64,
+    pub repeat_mode: SavedRepeatMode,
     pub theme: SavedTheme,
     pub shortcut: String,
 }
 impl Default for Preferences {
     fn default() -> Self {
         Self {
-            version: 1,
+            version: 2,
             interval_ms: 100,
             button: SavedButton::Left,
-            count: None,
+            count: 10,
+            repeat_mode: SavedRepeatMode::UntilStopped,
             theme: SavedTheme::System,
             shortcut: "F6".into(),
         }
@@ -87,13 +125,11 @@ impl Default for Preferences {
 }
 impl Preferences {
     fn validate(&self) -> Result<(), SettingsError> {
-        if self.version != 1 {
-            return Err(SettingsError::Invalid(format!(
-                "Preferences version {} is not supported. The file was preserved.",
-                self.version
-            )));
+        if self.version != 2 {
+            return Err(SettingsError::UnsupportedVersion(self.version));
         }
-        ClickConfig::new(self.interval_ms, self.button.into(), self.count)
+        // Preserve and validate the remembered finite count in both modes.
+        ClickConfig::new(self.interval_ms, self.button.into(), Some(self.count))
             .map_err(|e| SettingsError::Invalid(e.to_string()))?;
         if self.shortcut.len() > 128 {
             return Err(SettingsError::Invalid(
@@ -108,8 +144,8 @@ impl Preferences {
     pub fn draft(&self) -> Draft {
         Draft {
             interval: self.interval_ms.to_string(),
-            count: self.count.unwrap_or(10).to_string(),
-            finite: self.count.is_some(),
+            count: self.count.to_string(),
+            finite: self.repeat_mode == SavedRepeatMode::Count,
             button: self.button.into(),
         }
     }
@@ -119,15 +155,19 @@ impl Preferences {
         shortcut: &str,
     ) -> Result<Self, SettingsError> {
         let plan = draft.validate().map_err(SettingsError::Invalid)?;
-        let count = match plan.stop_condition() {
-            StopCondition::UntilStopped => None,
-            StopCondition::Count(count) => Some(count.get()),
-        };
+        let count = draft.count.parse::<u64>().map_err(|_| {
+            SettingsError::Invalid("Enter a count from 1 to 999999 clicks before saving.".into())
+        })?;
         let preferences = Self {
-            version: 1,
+            version: 2,
             interval_ms: plan.interval().as_millis() as u64,
             button: plan.button().into(),
             count,
+            repeat_mode: if draft.finite {
+                SavedRepeatMode::Count
+            } else {
+                SavedRepeatMode::UntilStopped
+            },
             theme: theme.into(),
             shortcut: shortcut.into(),
         };
@@ -219,10 +259,14 @@ impl PreferencesFile {
                 return Err(error.into());
             }
         };
-        if version.version != 1 {
+        if !matches!(version.version, 1 | 2) {
             return Err(SettingsError::UnsupportedVersion(version.version));
         }
-        let preferences: Preferences = match serde_json::from_slice(&bytes) {
+        let decoded = match version.version {
+            1 => serde_json::from_slice::<PreferencesV1>(&bytes).map(Preferences::from),
+            _ => serde_json::from_slice::<Preferences>(&bytes),
+        };
+        let preferences = match decoded {
             Ok(preferences) => preferences,
             Err(error) => {
                 self.recovery_available = true;
@@ -335,6 +379,40 @@ impl PreferencesFile {
 mod tests {
     use super::*;
     #[test]
+    fn until_stopped_preserves_the_remembered_count() -> Result<(), Box<dyn std::error::Error>> {
+        let draft = Draft {
+            count: "500".into(),
+            finite: false,
+            ..Default::default()
+        };
+        let preferences = Preferences::from_draft(&draft, egui::ThemePreference::Dark, "F6")?;
+        let restored: Preferences = serde_json::from_str(&serde_json::to_string(&preferences)?)?;
+        assert_eq!(restored.draft().count, "500");
+        assert!(!restored.draft().finite);
+        Ok(())
+    }
+    #[test]
+    fn version_one_migrates_in_memory_without_rewriting_the_file()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let path = dir.path().join("preferences.json");
+        for (count, expected, finite) in [("null", "10", false), ("500", "500", true)] {
+            let text = format!(
+                r#"{{"version":1,"interval_ms":37,"button":"middle","count":{count},"theme":"dark","shortcut":"F6"}}"#
+            );
+            fs::write(&path, &text)?;
+            let mut file = PreferencesFile::new(path.clone());
+            let migrated = file.load()?;
+            assert_eq!(migrated.version, 2);
+            assert_eq!(migrated.draft().count, expected);
+            assert_eq!(migrated.draft().finite, finite);
+            assert_eq!(fs::read_to_string(&path)?, text);
+            file.save(&migrated)?;
+            assert_eq!(file.load()?, migrated);
+        }
+        Ok(())
+    }
+    #[test]
     fn roundtrip_replaces_only_valid_preferences() -> Result<(), Box<dyn std::error::Error>> {
         let dir = tempfile::tempdir()?;
         let mut file = PreferencesFile::new(dir.path().join("preferences.json"));
@@ -371,12 +449,12 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let dir = tempfile::tempdir()?;
         let path = dir.path().join("preferences.json");
-        let bytes = br#"{"version":2,"interval_ms":"a future representation","extra":true}"#;
+        let bytes = br#"{"version":99,"interval_ms":"a future representation","extra":true}"#;
         std::fs::write(&path, bytes)?;
         let mut file = PreferencesFile::new(path.clone());
         assert!(matches!(
             file.load(),
-            Err(SettingsError::UnsupportedVersion(2))
+            Err(SettingsError::UnsupportedVersion(99))
         ));
         assert!(!file.can_recover());
         assert!(matches!(
@@ -467,7 +545,7 @@ mod tests {
         assert!(file.load().is_err());
         assert_eq!(std::fs::metadata(path)?.len(), 65_537);
         let invalid = Preferences {
-            count: Some(0),
+            count: 0,
             ..Default::default()
         };
         assert!(invalid.validate().is_err());
