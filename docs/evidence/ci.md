@@ -57,4 +57,8 @@ The X11 artifact was downloaded to `artifacts/ci/linux-run-40139252678/`. Its GU
 
 [Run 40292975833](https://github.com/bensalcos/nanoclicker/actions/runs/40292975833) at `0a3380cb2d997031555eef31ec1bb45dd83b07df` passed the Windows desktop, Ubuntu desktop and alternative-renderer jobs. The Rust 1.95 job failed before crate compilation because the Linux runner lacked `wayland-client.pc`, required by `wayland-sys` during `pkg-config` discovery. This was a missing host development dependency, not an MSRV compiler diagnostic. The Windows artifact was downloaded, verified against the commit, and executed in the isolated Windows 11 VM; its current-source manual Start probe has producer sends but no receiver events (see [VM evidence](windows-vm-functional.md#current-source-0a3380c-manual-start-probe--2026-10-26)).
 
-The workflow was updated to install the Linux graphics and isolated-test packages in the Rust 1.95 job, matching the Ubuntu desktop job. The updated YAML still requires hosted CI confirmation. Do not report the MSRV job as passing until that rerun completes.
+The workflow was updated to install the Linux graphics and isolated-test packages in the Rust 1.95 job, matching the Ubuntu desktop job. The corrected workflow passed hosted verification in run 40297722966; see the follow-up section below.
+
+## MSRV Linux dependency fix — run 40297722966
+
+[Run 40297722966](https://github.com/bensalcos/nanoclicker/actions/runs/40297722966) at `c55c282a0a2f4bed0d0dbe10a50f6434952178ea` passed all four jobs: Windows 2025 desktop, Ubuntu 24.04 desktop, alternative Linux renderer and Minimum Rust 1.95. The Rust 1.95 job installs the Linux graphics and isolated-test development packages before `cargo +1.95.0 check --workspace --locked`; this resolved the prior missing `wayland-client.pc` discovery failure. This is hosted compile/test/package evidence and remains complementary to native GUI/input testing in the Windows 11 VM.
