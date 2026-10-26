@@ -327,7 +327,7 @@ impl eframe::App for NanoClick {
             return;
         }
         if let Ok(result) = self.probe.try_recv() {
-            self.available = Some(result);
+            self.complete_probe(result);
         }
         self.process_shortcuts(ctx);
         if self.shortcut.refresh() {
@@ -342,6 +342,12 @@ impl eframe::App for NanoClick {
     }
 }
 impl NanoClick {
+    fn complete_probe(&mut self, result: Result<(), String>) {
+        // A probe result and shortcut wake can be coalesced into the same frame.
+        // Discard earlier activations before making the desktop available.
+        self.shortcut.clear_pending();
+        self.available = Some(result);
+    }
     fn process_shortcuts(&mut self, ctx: &egui::Context) {
         if self.confirm_close || !matches!(self.available, Some(Ok(()))) {
             self.shortcut.clear_pending();

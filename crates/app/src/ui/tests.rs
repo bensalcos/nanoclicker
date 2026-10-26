@@ -50,6 +50,12 @@ fn shortcuts_received_while_unavailable_are_not_replayed() -> Result<(), Box<dyn
         app.process_shortcuts(&ctx);
         assert_eq!(app.control.engine.snapshot().state, RunState::Idle);
     }
+    let mut app = fixture(&ctx)?;
+    app.available = None;
+    app.shortcut.activation()();
+    app.complete_probe(Ok(()));
+    app.process_shortcuts(&ctx);
+    assert_eq!(app.control.engine.snapshot().state, RunState::Idle);
     Ok(())
 }
 
