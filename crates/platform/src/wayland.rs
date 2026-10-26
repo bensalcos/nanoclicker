@@ -80,17 +80,17 @@ pub struct PortalContext {
 impl PortalContext {
     /// Exports the live application window. The context must be dropped before
     /// its native window/display are destroyed. Unsupported exporters fall back
-    /// to an unparented dialog; export waits at most one second.
+    /// to an unparented dialog. Native export completes before returning.
     pub fn from_window(
         window: raw_window_handle::RawWindowHandle,
         display: raw_window_handle::RawDisplayHandle,
     ) -> Self {
-        let parent = block_on(race(
-            ashpd::WindowIdentifier::from_raw_handle(&window, Some(&display)),
-            async {
-                Timer::after(Duration::from_secs(1)).await;
-                None
-            },
+        // ashpd's exporter owns an internal native worker. Dropping its future
+        // on a timer would leave that worker using the borrowed display after
+        // app shutdown. Complete the export while the window is still alive.
+        let parent = block_on(ashpd::WindowIdentifier::from_raw_handle(
+            &window,
+            Some(&display),
         ))
         .map(Arc::new);
         Self {
