@@ -22,6 +22,7 @@ pub struct Shortcut {
     current: Option<HotKey>,
     pub requested: String,
     pub status: String,
+    pub portal_configured: bool,
     pub error: Option<String>,
     events: Arc<AtomicUsize>,
 }
@@ -52,6 +53,7 @@ impl Shortcut {
             current: None,
             requested,
             status: "Not registered".into(),
+            portal_configured: false,
             error: None,
             events: Arc::new(AtomicUsize::new(0)),
         }
@@ -76,7 +78,7 @@ impl Shortcut {
             ctx.request_repaint();
         }
     }
-    pub fn configure_portal(&mut self, _: &egui::Context) {
+    pub fn configure_portal(&mut self) {
         #[cfg(target_os = "linux")]
         {
             self.portal = None;
@@ -101,7 +103,8 @@ impl Shortcut {
             }
         }
     }
-    pub fn refresh(&mut self) {
+    pub fn refresh(&mut self) -> bool {
+        let mut portal_registered = false;
         let update = self
             .latest
             .lock()
@@ -110,6 +113,10 @@ impl Shortcut {
         if let Some(update) = update {
             match update {
                 Ok(trigger) => {
+                    if self.desktop == Desktop::Wayland {
+                        self.portal_configured = true;
+                        portal_registered = true;
+                    }
                     self.status = format!("Registered · {trigger}");
                     self.error = None;
                 }
@@ -128,6 +135,7 @@ impl Shortcut {
                 }
             }
         }
+        portal_registered
     }
     pub fn apply(&mut self) {
         if self.desktop == Desktop::Wayland {

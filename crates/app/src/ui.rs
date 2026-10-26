@@ -114,6 +114,10 @@ impl NanoClick {
         let shortcut = {
             let mut shortcut = shortcut;
             shortcut.portal_context = portal;
+            shortcut.portal_configured = saved.portal_shortcut_configured;
+            if desktop == Desktop::Wayland && saved.portal_shortcut_configured {
+                shortcut.configure_portal();
+            }
             shortcut
         };
         Ok(Self {
@@ -144,7 +148,27 @@ impl NanoClick {
         }
     }
     fn current_preferences(&self) -> Result<Preferences, crate::settings::SettingsError> {
-        Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
+        let mut preferences =
+            Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)?;
+        preferences.portal_shortcut_configured = self.shortcut.portal_configured;
+        Ok(preferences)
+    }
+    fn remember_portal_assignment(&mut self) {
+        let mut saved = self.saved_preferences.clone();
+        saved.portal_shortcut_configured = true;
+        let result = self
+            .preferences
+            .as_ref()
+            .ok_or(crate::settings::SettingsError::Protected)
+            .and_then(|file| file.save(&saved));
+        match result {
+            Ok(()) => self.saved_preferences = saved,
+            Err(error) => {
+                self.preferences_message = Some(format!(
+                    "Could not remember the desktop shortcut assignment: {error}"
+                ))
+            }
+        }
     }
     fn preferences_dirty(&self) -> bool {
         !self
@@ -229,16 +253,16 @@ impl NanoClick {
         }
     }
     fn recover_preferences(&mut self) {
-        let recovered =
-            Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
-                .and_then(|value| match &mut self.preferences {
-                    Some(file) => file
-                        .recover_and_save(&value)
-                        .map(|backup| (backup.display().to_string(), value)),
-                    None => Err(crate::settings::SettingsError::Invalid(
-                        "No preferences directory is available.".into(),
-                    )),
-                });
+        let recovered = self
+            .current_preferences()
+            .and_then(|value| match &mut self.preferences {
+                Some(file) => file
+                    .recover_and_save(&value)
+                    .map(|backup| (backup.display().to_string(), value)),
+                None => Err(crate::settings::SettingsError::Invalid(
+                    "No preferences directory is available.".into(),
+                )),
+            });
         match recovered {
             Ok((backup, value)) => {
                 self.saved_preferences = value;
@@ -272,7 +296,7 @@ impl NanoClick {
             section(ui, "03", "Global shortcut", |ui| {
                 if self.desktop == Desktop::Wayland {
                     if ui.button("Configure in desktop…").clicked() {
-                        self.shortcut.configure_portal(ui.ctx());
+                        self.shortcut.configure_portal();
                     }
                     ui.weak("The desktop assigns the shortcut. Manual control is also available.");
                 } else {
@@ -306,7 +330,9 @@ impl eframe::App for NanoClick {
             self.available = Some(result);
         }
         self.process_shortcuts(ctx);
-        self.shortcut.refresh();
+        if self.shortcut.refresh() {
+            self.remember_portal_assignment();
+        }
         if self.control.engine.snapshot().ready_at.is_some() {
             ctx.request_repaint_after(Duration::from_millis(100));
         }

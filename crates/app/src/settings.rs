@@ -94,6 +94,7 @@ impl From<PreferencesV1> for Preferences {
             },
             theme: old.theme,
             shortcut: old.shortcut,
+            portal_shortcut_configured: false,
         }
     }
 }
@@ -109,6 +110,8 @@ pub struct Preferences {
     pub repeat_mode: SavedRepeatMode,
     pub theme: SavedTheme,
     pub shortcut: String,
+    #[serde(default)]
+    pub portal_shortcut_configured: bool,
 }
 impl Default for Preferences {
     fn default() -> Self {
@@ -120,6 +123,7 @@ impl Default for Preferences {
             repeat_mode: SavedRepeatMode::UntilStopped,
             theme: SavedTheme::System,
             shortcut: "F6".into(),
+            portal_shortcut_configured: false,
         }
     }
 }
@@ -170,6 +174,7 @@ impl Preferences {
             },
             theme: theme.into(),
             shortcut: shortcut.into(),
+            portal_shortcut_configured: false,
         };
         preferences.validate()?;
         Ok(preferences)

@@ -175,13 +175,14 @@ pub fn run(
         || data["button"] != "left"
         || data["count"] != 10
         || data["repeat_mode"] != "until_stopped"
+        || data["portal_shortcut_configured"] != false
         || data["shortcut"] != "F6"
         || data["theme"] != "dark"
         || data
             .as_object()
             .ok_or("Preferences must be an object")?
             .len()
-            != 7
+            != 8
     {
         return Err(format!("Unexpected saved preferences: {data}").into());
     }

@@ -345,3 +345,26 @@ fn successful_save_clears_dirty_state() -> Result<(), Box<dyn std::error::Error>
     assert!(!app.save_preferences());
     Ok(())
 }
+
+#[test]
+fn remembering_portal_assignment_does_not_save_other_unsaved_edits()
+-> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    let mut app = fixture(&ctx)?;
+    let dir = tempfile::tempdir()?;
+    let mut file = PreferencesFile::new(dir.path().join("preferences.json"));
+    file.load()?;
+    app.preferences = Some(file);
+    app.control.draft.interval = "37".into();
+    app.shortcut.portal_configured = true;
+    app.remember_portal_assignment();
+    let stored = app
+        .preferences
+        .as_mut()
+        .ok_or("Missing fixture file")?
+        .load()?;
+    assert!(stored.portal_shortcut_configured);
+    assert_eq!(stored.interval_ms, 100);
+    assert!(app.preferences_dirty());
+    Ok(())
+}
