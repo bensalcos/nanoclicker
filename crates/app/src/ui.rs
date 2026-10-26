@@ -208,12 +208,16 @@ impl NanoClick {
     }
     fn resolve_close(&mut self, ctx: &egui::Context, choice: CloseChoice) {
         match choice {
-            CloseChoice::Save if !self.save_preferences() => return,
+            CloseChoice::Save => {
+                if !self.save_preferences() {
+                    return;
+                }
+            }
             CloseChoice::Cancel => {
                 self.confirm_close = false;
                 return;
             }
-            _ => {}
+            CloseChoice::Discard => {}
         }
         self.confirm_close = false;
         self.close_approved = true;
@@ -226,7 +230,7 @@ impl NanoClick {
         let mut choice = None;
         egui::Modal::new(egui::Id::unique("unsaved-close")).show(ctx, |ui| {
             ui.heading("Save changes before closing?");
-            ui.label("Your current preferences have unsaved changes. Clicking has been stopped.");
+            ui.label("Your current preferences have unsaved changes. Stop has been requested.");
             if let Some(message) = &self.preferences_message {
                 ui.label(message);
             }
@@ -242,10 +246,20 @@ impl NanoClick {
                 }
             });
         });
-        if ctx.input(|input| input.modifiers.alt && input.key_pressed(egui::Key::D)) {
+        if ctx.input_mut(|input| {
+            input.consume_shortcut(&egui::KeyboardShortcut::new(
+                egui::Modifiers::ALT,
+                egui::Key::D,
+            ))
+        }) {
             choice = Some(CloseChoice::Discard);
         }
-        if ctx.input(|input| input.modifiers.alt && input.key_pressed(egui::Key::S)) {
+        if ctx.input_mut(|input| {
+            input.consume_shortcut(&egui::KeyboardShortcut::new(
+                egui::Modifiers::ALT,
+                egui::Key::S,
+            ))
+        }) {
             choice = Some(CloseChoice::Save);
         }
         if let Some(choice) = choice {

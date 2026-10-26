@@ -6,6 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 use x11rb::{
+    connection::Connection,
     protocol::{
         xproto::{
             ClientMessageEvent, ConfigureWindowAux, ConnectionExt, EventMask, InputFocus, StackMode,

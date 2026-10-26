@@ -374,3 +374,27 @@ fn remembering_portal_assignment_does_not_save_other_unsaved_edits()
     assert!(app.preferences_dirty());
     Ok(())
 }
+
+#[test]
+fn discard_uses_event_modifiers_even_after_alt_is_released()
+-> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    theme::configure(&ctx);
+    let mut app = fixture(&ctx)?;
+    app.control.draft.count = "500".into();
+    app.request_close(&ctx);
+    frame(
+        &mut app,
+        &ctx,
+        vec![egui::Event::Key {
+            key: egui::Key::D,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::ALT,
+        }],
+    )
+    .drop_without_applying_deltas();
+    assert!(app.close_approved);
+    Ok(())
+}
