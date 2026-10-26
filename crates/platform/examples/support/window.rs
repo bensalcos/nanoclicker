@@ -100,9 +100,41 @@ pub fn close(conn: &RustConnection, window: u32, app: &mut App) -> Result<()> {
         ),
     )?
     .check()?;
+    let first = conn.setup().min_keycode;
+    let mapping = conn
+        .get_keyboard_mapping(first, conn.setup().max_keycode - first + 1)?
+        .reply()?;
+    let key = |symbol| -> Result<u8> {
+        let offset = mapping
+            .keysyms
+            .chunks(usize::from(mapping.keysyms_per_keycode))
+            .position(|symbols| symbols.contains(&symbol))
+            .ok_or("Close fixture key is not mapped")?;
+        Ok(u8::try_from(usize::from(first) + offset)?)
+    };
+    let (alt, discard) = (key(0xffe9)?, key(u32::from(b'd'))?);
+    let mut last_attempt = Instant::now();
     wait(
         || match app.0.try_wait()? {
-            None => Ok(false),
+            None => {
+                // This isolated fixture explicitly chooses Discard in the
+                // unsaved-changes modal; it never changes product preferences.
+                if last_attempt.elapsed() >= Duration::from_millis(100) {
+                    last_attempt = Instant::now();
+                    if conn
+                        .set_input_focus(InputFocus::PARENT, window, x11rb::CURRENT_TIME)?
+                        .check()
+                        .is_ok()
+                    {
+                        conn.xtest_fake_input(2, alt, 0, x11rb::NONE, 0, 0, 0)?
+                            .check()?;
+                        pair(conn, discard)?;
+                        conn.xtest_fake_input(3, alt, 0, x11rb::NONE, 0, 0, 0)?
+                            .check()?;
+                    }
+                }
+                Ok(false)
+            }
             Some(status) if status.success() => Ok(true),
             Some(status) => Err(format!("NanoClick failed during shutdown: {status}").into()),
         },

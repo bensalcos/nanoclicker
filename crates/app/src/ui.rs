@@ -14,11 +14,21 @@ use std::{
     time::Duration,
 };
 
+#[derive(Clone, Copy)]
+enum CloseChoice {
+    Save,
+    Discard,
+    Cancel,
+}
+
 pub struct NanoClick {
     diagnostics: Option<Diagnostics>,
     diagnostics_message: Option<String>,
     preferences: Option<PreferencesFile>,
     preferences_message: Option<String>,
+    saved_preferences: Preferences,
+    confirm_close: bool,
+    close_approved: bool,
     preferences_recovery_available: bool,
     control: Controller,
     shortcut: Shortcut,
@@ -99,7 +109,7 @@ impl NanoClick {
             })?;
         let mut control = Controller::new(engine);
         control.draft = saved.draft();
-        let shortcut = Shortcut::new(desktop, &ctx, saved.shortcut);
+        let shortcut = Shortcut::new(desktop, &ctx, saved.shortcut.clone());
         #[cfg(target_os = "linux")]
         let shortcut = {
             let mut shortcut = shortcut;
@@ -111,6 +121,9 @@ impl NanoClick {
             diagnostics_message: None,
             preferences,
             preferences_message,
+            saved_preferences: saved,
+            confirm_close: false,
+            close_approved: false,
             preferences_recovery_available,
             control,
             shortcut,
@@ -130,19 +143,90 @@ impl NanoClick {
             self.diagnostics = None;
         }
     }
-    fn save_preferences(&mut self) {
-        let saved =
-            Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
-                .and_then(|value| match &self.preferences {
-                    Some(file) => file.save(&value),
-                    None => Err(crate::settings::SettingsError::Invalid(
+    fn current_preferences(&self) -> Result<Preferences, crate::settings::SettingsError> {
+        Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
+    }
+    fn preferences_dirty(&self) -> bool {
+        !self
+            .current_preferences()
+            .is_ok_and(|current| current == self.saved_preferences)
+    }
+    fn save_preferences(&mut self) -> bool {
+        let saved = self.current_preferences().and_then(|value| {
+            match &self.preferences {
+                Some(file) => file.save(&value)?,
+                None => {
+                    return Err(crate::settings::SettingsError::Invalid(
                         "No preferences directory is available.".into(),
-                    )),
-                });
-        self.preferences_message = Some(match saved {
-            Ok(()) => "Preferences saved.".into(),
-            Err(error) => error.to_string(),
+                    ));
+                }
+            }
+            Ok(value)
         });
+        match saved {
+            Ok(value) => {
+                self.saved_preferences = value;
+                self.preferences_message = Some("Preferences saved.".into());
+                true
+            }
+            Err(error) => {
+                self.preferences_message = Some(error.to_string());
+                false
+            }
+        }
+    }
+    fn request_close(&mut self, ctx: &egui::Context) {
+        self.stop();
+        if !self.close_approved && self.preferences_dirty() {
+            self.confirm_close = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+        }
+    }
+    fn resolve_close(&mut self, ctx: &egui::Context, choice: CloseChoice) {
+        match choice {
+            CloseChoice::Save if !self.save_preferences() => return,
+            CloseChoice::Cancel => {
+                self.confirm_close = false;
+                return;
+            }
+            _ => {}
+        }
+        self.confirm_close = false;
+        self.close_approved = true;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+    fn close_confirmation(&mut self, ctx: &egui::Context) {
+        if !self.confirm_close {
+            return;
+        }
+        let mut choice = None;
+        egui::Modal::new(egui::Id::unique("unsaved-close")).show(ctx, |ui| {
+            ui.heading("Save changes before closing?");
+            ui.label("Your current preferences have unsaved changes. Clicking has been stopped.");
+            if let Some(message) = &self.preferences_message {
+                ui.label(message);
+            }
+            ui.horizontal(|ui| {
+                if ui.button("Save").on_hover_text("Alt+S").clicked() {
+                    choice = Some(CloseChoice::Save);
+                }
+                if ui.button("Discard").on_hover_text("Alt+D").clicked() {
+                    choice = Some(CloseChoice::Discard);
+                }
+                if ui.button("Cancel").on_hover_text("Escape").clicked() {
+                    choice = Some(CloseChoice::Cancel);
+                }
+            });
+        });
+        if ctx.input(|input| input.modifiers.alt && input.key_pressed(egui::Key::D)) {
+            choice = Some(CloseChoice::Discard);
+        }
+        if ctx.input(|input| input.modifiers.alt && input.key_pressed(egui::Key::S)) {
+            choice = Some(CloseChoice::Save);
+        }
+        if let Some(choice) = choice {
+            self.resolve_close(ctx, choice);
+        }
     }
     fn recover_preferences(&mut self) {
         let recovered =
@@ -150,13 +234,14 @@ impl NanoClick {
                 .and_then(|value| match &mut self.preferences {
                     Some(file) => file
                         .recover_and_save(&value)
-                        .map(|backup| backup.display().to_string()),
+                        .map(|backup| (backup.display().to_string(), value)),
                     None => Err(crate::settings::SettingsError::Invalid(
                         "No preferences directory is available.".into(),
                     )),
                 });
         match recovered {
-            Ok(backup) => {
+            Ok((backup, value)) => {
+                self.saved_preferences = value;
                 self.preferences_recovery_available = false;
                 self.preferences_message = Some(format!(
                     "Current settings saved. The original file was backed up to {backup}."
@@ -208,10 +293,13 @@ impl eframe::App for NanoClick {
         #[cfg(target_os = "windows")]
         fit_window_to_monitor(ctx, _frame, &mut self.window_fit);
 
-        if ctx.input(|input| {
-            input.key_pressed(egui::Key::Escape) || input.viewport().close_requested()
-        }) {
+        if ctx.input(|input| input.key_pressed(egui::Key::Escape)) {
             self.stop();
+            self.confirm_close = false;
+            return;
+        }
+        if ctx.input(|input| input.viewport().close_requested()) {
+            self.request_close(ctx);
             return;
         }
         if let Ok(result) = self.probe.try_recv() {
@@ -229,7 +317,7 @@ impl eframe::App for NanoClick {
 }
 impl NanoClick {
     fn process_shortcuts(&mut self, ctx: &egui::Context) {
-        if !matches!(self.available, Some(Ok(()))) {
+        if self.confirm_close || !matches!(self.available, Some(Ok(()))) {
             self.shortcut.clear_pending();
             return;
         }
@@ -264,7 +352,10 @@ impl NanoClick {
             .frame(egui::Frame::central_panel(ui.style()).inner_margin(24))
             .show(ui, |ui| {
                 self.header(ui);
-                ui.weak(self.desktop.name());
+                ui.horizontal(|ui| {
+                    ui.weak(self.desktop.name());
+                    if self.preferences_dirty() { ui.weak("Unsaved changes"); }
+                });
                 ui.add_space(4.0);
                 // Reserve the measured footer before drawing the scroll area,
                 // but create its interactive widgets last: Tab follows reading order.
@@ -300,6 +391,7 @@ impl NanoClick {
                     });
                 self.action(ui, snapshot, label, &status, &progress);
             });
+        self.close_confirmation(ui.ctx());
     }
 }
 

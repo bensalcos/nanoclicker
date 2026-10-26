@@ -17,6 +17,13 @@ fn fixture(ctx: &egui::Context) -> Result<NanoClick, Box<dyn std::error::Error>>
         diagnostics_message: None,
         preferences: None,
         preferences_message: None,
+        saved_preferences: Preferences::from_draft(
+            &control.draft,
+            egui::ThemePreference::Dark,
+            "F6",
+        )?,
+        confirm_close: false,
+        close_approved: false,
         preferences_recovery_available: false,
         control,
         shortcut: Shortcut::unregistered(Desktop::X11, ctx, "F6".into()),
@@ -293,5 +300,48 @@ fn primary_action_stays_inside_minimum_window_with_long_status_and_errors()
             "Primary action must retain its target size"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn close_requires_a_decision_and_failed_save_keeps_changes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    let mut app = fixture(&ctx)?;
+    assert!(!app.preferences_dirty());
+    app.control.draft.count = "500".into();
+    assert!(app.preferences_dirty());
+    app.request_close(&ctx);
+    assert!(app.confirm_close);
+    app.shortcut.activation()();
+    app.process_shortcuts(&ctx);
+    assert!(!app.shortcut.has_pending());
+    app.resolve_close(&ctx, CloseChoice::Save);
+    assert!(
+        app.confirm_close,
+        "A failed Save must not close or discard edits"
+    );
+    app.resolve_close(&ctx, CloseChoice::Cancel);
+    assert!(!app.confirm_close);
+    assert_eq!(app.control.draft.count, "500");
+    app.request_close(&ctx);
+    app.resolve_close(&ctx, CloseChoice::Discard);
+    assert!(app.close_approved);
+    Ok(())
+}
+#[test]
+fn successful_save_clears_dirty_state() -> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    let mut app = fixture(&ctx)?;
+    let dir = tempfile::tempdir()?;
+    let mut file = PreferencesFile::new(dir.path().join("preferences.json"));
+    file.load()?;
+    app.preferences = Some(file);
+    app.control.draft.count = "500".into();
+    assert!(app.save_preferences());
+    assert!(!app.preferences_dirty());
+    app.control.draft.count = "invalid".into();
+    assert!(app.preferences_dirty());
+    assert!(!app.save_preferences());
     Ok(())
 }
