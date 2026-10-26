@@ -212,49 +212,104 @@ fn constrained_window_size(
     inner_size: egui::Vec2,
     scale_factor: f32,
 ) -> Option<egui::Vec2> {
-    // Winit reports the full monitor; leave room for Windows chrome and the taskbar.
-    const WORK_AREA_RESERVE_PX: f32 = 112.0;
     const MIN_WINDOW_HEIGHT: f32 = 520.0;
 
     if !monitor_size.y.is_finite()
+        || !inner_size.x.is_finite()
         || !inner_size.y.is_finite()
         || !scale_factor.is_finite()
         || monitor_size.y <= 0.0
+        || inner_size.x <= 0.0
         || scale_factor <= 0.0
     {
         return None;
     }
 
     let max_inner_height =
-        (monitor_size.y - WORK_AREA_RESERVE_PX / scale_factor).max(MIN_WINDOW_HEIGHT);
+        (monitor_size.y - WINDOW_CHROME_RESERVE_PX / scale_factor).max(MIN_WINDOW_HEIGHT);
     (inner_size.y > max_inner_height + 1.0).then(|| egui::vec2(inner_size.x, max_inner_height))
 }
 
 #[cfg(target_os = "windows")]
 fn fit_window_to_monitor(ctx: &egui::Context) {
-    let (monitor_size, inner_size, scale_factor) = ctx.input(|input| {
-        let viewport = input.viewport();
-        (
-            viewport.monitor_size,
-            viewport.inner_rect.map(|rect| rect.size()),
-            viewport.native_pixels_per_point,
-        )
-    });
-    let (Some(monitor_size), Some(inner_size), Some(scale_factor)) =
-        (monitor_size, inner_size, scale_factor)
+    let (monitor_size, inner_rect, outer_rect, scale_factor, maximized, fullscreen) =
+        ctx.input(|input| {
+            let viewport = input.viewport();
+            (
+                viewport.monitor_size,
+                viewport.inner_rect,
+                viewport.outer_rect,
+                viewport.native_pixels_per_point,
+                viewport.maximized,
+                viewport.fullscreen,
+            )
+        });
+    if maximized == Some(true) || fullscreen == Some(true) {
+        return;
+    }
+    let (Some(monitor_size), Some(inner_rect), Some(outer_rect), Some(scale_factor)) =
+        (monitor_size, inner_rect, outer_rect, scale_factor)
     else {
         return;
     };
 
-    if let Some(size) = constrained_window_size(monitor_size, inner_size, scale_factor) {
+    let (size, position) =
+        constrained_window_geometry(monitor_size, inner_rect.size(), outer_rect, scale_factor);
+    if let Some(size) = size {
         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
     }
+    if let Some(position) = position {
+        ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(position));
+    }
+}
+
+#[cfg(any(target_os = "windows", test))]
+const WINDOW_CHROME_RESERVE_PX: f32 = 112.0;
+
+#[cfg(any(target_os = "windows", test))]
+fn constrained_window_geometry(
+    monitor_size: egui::Vec2,
+    inner_size: egui::Vec2,
+    outer_rect: egui::Rect,
+    scale_factor: f32,
+) -> (Option<egui::Vec2>, Option<egui::Pos2>) {
+    const TASKBAR_RESERVE_PX: f32 = 72.0;
+
+    let size = constrained_window_size(monitor_size, inner_size, scale_factor);
+    if !monitor_size.x.is_finite()
+        || !monitor_size.y.is_finite()
+        || !scale_factor.is_finite()
+        || scale_factor <= 0.0
+        || !inner_size.x.is_finite()
+        || !inner_size.y.is_finite()
+        || !outer_rect.size().x.is_finite()
+        || !outer_rect.size().y.is_finite()
+        || !outer_rect.min.x.is_finite()
+        || !outer_rect.min.y.is_finite()
+    {
+        return (size, None);
+    }
+
+    let fitted_inner_size = size.unwrap_or(inner_size);
+    let non_client_size = outer_rect.size() - inner_size;
+    let fitted_outer_size = fitted_inner_size + non_client_size;
+    let available_width = monitor_size.x.max(0.0);
+    let available_height = (monitor_size.y - TASKBAR_RESERVE_PX / scale_factor).max(0.0);
+    let max_x = (available_width - fitted_outer_size.x).max(0.0);
+    let max_y = (available_height - fitted_outer_size.y).max(0.0);
+    let position = egui::pos2(
+        outer_rect.min.x.clamp(0.0, max_x),
+        outer_rect.min.y.clamp(0.0, max_y),
+    );
+    let position = ((position - outer_rect.min).length_sq() > 1.0).then_some(position);
+
+    (size, position)
 }
 
 #[cfg(test)]
 mod window_size_tests {
-    use super::constrained_window_size;
-    use eframe::egui::vec2;
+    use super::{constrained_window_geometry, constrained_window_size};
+    use eframe::egui::{self, pos2, vec2};
 
     #[test]
     fn shrinks_default_window_for_small_high_dpi_monitor() {
@@ -278,6 +333,39 @@ mod window_size_tests {
         let size = constrained_window_size(vec2(1024.0, 640.0), vec2(520.0, 540.0), 1.25);
 
         assert_eq!(size, None);
+    }
+
+    #[test]
+    fn moves_high_dpi_window_above_the_taskbar_after_shrinking() {
+        let (size, position) = constrained_window_geometry(
+            vec2(1024.0, 640.0),
+            vec2(520.0, 600.0),
+            egui::Rect::from_min_size(pos2(80.0, 80.0), vec2(550.0, 630.0)),
+            1.25,
+        );
+
+        let Some(size) = size else {
+            panic!("the inner window should shrink on a high-DPI monitor");
+        };
+        let Some(position) = position else {
+            panic!("the outer window should move above the taskbar");
+        };
+        assert!((size.y - 550.4).abs() < 0.1);
+        assert!((position.x - 80.0).abs() < 0.1);
+        assert!((position.y - 2.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn preserves_geometry_that_fits_on_a_standard_monitor() {
+        let (size, position) = constrained_window_geometry(
+            vec2(1280.0, 800.0),
+            vec2(520.0, 600.0),
+            egui::Rect::from_min_size(pos2(100.0, 80.0), vec2(550.0, 630.0)),
+            1.0,
+        );
+
+        assert_eq!(size, None);
+        assert_eq!(position, None);
     }
 }
 impl NanoClick {
