@@ -125,7 +125,7 @@ Implementation: versioned explicit Save and seven recovery tests pass on Linux a
 
 ### T14 — Accept UI, DPI and accessibility [M]
 
-Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. Native DPI and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
+Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+Tab order, Enter behavior, token contrast and primary-action bounds have tests. Xvfb full flows pass at 100/150/200%, including minimum-size scrolling; default help clipping is fixed. Windows 11 VM testing at 125% showed both an existing and freshly launched `0a3380c` window clipped its lower controls at 1280×800. Current source now constrains the Windows window to the monitor's available logical height; the rebuilt artifact must verify fresh launch, Start visibility, 100% behavior and monitor transitions. Native DPI acceptance and NVDA/Orca remain pending. See `docs/evidence/ui-scaling.md` and `ui-accessibility.md`.
 - [ ] Polish tokens, focus, errors, scaling and themes against UI.md with actual captures.
 - [ ] Complete keyboard and NVDA/Orca testing, without clipping at 420×520 and 200% DPI.
 

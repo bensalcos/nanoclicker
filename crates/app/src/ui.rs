@@ -119,6 +119,9 @@ impl NanoClick {
 }
 impl eframe::App for NanoClick {
     fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        #[cfg(target_os = "windows")]
+        fit_window_to_monitor(ctx);
+
         if ctx.input(|input| {
             input.key_pressed(egui::Key::Escape) || input.viewport().close_requested()
         }) {
@@ -200,6 +203,81 @@ impl NanoClick {
                     });
                 self.action(ui, snapshot, label, &status, &progress);
             });
+    }
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn constrained_window_size(
+    monitor_size: egui::Vec2,
+    inner_size: egui::Vec2,
+    scale_factor: f32,
+) -> Option<egui::Vec2> {
+    // Winit reports the full monitor; leave room for Windows chrome and the taskbar.
+    const WORK_AREA_RESERVE_PX: f32 = 112.0;
+    const MIN_WINDOW_HEIGHT: f32 = 520.0;
+
+    if !monitor_size.y.is_finite()
+        || !inner_size.y.is_finite()
+        || !scale_factor.is_finite()
+        || monitor_size.y <= 0.0
+        || scale_factor <= 0.0
+    {
+        return None;
+    }
+
+    let max_inner_height =
+        (monitor_size.y - WORK_AREA_RESERVE_PX / scale_factor).max(MIN_WINDOW_HEIGHT);
+    (inner_size.y > max_inner_height + 1.0).then(|| egui::vec2(inner_size.x, max_inner_height))
+}
+
+#[cfg(target_os = "windows")]
+fn fit_window_to_monitor(ctx: &egui::Context) {
+    let (monitor_size, inner_size, scale_factor) = ctx.input(|input| {
+        let viewport = input.viewport();
+        (
+            viewport.monitor_size,
+            viewport.inner_rect.map(|rect| rect.size()),
+            viewport.native_pixels_per_point,
+        )
+    });
+    let (Some(monitor_size), Some(inner_size), Some(scale_factor)) =
+        (monitor_size, inner_size, scale_factor)
+    else {
+        return;
+    };
+
+    if let Some(size) = constrained_window_size(monitor_size, inner_size, scale_factor) {
+        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
+    }
+}
+
+#[cfg(test)]
+mod window_size_tests {
+    use super::constrained_window_size;
+    use eframe::egui::vec2;
+
+    #[test]
+    fn shrinks_default_window_for_small_high_dpi_monitor() {
+        let size = constrained_window_size(vec2(1024.0, 640.0), vec2(520.0, 600.0), 1.25);
+
+        let Some(size) = size else {
+            panic!("the initial window should fit within the usable monitor height");
+        };
+        assert!((size.y - 550.4).abs() < 0.1);
+    }
+
+    #[test]
+    fn preserves_window_size_when_monitor_has_enough_space() {
+        let size = constrained_window_size(vec2(1280.0, 800.0), vec2(520.0, 600.0), 1.0);
+
+        assert_eq!(size, None);
+    }
+
+    #[test]
+    fn does_not_shrink_a_window_already_within_the_safe_area() {
+        let size = constrained_window_size(vec2(1024.0, 640.0), vec2(520.0, 540.0), 1.25);
+
+        assert_eq!(size, None);
     }
 }
 impl NanoClick {

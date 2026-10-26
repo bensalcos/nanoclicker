@@ -28,6 +28,7 @@
 - X11 shortcut invalidation after pointer-only mapping changes and handling of real keyboard-map changes.
 - Unbounded X11 protocol waits and caller waits during connection/authentication setup; blocked OS work is contained by a fixed helper limit.
 - Minimum-window scrolling and action visibility.
+- Windows high-DPI sizing for small work areas; current-source VM verification is pending.
 - Concurrent Xvfb display selection in the test launchers; startup observation now retains owned-server diagnostics.
 
 ### Acceptance status
