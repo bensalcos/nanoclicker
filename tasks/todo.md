@@ -116,12 +116,13 @@ Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activat
 
 ### T13 — Persist recoverable preferences [M]
 
-Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. The Windows 11 VM verifies Save/relaunch for theme, interval, button, count and shortcut, unsaved interval discard, and idle startup; it also verifies invalid-file recovery, exact damaged-byte backup and post-recovery relaunch on `cfd4a64`. The VM's original preferences were restored afterward. Native Linux GUI recovery/write-failure and Wayland desktop QA remain pending. See `docs/evidence/ui-preferences.md`.
+Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. Windows 11 VM verifies saved fields, unsaved-edit discard, idle startup and `cfd4a64` invalid-file recovery with exact backup and relaunch. A temporary Linux X11-only build from the same source verifies the invalid-file recovery GUI and relaunch in private Xvfb; it omits Wayland and AccessKit because host development metadata is missing. Native Wayland, unsupported-version and write-error GUI acceptance remain pending. See `docs/evidence/ui-preferences.md`.
 - [x] Theme, plan and requested shortcut in a versioned schema, without active state or automatic resumption.
 - [x] Verify versioned preferences, safe replacement, protected-path behavior and standard config directories through Linux tests and Windows CI/VM Save/relaunch.
 - [x] Verify invalid-file recovery and exact backup preservation in the Windows 11 GUI.
 - [ ] Verify unsupported-version recovery and backup/save write-error presentation in native Windows/Linux GUI flows.
-- [ ] Verify invalid-file recovery in a native Linux GUI and keep native Wayland desktop QA separate.
+- [x] Verify invalid-file recovery and post-recovery relaunch in the Linux X11 GUI on isolated Xvfb.
+- [ ] Verify recovery in native Wayland and full-feature Linux builds; keep portal consent and desktop acceptance separate.
 
 **Dependencies:** T11, T12. **Verification:** roundtrip, corruption, future version and failed write preserving the last valid file. **Files:** `app/src/settings.rs`, integration/controller and tests.
 
