@@ -6,6 +6,8 @@ Available Rust: rustc/cargo 1.97.1; initially installed target x86_64-unknown-li
 
 Actual read-only D-Bus query: RemoteDesktop version=2, AvailableDeviceTypes=7 (includes POINTER); GlobalShortcuts version=1. This establishes interface presence, not authorization, injection or effective shortcuts. No control of the user's desktop was requested.
 
+Read-only recheck on 2026-10-26: GNOME Shell 50.5 (`gnome-shell-50.5-1.fc44`), xdg-desktop-portal 1.22.1, GNOME portal backend 50.0 and GTK portal backend 1.15.3. The live `org.freedesktop.portal.Desktop` reports RemoteDesktop v2 with `AvailableDeviceTypes=7` and GlobalShortcuts v1. This confirms a real GNOME Wayland environment is available for later native acceptance; this inventory did not create a NanoClick session, request consent, bind a shortcut or send input.
+
 At this initial inventory, Windows, Ubuntu 24.04, KDE, NVDA and Orca had no native evidence. Record exact compositor/portal and GPU versions for measurements. Later hosted/container/GPU evidence is tracked separately in STATUS.md and must retain its scope.
 
 ## Capture fixture and isolation

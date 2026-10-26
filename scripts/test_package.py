@@ -2,9 +2,41 @@ import tempfile
 from pathlib import Path
 import unittest
 import subprocess
-from package import publish, tar_bundle, verify_binary
+from package import (
+    package_readme,
+    bundle_name,
+    publish,
+    renderer_feature_args,
+    tar_bundle,
+    validate_renderer,
+    verify_binary,
+)
 
 class PackageTests(unittest.TestCase):
+    def test_wgpu_and_glow_readmes_name_only_their_renderer_requirements(self):
+        wgpu = package_readme(True, "linux", "wgpu")
+        glow = package_readme(True, "linux", "glow")
+        self.assertIn("requires a Vulkan loader", wgpu)
+        self.assertIn("libvulkan1", wgpu)
+        self.assertIn("requires OpenGL/EGL", glow)
+        self.assertIn("libgl1 libegl1", glow)
+        self.assertNotIn("requires a Vulkan loader", glow)
+
+    def test_glow_inventory_uses_its_actual_cargo_feature_set(self):
+        self.assertEqual(renderer_feature_args("wgpu"), [])
+        self.assertEqual(renderer_feature_args("glow"), ["--no-default-features", "--features", "glow"])
+
+    def test_glow_bundle_name_does_not_collide_with_wgpu(self):
+        self.assertEqual(bundle_name("0.1.0", "linux", "wgpu", True),
+                         "nanoclick-0.1.0-linux-x86_64-preview")
+        self.assertEqual(bundle_name("0.1.0", "linux", "glow", True),
+                         "nanoclick-0.1.0-linux-x86_64-glow-preview")
+
+    def test_windows_rejects_the_linux_only_glow_renderer(self):
+        with self.assertRaisesRegex(ValueError, "Windows builds require the WGPU renderer"):
+            validate_renderer("windows", "glow")
+        validate_renderer("windows", "wgpu")
+
     def test_cached_notice_bytes_survive_windows_checkout_filters(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

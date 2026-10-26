@@ -12,6 +12,6 @@ Source 441e679 selects static CRT linkage. Hosted run 40231110831 produces a Win
 
 ## Graphics incompatibility exposed
 
-The same corrected executable's GUI exits with code 1: `OpenGL version is too low (1.1.0). egui requires OpenGL 2.0+.` This is a separate renderer issue, not a recurrence of the runtime-loader failure. Windows' default renderer subsequently changed to the existing wgpu backend; Linux retains glow. The replacement now opens in this VM; see [functional evidence and remaining discrepancies](windows-vm-functional.md).
+The same corrected executable's GUI exits with code 1: `OpenGL version is too low (1.1.0). egui requires OpenGL 2.0+.` This is a separate renderer issue, not a recurrence of the runtime-loader failure. Windows' default renderer subsequently changed to the existing wgpu backend. At the time of this older Linux check, Linux retained Glow; the later current-source GPU comparison moved its provisional default to WGPU. The replacement now opens in this VM; see [functional evidence and remaining discrepancies](windows-vm-functional.md).
 
 Local ignored startup evidence: `artifacts/vm/windows11-lab/resume-runtime-evidence.png`, `static-crt-startup.png`, `pe-imports.txt`, the QA scripts/media and the guest's `C:\NanoClickLab\StaticCRT\help-result.json` and `startup-result.json`. Subsequent actual app-generated input is recorded separately in the functional evidence.

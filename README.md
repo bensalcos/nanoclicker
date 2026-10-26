@@ -2,7 +2,7 @@
 
 A focused desktop autoclicker being rewritten in Rust for Windows and Linux. The interface is English-only, with light, dark and system themes.
 
-**Development status:** the first Rust implementation is available. Core tests and isolated X11 input/shortcut checks pass. Hosted Windows Server 2025 passes 50 native Rust tests and builds the preview ZIP/PDB; native Windows desktop/input/DPI/screen-reader acceptance remains pending. Wayland portal integration is implemented; consent, revocation and target delivery still need native acceptance. Performance budgets are targets, not verified product claims.
+**Development status:** the Rust preview is available. Isolated Linux/X11 checks and functional runs in the user's Windows 11 VM verify the UI, finite input delivery, preferences and lifecycle subsets. Hosted Windows Server 2025 passes 50 native Rust tests and builds the preview ZIP/PDB. Native DPI/screen-reader coverage, partial-failure handling, complete shortcut and manual-countdown matrices, Wayland consent/target delivery, and full per-backend performance acceptance remain open. Performance budgets are targets, not verified product claims.
 
 ## Run the Rust application
 
@@ -12,7 +12,7 @@ Install Rust through [rustup](https://rustup.rs/), then run:
 cargo run --locked -p nanoclick
 ```
 
-The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; the workspace has also passed a local check with Rust 1.95.0. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and OpenGL/EGL runtime libraries for the default renderer. On Ubuntu 24.04, X11 also requires `libxkbcommon-x11-0`; the clean runtime check installs `libx11-6`, `libxkbcommon0`, `libxkbcommon-x11-0`, `libgl1`, `libegl1`, `libxi6`, `libxrandr2`, `libxcursor1` and `libxinerama1`.
+The repository pins Rust 1.97.1. The declared minimum is Rust 1.95; the workspace has also passed a local check with Rust 1.95.0. Windows uses the MSVC target and requires Visual Studio Build Tools with the C++ workload. Linux needs a graphical X11 or Wayland session and a Vulkan loader plus working driver for the default WGPU renderer. On Ubuntu 24.04, X11 also requires `libxkbcommon-x11-0`; the clean runtime check installs `libvulkan1`, `mesa-vulkan-drivers`, `libx11-6`, `libxkbcommon0`, `libxkbcommon-x11-0`, `libxi6`, `libxrandr2`, `libxcursor1` and `libxinerama1`. A Glow build also requires OpenGL/EGL runtime libraries such as `libgl1` and `libegl1`.
 
 ```sh
 cargo run --locked -p nanoclick -- --theme light
@@ -20,7 +20,7 @@ cargo run --locked -p nanoclick -- --theme dark
 cargo build --release --locked -p nanoclick
 ```
 
-The platform default is glow on Linux and wgpu on Windows. Windows uses wgpu because the inbox display driver can expose only OpenGL 1.1, below glow's requirements. Explicit `--features glow` or `--features wgpu` builds remain available for comparison (glow wins if both are enabled). Native renderer and performance acceptance remain pending.
+The provisional default is WGPU on Linux and Windows. Linux GPU runs measured lower startup time and about 24 MiB less idle RSS than Glow, with similar active CPU; software-rendering runs show a small CPU advantage for Glow. Windows always selects WGPU because its inbox display driver can expose only OpenGL 1.1. Build the Linux OpenGL alternative with `cargo build --release --locked -p nanoclick --no-default-features --features glow` (Glow takes precedence over WGPU on Linux when both features are enabled). To package that binary with matching README and license inventory, pass `--renderer glow` to `scripts/package.py`; the default packaging renderer is WGPU. Native renderer, compatibility and performance acceptance remain pending.
 
 ## Use
 

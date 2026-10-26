@@ -1,0 +1,7 @@
+# Progress feedback at a 1 Hz publication interval
+
+Date: 2026-10-25. The release executable used the provisional 1,000 ms progress publication interval and has SHA-256 `39b8aab3673ea4deb6523d3025e686d824d5e9750e5ba890064720cb8f926d84`. The actual NanoClick UI ran in the isolated Xvfb/X11 fixture at 100% scale with dark theme, an infinite plan, a requested 10 ms interval (100 clicks/s), and a separate X11 capture window.
+
+Screen captures were taken at 0.2, 0.7, 1.2, 2.2, 3.2, 4.2, 6.2 and 8.2 seconds after active sampling began. The UI showed `1 pairs sent` in both early frames, then 101, 200, 300, 399, 601 and 801 in successive frames; the visible state remained `Running` and the Stop action remained available. This confirms the immediate first-pair update and legible ongoing count progress at one-second refreshes at this load. The sample is a usability observation, not proof for every rate/backend or human-computer accessibility acceptance.
+
+The montage is stored locally at `artifacts/ui-progress-feedback-1hz-2026-10-25.png` (ignored by Git). Taking eight full-screen captures added load: the exploratory 10-second sample recorded 996 received pairs, active CPU 3.0998%, and interarrival absolute error p99/max 4/14 ms. These timing/resource values are therefore not acceptance measurements. The separate full 60-second trials in [UI polish performance](ui-polish-performance.md) retain the performance evidence without screenshot overhead. NVDA/Orca, native Wayland and other renderer feedback remain open.

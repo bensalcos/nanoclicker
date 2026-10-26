@@ -187,10 +187,21 @@ fn main() -> Result<()> {
     // Keep startup/idle unmodified; deliberate load starts before active input.
     let _load = cpu_load::Load::start(load_threads);
     println!("load_threads,{load_threads}");
-    pair(&conn, key)?;
-    let before = ticks(pid)?;
+    pair(&conn, key).map_err(|error| {
+        std::io::Error::other(format!("Could not send the benchmark F6 shortcut: {error}"))
+    })?;
+    if let Some(status) = app.0.try_wait()? {
+        return Err(format!("NanoClick exited before active sampling: {status}").into());
+    }
+    let before = ticks(pid).map_err(|error| {
+        std::io::Error::other(format!(
+            "Could not read NanoClick process CPU baseline: {error}"
+        ))
+    })?;
     let began = Instant::now();
-    let thread_before = thread_ticks(pid)?;
+    let thread_before = thread_ticks(pid).map_err(|error| {
+        std::io::Error::other(format!("Could not read NanoClick thread baseline: {error}"))
+    })?;
     let mut presses = Vec::with_capacity(7000);
     let mut releases = 0;
     println!("phase,active,{}s", duration.as_secs());

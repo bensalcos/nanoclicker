@@ -12,21 +12,22 @@ Status: implementation in progress; see docs/STATUS.md and docs/evidence/impleme
 
 ### T02 — Prototype the renderer and accessible UI [M]
 
-Partial evidence: matched-source release glow/wgpu runs on software X11 recorded in `docs/evidence/renderer-comparison.md`. Both exceed memory and active CPU budgets. Linux default remains provisional. A subsequent full glow run on a private AMD GPU-backed display meets startup/CPU/RSS targets in that case; software rendering remains over budget. Matched-source GPU glow/wgpu now both meet the measured startup/CPU/idle-RSS targets in the private display case; see `docs/evidence/gpu-renderers.md`. Windows and native accessibility acceptance remain pending. See `docs/evidence/gpu-glow.md`.
-- [ ] Compare glow/wgpu with the minimum window, keyboard, DPI and accessibility tree; record size, startup and idle use.
-- [ ] Select a renderer and define visual tokens/components with captures of both themes; if neither meets the criteria, evaluate an architectural alternative.
+Partial evidence: matched-source glow/wgpu runs on software X11 and a private GPU display are recorded in `docs/evidence/renderer-comparison.md`, `gpu-glow.md` and `gpu-renderers.md`. The private GPU cases meet measured startup/CPU/idle-RSS budgets; software-rendering RSS remains over budget. WGPU is the provisional default on Windows and Linux; Linux has an explicit Glow build alternative, and Windows always selects WGPU. The UI tokens, keyboard behavior and theme captures are implemented; native DPI, reader and full graphics-compatibility acceptance remain open.
+- [x] Compare glow/wgpu measurements, define shared visual tokens/components and capture both themes; retain per-target defaults and renderer overrides.
+- [ ] Complete the supported Windows/Linux DPI, minimum-window, screen-reader, compatibility and resource matrix before final renderer acceptance.
 
 **Dependencies:** T01. **Verification:** Windows/Linux execution and review against UI.md/VALIDATION.md. **Files:** `experiments/ui/`, `docs/evidence/ui-spike.md`.
 
 ### T03 — Test Windows/X11 input and waiting [M]
 
-Implementation: Windows high-resolution timer and per-run cancellation event compile; Linux condition-variable and X11 tests pass. Native Windows timing remains pending. The passive native capture target and manual protocol are prepared; nine unit tests and an actual private-X11 target check pass, while real Windows/Wayland capture runs and a downloadable Windows target bundle remain pending. See `docs/NATIVE_QA.md`, `docs/evidence/input-capture.md` and `docs/evidence/native-waiter.md`.
-- [ ] Inject pairs into an isolated capture fixture, detect errors and release the button after partial failure; test shortcut registration/conflicts.
-- [ ] Select cancelable native waiting and check Stop during a long interval without busy waiting.
+Implementation and evidence: Linux condition-variable waiting and Windows high-resolution timer/cancellation event are implemented. The Windows 11 VM has received exact Count=1/10/1000 sessions for all three buttons, and long-interval Stop/restart/close flows; large-count skipped slots remain functional evidence only. Native Windows timing, partial-insertion error injection and the shortcut conflict/layout matrix remain open. The passive capture target is included in the Windows preview. Manual countdown cancellation passed; a matching manual-start capture remains unresolved. See `docs/NATIVE_QA.md`, `docs/evidence/input-capture.md`, `docs/evidence/windows-vm-functional.md` and `docs/evidence/native-waiter.md`.
+- [x] Select cancelable native waiting and verify cancellation/Stop paths without busy waiting in the implemented backends and available harnesses.
+- [ ] Complete native partial-failure/release and timing acceptance on reference Windows/Linux systems.
 
 **Dependencies:** T01. **Verification:** captured events, error tests and timings recorded per OS. **Files:** `experiments/input/`, `docs/evidence/input-spike.md`.
 
 ### T04 — Test Wayland portals [M]
+- Partial evidence: production adapters are implemented and thirteen private-D-Bus lifecycle scenarios pass. Native compositor consent, target input, revocation and cost measurements remain open; mocks do not close this task. See `docs/evidence/portal-contract-tests.md` and `docs/evidence/wayland-lifecycle.md`.
 - [ ] On GNOME/KDE, test a POINTER session and an outside-focus shortcut against a native Wayland client; document the assigned trigger.
 - [ ] Test denial/revocation and measure NotifyPointerButton cost; select the D-Bus client and execution model.
 
@@ -51,14 +52,18 @@ Implementation: Windows high-resolution timer and per-run cancellation event com
 **Dependencies:** T05. **Verification:** fake clock, race, saturation and overflow tests; no sleeps for arithmetic tests. **Files:** `core/src/{engine,scheduler,ports,metrics}.rs`, tests.
 
 ### T07 — Integrate the Windows backend [M]
-- [ ] SendInput wrapper with checked return values, button recovery and the selected cancelable waiter.
-- [ ] Actual left-button Start/Stop from the harness; shutdown leaves no active worker or leaked handle.
+- Source-level recovery refinement: `SendInput` now marks a button pressed only when exactly one event from its down/up pair was inserted; a zero-event result no longer triggers an unmatched cleanup release ([API return semantics](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput)). Three fake-result regression tests cover zero insertion, partial-down cleanup and retry after a failed release. All three passed on the hosted Windows Server 2025 runner in workflow run `40281183415` at `68cd895`; Windows Clippy and the full workspace tests passed as well. This does not replace Windows 11 VM failure injection or reference-machine timing evidence.
+- [x] Implement `SendInput` with checked record counts, partial-pair recovery, and the per-run cancelable Windows waiter.
+- [x] Verify native left/right/middle pairs and finite counts through the Windows 11 VM capture target; exercise long-interval Stop/restart and close while active.
+- [x] Exercise scripted zero/partial insertion and failed-release recovery through the test-only SendInput seam; all three regressions pass on hosted Windows Server 2025 in run `40281183415`.
+- [ ] Collect reference-machine Stop/resource/timing evidence; native Windows 11 OS-level failure behavior remains unverified.
 
 **Dependencies:** T03, T06. **Verification:** Windows capture fixture and error tests; do not use the user desktop for automated testing. **Files:** `platform/src/windows/`, Windows integration.
 
 ### T08 — Deliver UI Start/Stop on Linux X11 [M]
-- [ ] XTEST backend and UI/controller composition using existing contracts; connect Windows as well.
-- [ ] UI supports manual Start with a cancelable countdown and acknowledged Stop without blocking the graphics thread.
+- [x] Implement the XTEST backend and UI/controller composition; connect the Windows backend through the shared contracts.
+- [x] Verify Linux X11 manual countdown, acknowledged Stop and shutdown in the isolated release GUI harness; verify Windows F6 Start/Stop and long-wait cancellation in the user's VM.
+- [ ] Obtain a matching Windows manual countdown completion and capture receipt; cancellation is verified, but recent completion probes are inconclusive.
 
 **Dependencies:** T02, T03, T07. **Verification:** outside-UI clicks, Stop and shutdown on both systems. **Files:** `platform/src/x11/`, `app/src/{main,controller,ui}.rs`.
 
@@ -77,10 +82,11 @@ Follow-up: owned Xvfb launcher/authentication checks and adoption by local wrapp
 
 ### T10 — Complete buttons and repetition [M]
 
-Partial GUI evidence: actual form editing now verifies left/right/middle N=1 and N=7 at 100/150/200% private-X11 scaling, exact captured pairs, Completed, fresh run IDs/counters, unlocked editing and a 250 ms quiet window. See `docs/evidence/ui-finite-counts.md`. An additional 100%-scale run verifies N=1000 for all three buttons at a requested 1 ms interval in X11. The Windows 11 VM now also records N=1/10/1000 for all three buttons; its 10 ms large-count cases produced exact pairs but missed periods and do not establish performance. Deterministic tests also cover queued restart during Stopping; native Windows/Wayland rapid-state acceptance remains open.
+Evidence: actual form editing verifies left/right/middle N=1 and N=7 at 100/150/200% private-X11 scaling, exact captured pairs, Completed, fresh run IDs/counters, unlocked editing and a quiet window. N=1000 for all three buttons also completes on X11 and Windows 11 VM; the VM's 10 ms runs missed periods and do not establish performance. Deterministic tests cover queued restart during Stopping. See `docs/evidence/ui-finite-counts.md` and `docs/evidence/windows-vm-functional.md`.
 
-- [ ] Three buttons, infinite mode and N validated through the UI; snapshots show count and stop reason.
-- [ ] Automatic completion unlocks controls; active editing is disabled and rapid restart does not reuse previous state.
+- [x] Validate all three buttons, finite counts and infinite-mode Stop through the UI; snapshots expose count and stop reason.
+- [x] Verify automatic completion unlocks controls, active editing is disabled, and queued restart uses a fresh run identity in the X11 harness.
+- [x] Verify Windows finite delivery for N=1/10/1000 on all three buttons; retain VM timing limitations separately.
 
 **Dependencies:** T09. **Verification:** core and capture tests, N=1/large N, rapid sequences and down/up failure. **Files:** `app/src/ui.rs`, `controller.rs`, existing adapters/tests.
 
@@ -89,16 +95,18 @@ Partial GUI evidence: actual form editing now verifies left/right/middle N=1 and
 A reproduced frontend parity bug is fixed: queued activations are delivered individually, restart waits for Stop acknowledgement, and explicit Stop/Close supersedes older pending requests. Three deterministic regressions and the existing actual X11 GUI suite pass. Native burst/layout acceptance remains open; see `docs/evidence/shortcut-queue.md`.
 
 Additional X11 evidence: pointer-only map changes preserve the binding, actual keyboard-map changes invalidate it, and unchanged XKB master-device transitions retain it. Native layout/group and Windows/Wayland acceptance remain open. See `docs/evidence/x11-shortcut-mapping.md`.
-- [ ] Default F6 and rebinding without losing a valid binding on conflict; one press produces one transition.
-- [ ] The English UI shows the effective shortcut and allows outside-focus Stop.
+- [x] Implement default F6, rebinding and conflict-safe registration; shortcut actions produce prioritized state transitions.
+- [x] Verify the English UI's effective shortcut and outside-focus Start/Stop in X11 and Windows VM flows.
+- [ ] Complete Windows/X11 held-key, conflict, modifier and keyboard-layout acceptance; native Wayland trigger acceptance is tracked under T12.
 
 **Dependencies:** T10. **Verification:** conflicts, modifiers/layout, held key and messages in terminal states. **Files:** hotkey adapters, UI/controller.
 
 ### T12 — Integrate Wayland and capabilities [M]
 
 Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activation-disabled private bus, including five GlobalShortcuts service-loss/closure cases before and after binding. This exercises the production adapter and engine without a compositor; real GNOME/KDE portal and input acceptance remains open. See `docs/evidence/portal-contract-tests.md`.
-- [ ] Portal adapter with cancelable preparation, sessions and revocation signals; UI distinguishes input injection from shortcuts.
-- [ ] Desktop-assigned trigger and explicit manual mode when no shortcut exists; unavailable input injection prevents Start.
+- [x] Implement portal adapter lifecycle, cancelable preparation and revocation handling; distinguish injection from shortcut capabilities in the app.
+- [x] Disable Start when input injection is unavailable and support a desktop-assigned trigger with manual mode when no global shortcut is available.
+- [ ] Verify actual desktop-assigned trigger, permission denial/revocation and target delivery on GNOME and KDE; protocol mocks are not native acceptance.
 
 **Dependencies:** T04, T08, T10. **Verification:** native GNOME/KDE flows, denial and revocation; separate XWayland testing. **Files:** `platform/src/wayland/`, `capabilities.rs`, controller and capability view.
 
@@ -110,7 +118,8 @@ Partial protocol evidence: thirteen real-D-Bus mock scenarios pass on an activat
 
 Implementation: versioned explicit Save and seven recovery tests pass on Linux and hosted Windows. Actual release X11 Save/relaunch checks restored interval, unsaved-edit discard and no automatic Start at 100/200% scale. The Windows 11 VM now verifies Save/relaunch for theme, interval, button, count and shortcut, unsaved interval discard, and idle startup; default preferences were restored afterward. Invalid-file GUI recovery and native Wayland desktop QA remain pending. See `docs/evidence/ui-preferences.md`.
 - [x] Theme, plan and requested shortcut in a versioned schema, without active state or automatic resumption.
-- [ ] Safe writing/replacement on each OS, invalid-file recovery and standard directories.
+- [x] Verify versioned preferences, safe replacement, protected-path behavior and standard config directories through Linux tests and Windows CI/VM Save/relaunch.
+- [ ] Verify invalid/unsupported-file recovery and write-error presentation in the native GUI on Windows and Linux.
 
 **Dependencies:** T11, T12. **Verification:** roundtrip, corruption, future version and failed write preserving the last valid file. **Files:** `app/src/settings.rs`, integration/controller and tests.
 
@@ -124,7 +133,9 @@ Partial evidence: names/values verified in the actual AccessKit tree; Tab/Shift+
 
 ### T15 — Harden lifecycle and failure handling [M]
 
-Windows VM update (2026-10-25): a matching zero-event failure mode was reproduced in the passive egui-winit capture target when it had no known in-window pointer position; after a fresh cursor move, native Count=10 produced ten complete pairs. Follow-up Count=1 and Count=1000 at 10 ms produced exactly one and 1000 captured pairs for each button. The three Count=1000 cases showed 1185–1265 skipped periods on the constrained VM and are not performance acceptance. Count=10/100 ms/Left were restored in the unsaved app UI. The original zero-event sessions' pointer state was not recorded. Keep the instrumented target and use the focus-then-move protocol for remaining Windows QA. Broader lifecycle, preference, accessibility and performance acceptance remain open. See `docs/evidence/windows-vm-functional.md`.
+Windows VM evidence (2026-10-25): the capture-target zero-event condition was reproduced when no in-client pointer position was known, and a fresh in-client move restored event receipt. Exact Count=1/10/1000 was received for Left/Right/Middle; 1000 at 10 ms missed 1185–1265 periods and is not timing acceptance. Preference Save/relaunch/discard and long-wait Stop/restart/active close are documented. Manual cancellation passed. Manual countdown completion currently has no matching target receipt: a recent session reached Preparing, but the app returned to Ready while the capture remained at zero; focus transitions in that probe make it inconclusive, so do not classify it as a product failure or a pass. See `docs/evidence/windows-vm-functional.md` and `docs/RESUME.md`.
+
+Current-source follow-up (2026-10-26): the exact `68cd895` WGPU preview has two matching Windows 11 VM Count=10/F6 Left receiver receipts (`10/10`, balanced, no extra events/overflow); the first VM run skipped two periods, while the second skipped none. Neither is timing acceptance. A separate manual-countdown invocation still has no matching target receipt because the target lacked a known in-client pointer position; keep that result inconclusive. The app and receiver were left Completed/Ready with defaults unchanged. See `docs/evidence/windows-vm-functional.md`.
 
 Partial evidence: five private-Xvfb failure cases now cover stalled input with/without Stop, cancellation during protocol preparation, disconnection and shortcut registration timeout; see `docs/evidence/x11-stalled-server.md`. Three additional private-authority-FIFO cases verify Stop, setup timeout and shortcut shutdown. A four-slot helper contains OS-managed setup without unbounded thread accumulation; underlying blocked-OS recovery remains open. See `docs/evidence/x11-setup-cancellation.md`. Private-bus tests cover cancellation during preparation, failed release recovery, early session closure, revocation and portal owner loss/replacement. Actual X11 release UI also passes 1000 measured Start/Stop cycles with stable sampled resources and graceful close during preparation/running/Stop-request races at 100/200% scale. Windows/Wayland desktop/resource stability and other failure variants remain open. See `docs/evidence/ui-lifecycle-stress.md`.
 - [ ] Cover closing in Preparing/Running/Stopping, disconnected backend, revoked permissions and failed release.
@@ -138,7 +149,21 @@ Partial evidence: five private-Xvfb failure cases now cover stalled input with/w
 
 ### T16 — Measure and optimize bottlenecks [M]
 
-Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers software-rendering CPU from 19.67% to 5.23%. Active CPU and RSS budgets remain unmet. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The actual release GUI now also exports engine timing: two 60-second private GPU-display runs show p99 upper bounds of 0.4/0.1 ms without added load/with two CPU load threads, respectively; see `docs/evidence/gui-deadline-lateness.md`. The matched-source glow/wgpu GPU-display experiments both meet startup/CPU/idle-RSS targets in that case (see `docs/evidence/gpu-renderers.md`); software and other native performance gates remain open. See `docs/evidence/gpu-glow.md`. See `docs/evidence/ui-performance.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
+- [x] Compare two full 2 Hz controls against two full 1 Hz candidate trials; all captured 6001 matching pairs, with active CPU at 4.6998%/4.9831% and 2.8165%/2.9833%, respectively.
+- [x] Observe the 1 Hz progress footer during actual 100-click/s X11 operation; it shows the immediate first pair and legible updates about once per second.
+- [x] Compare current-source 1 Hz Glow and WGPU software runs; Glow has lower CPU, WGPU saves about 1.14 MiB RSS, and both remain above the memory target.
+- [x] Compare two current-source 1 Hz trials per renderer on the private AMD GPU display; WGPU averages 53.284 ms startup p95 and 58.827 MiB idle RSS versus Glow at 112.062 ms and 83.084 MiB, with near-equal CPU and exact 6001-pair capture.
+- [ ] Reduce RSS below 100 MiB without regressing input/Stop or other renderers/backends; retain native reader/Wayland checks separately.
+
+Current provisional probe (2026-10-26): Linux WGPU now explicitly compiles Vulkan/WGSL without GLES. Ubuntu 24.04 `cargo check` and release build pass; `cargo check --locked --offline --target x86_64-pc-windows-msvc -p nanoclick` also passes on the current source. The Linux GUI acceptance harness passes across manual Start, shortcuts, Stop/close, finite counts and preferences. The binary is 2.49% smaller, but one quick profile measured 109.980 MiB idle RSS and 3.5994% active CPU. The older binary could not complete a matched profile with the current harness, so there is no accepted RSS or CPU improvement. Keep the candidate provisional; repeat matched profiles, review Vulkan-only Linux runtime requirements, then build/run the current Windows artifact in the user's existing Windows 11 VM before deciding whether to retain the shared feature change. The VM procedure and isolation constraints are in `AGENTS.md`.
+
+Feature-graph correction (2026-10-26): the Linux target-specific `eframe` feature had kept `wgpu` in the Glow alternative. It is now activated only by the app's `wgpu` feature; `cargo tree` shows no `wgpu` for the Glow configuration. The separated Glow release artifact passes full isolated X11 GUI acceptance and one exploratory quick profile records 107.305 MiB idle RSS/3.0999% CPU; memory remains over budget. The 63-test workspace/all-target suite and Clippy pass for both default WGPU and Glow feature sets. Repeat full profiles and test the exact current Windows artifact in the VM before closing T16.
+
+Partial evidence: actual release GUI measurements on Xvfb show the earlier 2 Hz progress change reduced active CPU from 19.67% to about 5.23%, while RSS remained above target. Two full 60 s runs at 2 Hz measured 4.6998%/4.9831% active CPU and 107.137/107.301 MiB idle RSS; two full 1 Hz runs measured 2.8165%/2.9833% active CPU and 107.309/107.059 MiB idle RSS, with 6001 captured pairs each. Both matched trials show about 40% lower CPU at 1 Hz. Two full current-source 1 Hz WGPU software runs measured 3.2998%/3.4998% active CPU and 106.141/105.945 MiB idle RSS, each with 6001 pairs. Glow is faster in software; WGPU saves about 1.14 MiB but neither closes the RSS budget. An actual-UI X11 observation at 100 clicks/s shows a legible count increment about once per second and an immediate first pair; screenshot load makes that observation unsuitable for performance claims. Two short 1 Hz profiles measured 2.60%/2.80% with 1001 pairs each. Two current-source physical-GPU trials per renderer now show WGPU startup p95 of 53.221/53.346 ms and idle RSS of 61.684/55.969 MiB, versus Glow at 110.392/113.732 ms and 83.602/82.566 MiB; active CPU was near equal and all runs captured 6001 pairs. WGPU is the provisional Linux default, with Glow retained as an alternative build. Software RSS, Vulkan compatibility, native backend and accessibility gates remain open. Native X11 input completed 60-second no-added-load and two-load-thread timing runs with matching captured pairs; this excludes the GUI and other backends. An additional 4,000 native X11 Stop cycles retain matching captured pairs. The actual release GUI now also exports engine timing: two 60-second private GPU-display runs show p99 upper bounds of 0.4/0.1 ms without added load/with two CPU load threads, respectively; see `docs/evidence/gui-deadline-lateness.md`. The matched-source Glow/WGPU GPU-display experiments meet startup/CPU/idle-RSS targets in that case (see `docs/evidence/gpu-renderers.md`); software and other native performance gates remain open. Latest current-binary 10-second quick profiles on executable SHA-256 `2cab232157fc957bbfaceca1909f9816ab0ed9c47d28ea110b6cded435828031` measured 105.258 MiB idle RSS on Vulkan/lavapipe, 104.832 MiB with `MALLOC_ARENA_MAX=1` (rejected; only 0.426 MiB lower), and 117.746 MiB on WGPU OpenGL software (rejected). All three received exactly 1001 pairs; these single exploratory samples do not accept the 100 MiB RSS gate. See `docs/evidence/ui-polish-performance.md` and `docs/evidence/optimization-ledger.md`. See `docs/evidence/gpu-glow.md`, `docs/evidence/ui-performance.md`, `docs/evidence/ui-polish-performance.md`, `docs/evidence/ui-progress-feedback.md`, `docs/evidence/renderer-comparison.md`, `docs/evidence/optimization-ledger.md`, `docs/evidence/x11-deadline-lateness.md` and `docs/evidence/x11-stop-latency.md`.
+
+Follow-up triage on 2026-10-26: one valid quick profile with `GLIBC_TUNABLES=glibc.malloc.trim_threshold=0` measured 104.719 MiB idle RSS and 104.871 MiB active RSS with 1001 matching pairs; one first attempt exited before active measurement and was discarded. The single valid result is only about 0.54 MiB below the matching current-binary baseline and remains above budget, so the tunable is rejected for product use. This adds no full-profile acceptance; continue investigating the application/renderer footprint.
+
+The documented LLVMpipe `LP_NUM_THREADS=1` setting was also sampled on the WGPU OpenGL software route: 117.105 MiB idle RSS, 2.8986% active CPU and 1000 pairs, versus the prior 117.746 MiB/4.2992%/1001-pair quick sample. This is an unmatched exploratory result, remains far above budget, does not affect Vulkan/lavapipe, and is rejected for product use. T16 remains open.
 - [ ] Measure the VALIDATION.md table per renderer/backend, compare C++ where a baseline exists and profile deviations.
 - [ ] Optimize only reproducible findings; verify that no improvement worsens Stop, CPU or precision without a recorded decision.
 
@@ -146,8 +171,8 @@ Partial evidence: actual release GUI measured on Xvfb; 2 Hz progress lowers soft
 
 ### T17 — Package and verify clean installation [M]
 
-Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archives, checksums and separate symbols passes expanded isolated Ubuntu 24.04 GUI execution, including all three finite button plans; a second packaging pass has identical archive hashes and GNU debuglink CRC matches the supplied symbols. Windows CI now produces a ZIP/PDB preview with zero unresolved notices; the downloaded 88bd9b4 archives pass independent structural/hash verification. Eight packaging tests pass; Windows runtime and native desktop acceptance remain pending. See `docs/evidence/packaging.md`.
-- [ ] Windows ZIP and Linux tar.gz with icons, licenses, checksums, requirements and separate symbols.
+Partial evidence: Linux and Windows preview archives include notices/checksums and separate symbols; the current WGPU-default Linux bundle passes the restricted Ubuntu 24.04 GUI flow, and the Windows README is generated with Windows-specific WGPU guidance. Renderer-aware packaging now emits an isolated Glow dependency/license inventory and correct OpenGL/EGL runtime README; the local Glow package passes the full X11 GUI flow. The Windows preview executes in the user's Windows 11 VM, but predates the current uncommitted source. Native clean-reference installation and final artifact acceptance remain pending. See `docs/evidence/packaging.md` and `docs/evidence/windows-vm-functional.md`.
+- [x] Produce and verify Windows ZIP/PDB and Linux tar.gz/symbol previews with icons/notices/checksums and recorded runtime requirements.
 - [ ] Run on clean reference installations; review features, dependencies/licenses and glibc baseline.
 
 **Dependencies:** T16. **Verification:** execute the final artifact, not only `cargo run`; record the audit and resources used. **Files:** packaging scripts, artifact workflow, documentation.
@@ -155,7 +180,7 @@ Partial evidence: refreshed Linux preview at 88bd9b4 with notices, source archiv
 ### T18 — Close the migration and update documentation [M]
 
 Prepared documentation: README, `CHANGELOG.md`, `docs/ACCEPTANCE.md` and `docs/ROLLBACK.md` now describe the implemented preview, evidence boundaries and preserved C++ reference. Final acceptance and legacy retirement remain gated by the native/performance matrix; no checkbox is narrowed to documentation alone.
-- [ ] Rust README with build, usage, permissions and actual limitations; changelog and final evidence matrix.
+- [x] Maintain the Rust README, build/usage/permission guidance, changelog, rollback guide and evidence/acceptance matrix.
 - [ ] Remove C++/Visual Studio in a separate change after acceptance; preserve a historical reference and review MIT/icon ownership before distribution.
 
 **Dependencies:** T17 and all milestones. **Verification:** reproduction from a clean checkout, links and rollback guide to the C++ commit; publication only with the required scope and credentials. **Files:** README/changelog/docs and subsequent legacy removal.

@@ -24,7 +24,7 @@ Both invocations set `WGPU_BACKEND=vulkan` and `VK_DRIVER_FILES=/usr/share/vulka
 
 Each manual preflight required one fixture-only cursor reassertion after a fake-seat focus transition. That accommodation is logged and never runs during the measured active phase. The actual physical pointer, GNOME/KDE portal assignment and native Wayland input are outside this fixture's scope.
 
-Decision: retain glow as the provisional default while carrying wgpu forward into the remaining native GPU/Windows/accessibility matrix. This measured wgpu case is promising; it does not justify a universal renderer preference or bypass the matrix. The earlier [software comparison](renderer-comparison.md) remains a separate, above-budget result.
+Decision at the time: retain glow provisionally pending current-source evidence. The subsequent comparison below supersedes that operational default, but not the remaining acceptance gates. The earlier [software comparison](renderer-comparison.md) remains a separate result.
 
 Data: [glow CSV](gpu-matched-glow.csv), [wgpu CSV](gpu-matched-wgpu.csv), [environment, hashes and results](gpu-renderers.json), [glow GUI preflight](gpu-matched-glow-validation.txt), [wgpu GUI preflight](gpu-matched-wgpu-validation.txt). Local full logs remain in `/tmp/nanoclick-gpu.pIkwxf` and `/tmp/nanoclick-gpu.SqcfIo`; the committed data above is self-contained.
 
@@ -32,9 +32,9 @@ Reproduce after building and preserving each release executable:
 
 ```sh
 renderer_dir="$(mktemp -d /tmp/nanoclick-renderers.XXXXXX)"
-cargo build --release --locked -p nanoclick
+cargo build --release --locked -p nanoclick --no-default-features --features glow
 cp target/release/nanoclick "$renderer_dir/nanoclick-glow"
-cargo build --release --locked -p nanoclick --no-default-features --features wgpu
+cargo build --release --locked -p nanoclick
 cp target/release/nanoclick "$renderer_dir/nanoclick-wgpu"
 for renderer in wgpu glow; do
   WGPU_BACKEND=vulkan VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json \
@@ -43,3 +43,20 @@ done
 ```
 
 Use the verified Weston prefix described in the setup document and run the full script separately for each binary. The script's --quick-profile is exploratory and cannot substitute for these 60-second phases.
+
+## Current-source 1 Hz GPU follow-up — 2026-10-26
+
+Both release binaries use the current 1,000 ms progress-publication source and passed the full GUI preflight on the same isolated AMD Renoir/RADV display described above. We ran two complete 60-second trials per renderer in alternating order. WGPU required `WGPU_BACKEND=vulkan` and `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json`; Glow used the same display. Candidate binary SHA-256: Glow `39b8aab3673ea4deb6523d3025e686d824d5e9750e5ba890064720cb8f926d84`; WGPU `e7b5af41a028a1b36b74afcae5e0d390ed5aa58ed408b8c0fbfac8466deebff5`.
+
+| Measurement | Glow run 1 | Glow run 2 | WGPU run 1 | WGPU run 2 |
+|---|---:|---:|---:|---:|
+| Warm startup p95, ms | 110.392 | 113.732 | 53.221 | 53.346 |
+| Idle RSS, MiB | 83.602 | 82.566 | 61.684 | 55.969 |
+| Active CPU, one core | 1.3832% | 1.2666% | 1.3832% | 1.3666% |
+| Active RSS, MiB | 84.324 | 83.223 | 63.105 | 57.410 |
+| Captured pairs | 6001 | 6001 | 6001 | 6001 |
+| Server interarrival absolute error p99 / max, ms | 0 / 1 | 0 / 2 | 0 / 0 | 0 / 2 |
+
+WGPU's warm-start p95 averaged 53.284 ms versus Glow's 112.062 ms; idle RSS averaged 58.827 MiB versus 83.084 MiB (24.257 MiB, about 29%, lower). Active CPU averaged 1.375% for WGPU and 1.325% for Glow. All trials captured the expected 6001 pairs. Given the material hardware-rendered startup and memory improvement, WGPU is now the provisional Linux default; retain Glow as an explicit compatibility alternative. The separate Xvfb/lavapipe comparison shows a small active-CPU advantage for Glow and both remain over the software RSS budget, so this choice is not a claim that every driver performs better with WGPU.
+
+This changes the build default only. Native Xorg/Wayland, Vulkan availability and driver compatibility across supported distributions, software-rendering budgets, monitor and screen-reader behavior, and the constrained Windows VM performance remain open acceptance gates. The physical-GPU result does not replace them.

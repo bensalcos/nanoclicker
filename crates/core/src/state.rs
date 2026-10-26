@@ -25,7 +25,7 @@ pub enum StopReason {
     Failed,
 }
 
-/// Constant-space measurements. Progress is published at most twice per second; terminal state is immediate.
+/// Constant-space measurements. Progress is published at most once per second; terminal state is immediate.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Metrics {
     pub attempts: u64,

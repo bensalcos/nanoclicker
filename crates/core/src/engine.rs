@@ -8,6 +8,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+const PROGRESS_PUBLISH_INTERVAL: Duration = Duration::from_millis(1_000);
+
 struct RunMeasurements {
     metrics: Metrics,
     histogram: crate::histogram::LatenessHistogram,
@@ -300,7 +302,7 @@ fn execute(
                     .map_err(|error| BackendError::new(error.to_string()))?,
             )
             .ok_or_else(|| BackendError::new("Skipped-period counter overflow."))?;
-        if metrics.sent == 1 || publish.elapsed() >= Duration::from_millis(500) {
+        if metrics.sent == 1 || publish.elapsed() >= PROGRESS_PUBLISH_INTERVAL {
             histogram.publish(metrics);
             lock(&shared.control).snapshot.metrics = *metrics;
             (shared.wake)();

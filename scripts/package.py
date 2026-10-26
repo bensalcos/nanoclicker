@@ -75,9 +75,65 @@ def zip_bundle(source: Path, destination: Path, epoch: int) -> None:
                 archive.writestr(info, path.read_bytes())
 
 
-def notices(stage: Path, target: str) -> list[str]:
-    metadata = json.loads(run("cargo", "metadata", "--locked", "--format-version", "1", "--filter-platform", target))
-    tree = run("cargo", "tree", "--locked", "-p", "nanoclick", "--target", target,
+def renderer_feature_args(renderer: str) -> list[str]:
+    return ["--no-default-features", "--features", "glow"] if renderer == "glow" else []
+
+
+def validate_renderer(platform: str, renderer: str) -> None:
+    if platform == "windows" and renderer != "wgpu":
+        raise ValueError("Windows builds require the WGPU renderer.")
+
+
+def bundle_name(version: str, platform: str, renderer: str, preview: bool) -> str:
+    renderer_suffix = "-glow" if platform == "linux" and renderer == "glow" else ""
+    preview_suffix = "-preview" if preview else ""
+    return f"nanoclick-{version}-{platform}-x86_64{renderer_suffix}{preview_suffix}"
+
+
+def package_readme(preview: bool, platform: str, renderer: str) -> str:
+    title = "NanoClick local preview" if preview else "NanoClick"
+    run_line = "Run ./nanoclick on Linux.\n" if platform == "linux" else "Run nanoclick.exe on Windows.\n"
+    if platform == "linux" and renderer == "wgpu":
+        runtime_requirements = (
+            "The WGPU renderer requires a Vulkan loader, a working Vulkan driver, "
+            "and X11 or Wayland runtime libraries.\n"
+            "Ubuntu X11: libvulkan1 mesa-vulkan-drivers libx11-6 libxkbcommon0\n"
+            "libxkbcommon-x11-0 libxi6 libxrandr2 libxcursor1 libxinerama1 (and dependencies).\n"
+        )
+    elif platform == "linux":
+        runtime_requirements = (
+            "The Glow renderer requires OpenGL/EGL and X11 or Wayland runtime libraries.\n"
+            "Ubuntu X11: libgl1 libegl1 libx11-6 libxkbcommon0 libxkbcommon-x11-0\n"
+            "libxi6 libxrandr2 libxcursor1 libxinerama1 (and dependencies).\n"
+        )
+    else:
+        runtime_requirements = (
+            "This x86_64 Windows build uses the WGPU renderer and the graphics APIs available in Windows.\n"
+            "Extract the ZIP and run nanoclick.exe; no installer or automatic startup is included.\n"
+        )
+    if platform == "linux":
+        runtime_requirements += "Wayland requires desktop portals and pointer consent.\n"
+        install_guidance = (
+            "The Linux desktop entry expects nanoclick on PATH and its icon in the icon theme.\n"
+            "Install the binary into ~/.local/bin, the .desktop into ~/.local/share/applications,\n"
+            "and nanoclick.png as ~/.local/share/icons/hicolor/256x256/apps/io.github.bensalcos.NanoClick.png.\n"
+        )
+    else:
+        install_guidance = "Remove the extracted folder to uninstall the preview.\n"
+    return (
+        f"{title}\n\n{run_line}No automatic installation or startup occurs.\n"
+        + runtime_requirements
+        + "This host-built binary has not been accepted on every target OS.\n"
+        + install_guidance
+        + "See build.json for preview status and unresolved dependency notices.\n"
+        + "Platform acceptance remains subject to docs/STATUS.md in the source checkout.\n"
+    )
+
+
+def notices(stage: Path, target: str, renderer: str) -> list[str]:
+    feature_args = renderer_feature_args(renderer)
+    metadata = json.loads(run("cargo", "metadata", "--locked", "--format-version", "1", "--filter-platform", target, *feature_args))
+    tree = run("cargo", "tree", "--locked", "-p", "nanoclick", "--target", target, *feature_args,
                "--prefix", "none", "--format", "{p}", "--edges", "normal,build", "--no-dedupe")
     selected = {match.groups() for line in tree.splitlines() if (match := re.match(r"^(\S+) v(\S+)", line))}
     cached_path = ROOT / "assets" / "third-party" / "manifest.json"
@@ -135,10 +191,16 @@ def notices(stage: Path, target: str) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=["linux", "windows"], required=True)
+    parser.add_argument("--renderer", choices=["wgpu", "glow"], default="wgpu",
+                        help="renderer used to build the binary (Linux only: glow; default: wgpu)")
     parser.add_argument("--binary", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "dist")
     parser.add_argument("--preview", action="store_true", help="local validation bundle with unresolved release gates")
     args = parser.parse_args()
+    try:
+        validate_renderer(args.platform, args.renderer)
+    except ValueError as error:
+        parser.error(str(error))
     version = tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]["version"]
     extension = ".exe" if args.platform == "windows" else ""
     binary = (args.binary or ROOT / "target" / "release" / f"nanoclick{extension}").resolve()
@@ -148,7 +210,7 @@ def main() -> None:
         raise ValueError("LICENSE.txt has owner/year placeholders. Resolve them before distribution; --preview only creates a local validation bundle.")
     target = "x86_64-pc-windows-msvc" if args.platform == "windows" else "x86_64-unknown-linux-gnu"
     epoch = int(run("git", "show", "-s", "--format=%ct", "HEAD"))
-    name = f"nanoclick-{version}-{args.platform}-x86_64" + ("-preview" if args.preview else "")
+    name = bundle_name(version, args.platform, args.renderer, args.preview)
     args.output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".package-", dir=args.output) as temporary:
         staging = Path(temporary)
@@ -170,12 +232,12 @@ def main() -> None:
             shutil.copyfile(pdb, symbols / "nanoclick.pdb")
         shutil.copyfile(ROOT / "assets/nanoclick.png", stage / "nanoclick.png")
         shutil.copyfile(ROOT / "LICENSE.txt", stage / "LICENSE.txt")
-        missing = notices(stage, target)
+        missing = notices(stage, target, args.renderer)
         if missing and not args.preview:
             raise ValueError("Dependency notices need review: " + ", ".join(missing))
-        build = {"version": version, "target": target, "packaging_commit": run("git", "rev-parse", "HEAD"), "packaging_tree_dirty": bool(run("git", "status", "--porcelain")), "input_binary_sha256": sha256(binary), "binary_build_commit": "Not inferred from the packaging checkout", "preview": args.preview, "native_acceptance": "See docs/STATUS.md; packaging does not certify acceptance.", "unresolved_dependency_notices": missing}
+        build = {"version": version, "target": target, "renderer": args.renderer, "packaging_commit": run("git", "rev-parse", "HEAD"), "packaging_tree_dirty": bool(run("git", "status", "--porcelain")), "input_binary_sha256": sha256(binary), "binary_build_commit": "Not inferred from the packaging checkout", "preview": args.preview, "native_acceptance": "See docs/STATUS.md; packaging does not certify acceptance.", "unresolved_dependency_notices": missing}
         (stage / "build.json").write_text(json.dumps(build, indent=2) + "\n")
-        (stage / "README.txt").write_text(("NanoClick local preview" if args.preview else "NanoClick") + "\n\nRun ./nanoclick on Linux or nanoclick.exe on Windows.\nNo automatic installation or startup occurs.\nLinux requires OpenGL/EGL plus X11 or Wayland runtime libraries.\nUbuntu X11: libx11-6 libxkbcommon0 libxkbcommon-x11-0 libgl1 libegl1\nlibxi6 libxrandr2 libxcursor1 libxinerama1 (and their dependencies).\nWayland requires desktop portals and pointer consent.\nThis host-built binary has not been accepted on every target OS.\nThe Linux desktop entry expects nanoclick on PATH and its icon in the icon theme.\nInstall the binary into ~/.local/bin, the .desktop into ~/.local/share/applications,\nand nanoclick.png as ~/.local/share/icons/hicolor/256x256/apps/io.github.bensalcos.NanoClick.png.\nSee build.json for preview status and unresolved dependency notices.\nPlatform acceptance remains subject to docs/STATUS.md in the source checkout.\n")
+        (stage / "README.txt").write_text(package_readme(args.preview, args.platform, args.renderer))
         suffix = ".zip" if args.platform == "windows" else ".tar.gz"
         archive = zip_bundle if args.platform == "windows" else tar_bundle
         outputs = []

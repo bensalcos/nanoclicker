@@ -1,0 +1,74 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.15s
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 600B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+#4 resolve docker.io/library/ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac 0.0s done
+#4 DONE 0.0s
+
+#5 [2/2] RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends     xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl1 libxkbcommon0 libxkbcommon-x11-0 libx11-6 libxi6 libxrandr2     libxcursor1 libxinerama1 libvulkan1 mesa-vulkan-drivers dbus-x11     && rm -rf /var/lib/apt/lists/*
+#5 CACHED
+
+#6 exporting to image
+#6 exporting layers done
+#6 exporting manifest sha256:5604a07bc31952099f1e237241d1f9a0d7b447641dc403e4ed45a34679ab63f2 done
+#6 exporting config sha256:304676374e4fe459b75c206cc40b5b48085860a523b51f580d509255bb8412c1 done
+#6 exporting attestation manifest sha256:24091114a69369579e7a466c6d9dd601ab072e09fbb182d168399150d532c62a 0.0s done
+#6 exporting manifest list sha256:302748a6f4af4298c0018a1201ecdcb851fc89e51e4ced3c177996442a6effbe 0.0s done
+#6 naming to docker.io/library/nanoclick-qa:ubuntu24.04 done
+#6 unpacking to docker.io/library/nanoclick-qa:ubuntu24.04 0.0s done
+#6 DONE 0.1s
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+PASS GUI: global shortcut starts/stops outside focus; complete input pairs and no post-stop input
+PASS GUI: Start remains visible at 420x520 logical units, scale 1
+PASS GUI: manual Start delays input for preparation and then sends pairs to the target
+PASS GUI: clean window shutdown
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+PASS GUI close: preparing; clean exit, no held pair and no post-exit input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+PASS GUI close: running; clean exit, no held pair and no post-exit input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+PASS GUI close: stop-request-race; clean exit, no held pair and no post-exit input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+finite_terminal,left,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":111,"lateness_p95_ns":111,"lateness_p99_ns":111,"max_lateness_ns":111,"reason":"completed","renderer":"wgpu","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: left, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,left,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":72089,"lateness_p95_ns":72089,"lateness_p99_ns":72089,"max_lateness_ns":72089,"reason":"completed","renderer":"wgpu","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: left, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,left,{"app_version":"0.1.0","attempts":1000,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":100000,"lateness_p99_ns":100000,"max_lateness_ns":408104,"reason":"completed","renderer":"wgpu","run_id":3,"schema_version":1,"sent":1000,"skipped":0}
+PASS GUI finite: left, N=1000, run_id=3, exact complete pairs, Completed, controls editable, no late input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+finite_terminal,right,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":190,"lateness_p95_ns":190,"lateness_p99_ns":190,"max_lateness_ns":190,"reason":"completed","renderer":"wgpu","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: right, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":85617,"lateness_p95_ns":85617,"lateness_p99_ns":85617,"max_lateness_ns":85617,"reason":"completed","renderer":"wgpu","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: right, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,right,{"app_version":"0.1.0","attempts":1000,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":100000,"lateness_p99_ns":100000,"max_lateness_ns":538148,"reason":"completed","renderer":"wgpu","run_id":3,"schema_version":1,"sent":1000,"skipped":3}
+PASS GUI finite: right, N=1000, run_id=3, exact complete pairs, Completed, controls editable, no late input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+finite_terminal,middle,{"app_version":"0.1.0","attempts":1,"backend":"x11","failures":0,"lateness_p50_ns":190,"lateness_p95_ns":190,"lateness_p99_ns":190,"max_lateness_ns":190,"reason":"completed","renderer":"wgpu","run_id":1,"schema_version":1,"sent":1,"skipped":0}
+PASS GUI finite: middle, N=1, run_id=1, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":7,"backend":"x11","failures":0,"lateness_p50_ns":75145,"lateness_p95_ns":75145,"lateness_p99_ns":75145,"max_lateness_ns":75145,"reason":"completed","renderer":"wgpu","run_id":2,"schema_version":1,"sent":7,"skipped":0}
+PASS GUI finite: middle, N=7, run_id=2, exact complete pairs, Completed, controls editable, no late input
+finite_terminal,middle,{"app_version":"0.1.0","attempts":1000,"backend":"x11","failures":0,"lateness_p50_ns":100000,"lateness_p95_ns":100000,"lateness_p99_ns":100000,"max_lateness_ns":199198,"reason":"completed","renderer":"wgpu","run_id":3,"schema_version":1,"sent":1000,"skipped":0}
+PASS GUI finite: middle, N=1000, run_id=3, exact complete pairs, Completed, controls editable, no late input
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+PASS GUI preferences: explicit Save, unsaved edit discarded, saved interval restored, no automatic Start; captured median interval 37 ms

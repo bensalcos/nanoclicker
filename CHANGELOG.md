@@ -11,6 +11,11 @@
 - Versioned explicit preference saving and opt-in terminal timing diagnostics.
 - Windows/Linux CI, preview archives with dependency notices and separate symbols, isolated integration checks and a passive native capture target.
 
+### Changed
+
+- Linux now selects WGPU provisionally by default after repeated GPU trials showed materially lower startup time and memory use; Glow remains a Linux build alternative. Windows always selects WGPU. Package instructions now describe each platform's graphics requirements.
+- The current WGPU-default Linux preview passes the restricted Ubuntu 24.04 X11 GUI flow. Native Wayland, hardware compatibility across distributions, and full platform acceptance remain open.
+
 ### Fixed
 
 - Windows selects wgpu by default to support the inbox display driver that exposed OpenGL 1.1 in the VM; the replacement and passive QA target now open in the Windows 11 VM.

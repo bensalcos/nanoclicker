@@ -21,15 +21,16 @@ thiserror.workspace = true
 workspace = true
 
 [target.'cfg(windows)'.dependencies]
-eframe = { version = "0.37.0", default-features = false, features = ["wgpu"] }
+wgpu = { version = "30.0.1", default-features = false, features = ["dx12", "gles", "vulkan", "wgsl"], optional = true }
 
-[target.'cfg(not(windows))'.dependencies]
-eframe = { version = "0.37.0", default-features = false, features = ["glow"] }
+[target.'cfg(target_os = "linux")'.dependencies]
+# The Linux WGPU build targets Vulkan; users with GL-only systems can select the Glow build.
+wgpu = { version = "30.0.1", default-features = false, features = ["vulkan", "wgsl"], optional = true }
 
 [features]
-default = []
+default = ["wgpu"]
 glow = ["eframe/glow"]
-wgpu = ["eframe/wgpu"]
+wgpu = ["dep:wgpu", "eframe/wgpu_no_default_features"]
 
 [dev-dependencies]
 raw-window-handle = "0.6.2"
