@@ -2,6 +2,8 @@
 
 Date: 2026-10-26. Environment and isolation are recorded in [startup evidence](windows-vm-startup.md). This uses the user's Windows 11 lab through a separate NanoClick overlay, with no network, shared folders or physical USB. The VM is below the performance reference specification; these results do not accept hardware performance budgets.
 
+Current exact-source package and invalid-preferences recovery evidence are recorded in [GUI preferences evidence](ui-preferences.md#windows-11-invalid-preferences-recovery--2026-10-26). The Windows 11 VM test passed on commit `cfd4a64`; it does not replace the older functional receipts below or close the remaining native matrix.
+
 ## Artifact and startup
 
 All four jobs pass in hosted run `40232606248`, packaging commit `8bde30f51400e6d4c6de00b894b74051f73d0b03`. Application renderer changes are source `23aba0d`; the subsequent change adds the exact upstream SPIR-V license. The downloaded ZIP, PE imports, notices and separate PDB pass verification on Linux. The ZIP is 6,253,702 bytes, below the compressed-size budget.

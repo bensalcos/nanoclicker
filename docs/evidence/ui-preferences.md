@@ -11,7 +11,7 @@ The X11 GUI fixture now operates the actual Save button and interval field. It u
 5. Relaunch, focus the capture target and observe 500 ms without input. Explicitly Start, capture twelve timestamps and ordered pairs, and verify a 25–65 ms median, distinguishing the saved 37 ms plan from both the 91 ms unsaved edit and the 100 ms default.
 6. Remove only the fixture's known preferences file, click Save again, wait for a new publication and verify the original bytes. A stale matching file cannot satisfy this check.
 
-The captured restored median is 37 ms. The broad ranges above discriminate plans; they are not deadline-lateness or performance acceptance thresholds. Theme is explicitly forced dark by the shared launcher, so the X11 case does not prove restoration of a saved theme. The Windows follow-up below verifies native restoration of theme, mouse button, count and shortcut. Invalid-file GUI recovery and native Wayland remain open.
+The captured restored median is 37 ms. The broad ranges above discriminate plans; they are not deadline-lateness or performance acceptance thresholds. Theme is explicitly forced dark by the shared launcher, so the X11 case does not prove restoration of a saved theme. The Windows follow-up below verifies native restoration of theme, mouse button, count and shortcut. Native Wayland remains open.
 
 ## Windows 11 native desktop follow-up
 
@@ -32,3 +32,13 @@ NANOCLICK_UI_STRESS_CYCLES=20 scripts/verify-ui-x11.sh target/release/nanoclick 
 ```
 
 Local release flows pass at 100% and 200% scale, including the existing manual Start, complete-pair, minimum-window, Stop and active-close checks. The 200% run also includes twenty measured stress cycles. Xvfb proves this isolated X11 flow; native monitor/DPI, Wayland and Windows acceptance remain separate. Hosted run 40121663794 at e244efd also passes the release preferences case; its downloaded GUI log was inspected. See [CI evidence](ci.md).
+
+## Windows 11 invalid-preferences recovery — 2026-10-26
+
+The exact `cfd4a64ff6f73d25ce3364dfd9795919aa1cef2f` Windows preview from hosted run [40313423347](https://github.com/bensalcos/nanoclicker/actions/runs/40313423347) was mounted read-only as E: in the isolated Windows 11 VM. The VM was Windows 11 Pro build `26300.9457`, 2 vCPU, 4 GiB RAM and 1280×800 at 100%. The preview package manifest reports `x86_64-pc-windows-msvc`, WGPU, a clean packaging tree and no unresolved dependency notices. The application SHA-256 is `95f86e882648fbee74f6f37106cbd83fa4cf615cae294d2bfce2f1d0b6717820`; the transfer ISO SHA-256 is `a11dcaeb01c228aed664445a951edcdf56363e2e28cda031f22f7137cb316e13`.
+
+The test first copied `%APPDATA%\bensalcos\NanoClick\config\preferences.json` to `C:\NanoClickLab\preferences-original-cfd4a64.json`. Both files had SHA-256 `70B7FC620F1D03BE45E8286FDDBC21CD695823313C34419F4A851B3BE9C45A60`. The source file was then replaced with exactly three invalid bytes (`123,255,125`, SHA-256 `5B3430EE5EC57490D0E154755CDAE0C9A7791BE87E77B1F91A52F77676BED0C7`). On launch, NanoClick displayed the parse error, stated that it preserved the original, described safe defaults and exposed “Back up and replace damaged preferences.” Invoking it created `preferences.json.invalid-1793039418423792400-0.bak`; its bytes and SHA-256 exactly matched the three-byte damaged file. The replacement parsed as valid JSON and represented the current safe settings.
+
+After closing NanoClick, the saved original was copied back to the active preferences path; readback SHA-256 matched the original. Relaunch showed the original System, Left, 100 ms, Count=10 and F6 values, Ready state, and no corruption message or recovery button. The generated `.invalid-*.bak` remains in the isolated guest overlay as test evidence. Relevant local screenshots are `recovery-corrupt-ui-ready-cfd4a64.png`, `recovery-success-cfd4a64.png`, `recovery-verify-cancelled-cfd4a64.png` and `recovery-restored-final-cfd4a64.png` in the ignored VM lab directory.
+
+This accepts the Windows 11 invalid-file recovery success path and byte-preserving backup for this artifact. It does not exercise unsupported future schema recovery, backup/save failures, blocked directories, Windows filesystem fault injection, Linux native GUI recovery, native Wayland or reader/DPI acceptance.
