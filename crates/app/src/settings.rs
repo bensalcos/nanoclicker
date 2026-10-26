@@ -6,6 +6,7 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
@@ -167,6 +168,9 @@ impl PreferencesFile {
             can_replace: false,
         }
     }
+    pub fn can_replace(&self) -> bool {
+        self.can_replace
+    }
     pub fn load(&mut self) -> Result<Preferences, SettingsError> {
         self.can_replace = false;
         let file = match File::open(&self.path) {
@@ -220,6 +224,74 @@ impl PreferencesFile {
         #[cfg(unix)]
         File::open(parent)?.sync_all()?;
         Ok(())
+    }
+
+    /// Preserve a rejected preferences file before explicitly replacing it.
+    /// The backup and replacement are kept in the same directory so the final
+    /// save remains an atomic rename on the destination filesystem.
+    pub fn recover_and_save(
+        &mut self,
+        preferences: &Preferences,
+    ) -> Result<PathBuf, SettingsError> {
+        preferences.validate()?;
+        if self.can_replace {
+            return Err(SettingsError::Invalid(
+                "The preferences file does not need recovery.".into(),
+            ));
+        }
+
+        let parent = self.path.parent().ok_or_else(|| {
+            SettingsError::Invalid("No preferences directory is available.".into())
+        })?;
+        let file_name = self
+            .path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| SettingsError::Invalid("The preferences filename is invalid.".into()))?;
+
+        // Match the load limit and bound disk and memory work for a file that
+        // cannot be parsed. Larger files remain untouched for manual recovery.
+        let source = File::open(&self.path)?;
+        let mut bytes = Vec::new();
+        source.take(65_537).read_to_end(&mut bytes)?;
+        if bytes.len() > 65_536 {
+            return Err(SettingsError::Invalid(
+                "The preferences file exceeds 64 KiB and was left untouched. Move it aside manually before saving new preferences.".into(),
+            ));
+        }
+
+        let mut backup = tempfile::NamedTempFile::new_in(parent)?;
+        backup.write_all(&bytes)?;
+        backup.as_file().sync_all()?;
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let mut backup_path = None;
+        for attempt in 0_u32..100 {
+            let candidate = parent.join(format!("{file_name}.invalid-{timestamp}-{attempt}.bak"));
+            match backup.persist_noclobber(&candidate) {
+                Ok(_) => {
+                    backup_path = Some(candidate);
+                    break;
+                }
+                Err(error) if error.error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    backup = error.file;
+                }
+                Err(error) => return Err(error.error.into()),
+            }
+        }
+        let backup_path = backup_path.ok_or_else(|| {
+            SettingsError::Invalid("Could not create a unique preferences backup.".into())
+        })?;
+
+        #[cfg(unix)]
+        File::open(parent)?.sync_all()?;
+
+        self.can_replace = true;
+        self.save(preferences)?;
+        Ok(backup_path)
     }
 }
 

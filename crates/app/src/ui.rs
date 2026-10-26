@@ -19,6 +19,7 @@ pub struct NanoClick {
     diagnostics_message: Option<String>,
     preferences: Option<PreferencesFile>,
     preferences_message: Option<String>,
+    preferences_recovery_available: bool,
     control: Controller,
     shortcut: Shortcut,
     desktop: Desktop,
@@ -34,13 +35,19 @@ impl NanoClick {
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let ctx = cc.egui_ctx.clone();
         theme::configure(&ctx);
-        let (preferences, saved, preferences_message) = match PreferencesFile::discover() {
-            Ok(mut file) => match file.load() {
-                Ok(saved) => (Some(file), saved, None),
-                Err(error) => (Some(file), Preferences::default(), Some(error.to_string())),
-            },
-            Err(error) => (None, Preferences::default(), Some(error.to_string())),
-        };
+        let (preferences, saved, preferences_message, preferences_recovery_available) =
+            match PreferencesFile::discover() {
+                Ok(mut file) => match file.load() {
+                    Ok(saved) => (Some(file), saved, None, false),
+                    Err(error) => (
+                        Some(file),
+                        Preferences::default(),
+                        Some(error.to_string()),
+                        true,
+                    ),
+                },
+                Err(error) => (None, Preferences::default(), Some(error.to_string()), false),
+            };
         let selected_theme = selected_theme.unwrap_or_else(|| saved.theme.into());
         ctx.set_theme(selected_theme);
         let desktop = Desktop::detect();
@@ -65,6 +72,7 @@ impl NanoClick {
             diagnostics_message: None,
             preferences,
             preferences_message,
+            preferences_recovery_available,
             control,
             shortcut: Shortcut::new(desktop, &ctx, saved.shortcut),
             desktop,
@@ -94,6 +102,40 @@ impl NanoClick {
             Ok(()) => "Preferences saved.".into(),
             Err(error) => error.to_string(),
         });
+    }
+    fn recover_preferences(&mut self) {
+        let recovered =
+            Preferences::from_draft(&self.control.draft, self.theme, &self.shortcut.requested)
+                .and_then(|value| match &mut self.preferences {
+                    Some(file) => file
+                        .recover_and_save(&value)
+                        .map(|backup| backup.display().to_string()),
+                    None => Err(crate::settings::SettingsError::Invalid(
+                        "No preferences directory is available.".into(),
+                    )),
+                });
+        match recovered {
+            Ok(backup) => {
+                self.preferences_recovery_available = false;
+                self.preferences_message = Some(format!(
+                    "Current settings saved. The original file was backed up to {backup}."
+                ));
+            }
+            Err(error) => {
+                let backup_exists = self
+                    .preferences
+                    .as_ref()
+                    .is_some_and(PreferencesFile::can_replace);
+                self.preferences_recovery_available = !backup_exists;
+                self.preferences_message = Some(if backup_exists {
+                    format!(
+                        "The original file is backed up, but saving failed: {error}. Use Save to retry."
+                    )
+                } else {
+                    error.to_string()
+                });
+            }
+        }
     }
     fn controls(&mut self, ui: &mut egui::Ui, active: bool) {
         ui.add_enabled_ui(!active, |ui| {
@@ -193,6 +235,16 @@ impl NanoClick {
                             _ => {}
                         }
                         if let Some(message) = &self.preferences_message { ui.label(message); }
+                        if self.preferences_recovery_available {
+                            ui.weak("NanoClick is using safe defaults. You can preserve the unreadable file and save the current settings.");
+                            if ui
+                                .button("Back up and replace damaged preferences")
+                                .on_hover_text("Creates a unique backup beside the original, then saves the current settings.")
+                                .clicked()
+                            {
+                                self.recover_preferences();
+                            }
+                        }
                         if let Some(message) = &self.diagnostics_message { ui.colored_label(error_color(ui), message); }
                         if let Some(error) = self.control.error.as_ref().or(snapshot.error.as_ref()) {
                             ui.colored_label(error_color(ui), error);

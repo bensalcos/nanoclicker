@@ -6,7 +6,7 @@ Reviewed against the repository plan on 2026-10-26. The Rust implementation and 
 |---|---|---|
 | Architecture, modules, phases and tasks | [Architecture](architecture/RUST.md), [plan](../tasks/plan.md), [backlog](../tasks/todo.md) | Final decisions remain subject to native results |
 | Core correctness and cancellation | Deterministic scheduling/concurrency tests; retained run identities; finite counts; overflow/error handling | Adapter-specific native acceptance below |
-| Windows 11 | MSVC build/unit/package checks; [Windows 11 VM startup, Count=1/10/1000 per button, native preference Save/relaunch/discard, F6 outside focus, long-wait Stop/restart/active close, diagnosed capture-position setup, and current `68cd895` focused-target F6 Count=10 receipt](evidence/windows-vm-functional.md) | Matching manual-countdown completion receipt, partial-insertion/release failures, shortcut layouts/conflicts, resource/timing budgets, DPI/monitor transitions and NVDA |
+| Windows 11 | MSVC build/unit/package checks; [Windows 11 VM startup, Count=1/10/1000 per button, native preference Save/relaunch/discard, F6 outside focus, manual Start/countdown with matching receiver receipt, long-wait Stop/restart/active close, diagnosed capture-position setup and current `c2f21a1` DPI checks](evidence/windows-vm-functional.md) | Partial-insertion/release failures, shortcut layouts/conflicts, invalid-preference recovery GUI, resource/timing budgets, additional monitor/DPI configurations and NVDA |
 | Ubuntu X11 | Actual product GUI and capture on private Xvfb; extracted WGPU-default release bundle passes the restricted Ubuntu 24.04 flow for three buttons, N=1/7/1000, shortcuts, preferences, manual preparation and lifecycle cases | Hardware Vulkan drivers, reference desktop/layout behavior, Orca, real monitor transitions and complete native performance protocol |
 | GNOME Wayland | Production portal adapters; thirteen private-D-Bus lifecycle cases; passive native capture target prepared | Real consent/denial/revocation, desktop-assigned trigger, native Wayland target delivery, resource/timing and reader/DPI checks |
 | KDE Wayland | Linux adapter/contract checks | Distribution/backend versions and the same native flows as GNOME |
@@ -19,7 +19,7 @@ The [validation contract](VALIDATION.md) defines unchanged numeric budgets and c
 
 ## Current next actions
 
-1. Continue the [Windows 11 VM QA](evidence/windows-vm-functional.md), first obtaining matching producer and capture evidence for manual countdown completion; cancellation already passes and recent completion probes are inconclusive.
+1. Continue the [Windows 11 VM QA](evidence/windows-vm-functional.md), starting with current-source invalid-preference recovery and remaining failure cases; manual Start/countdown now has a matching producer and receiver receipt.
 2. Close remaining Windows failure, shortcut, preference-recovery, DPI/accessibility and stability cases in the VM. Use reference hardware for performance budgets the constrained VM cannot accept.
 3. Run native GNOME/KDE portal consent, target delivery, revocation, accessibility and timing flows; Xvfb and D-Bus mocks do not substitute for compositor acceptance.
 4. Close the software-rendering RSS finding and rerun per-backend measurements, verify WGPU/Glow compatibility and final artifacts on reference installations. Retain the C++ reference and label bundles as previews until those gates pass.
