@@ -50,6 +50,39 @@ fn keyboard_mapping(conn: &X11Connection) -> Result<KeyboardMapping, BackendErro
         modifiers: modifiers.keycodes,
     })
 }
+fn keycode_for_symbol(
+    first: u8,
+    mapping: &KeyboardMapping,
+    symbol: u32,
+) -> Result<(u8, bool), BackendError> {
+    let width = usize::from(mapping.keysyms_per_keycode);
+    if width == 0 {
+        return Err(BackendError::new("The keyboard layout has no key symbols."));
+    }
+    // Prefer the unshifted level. Higher groups require XKB-aware group
+    // selection and must not silently become an unrelated physical binding.
+    for level in 0..2 {
+        let mut matches = mapping
+            .keysyms
+            .chunks(width)
+            .enumerate()
+            .filter(|(_, symbols)| symbols.get(level) == Some(&symbol));
+        if let Some((offset, _)) = matches.next() {
+            if matches.next().is_some() {
+                return Err(BackendError::new(
+                    "The requested key has ambiguous keyboard mappings. Choose another shortcut.",
+                ));
+            }
+            let code = u8::try_from(usize::from(first) + offset)
+                .map_err(|_| BackendError::new("The keyboard keycode is out of range."))?;
+            return Ok((code, level == 1));
+        }
+    }
+    Err(BackendError::new(
+        "The requested key is not present in the supported keyboard levels.",
+    ))
+}
+
 impl X11Shortcut {
     /// Registration is completed before returning, preserving the previous grab
     /// when a replacement conflicts. The caller owns at most one listener.
@@ -117,16 +150,7 @@ impl X11Shortcut {
                     }
                     let first = conn.setup().min_keycode;
                     let map = keyboard_mapping(&conn)?;
-                    let code = map
-                        .keysyms
-                        .chunks(usize::from(map.keysyms_per_keycode))
-                        .position(|symbols| symbols.contains(&symbol))
-                        .and_then(|offset| u8::try_from(usize::from(first) + offset).ok())
-                        .ok_or_else(|| {
-                            BackendError::new(
-                                "The requested key is not present in the current keyboard layout.",
-                            )
-                        })?;
+                    let (code, shifted) = keycode_for_symbol(first, &map, symbol)?;
                     let mut modifiers = ModMask::default();
                     for (flag, mask) in [
                         (Modifiers::CONTROL, ModMask::CONTROL),
@@ -137,6 +161,9 @@ impl X11Shortcut {
                         if hotkey.mods.contains(flag) {
                             modifiers |= mask;
                         }
+                    }
+                    if shifted {
+                        modifiers |= ModMask::SHIFT;
                     }
                     // Ignore CapsLock and NumLock. Partial grabs are released when
                     // this private connection closes on any registration failure.
@@ -309,5 +336,41 @@ fn keysym(hotkey: HotKey) -> Result<u32, BackendError> {
         _ => Err(BackendError::new(
             "Use a letter, digit, F1–F24, Space, Enter, Tab, Escape, navigation, Insert or Delete key.",
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn mapping(symbols: &[u32]) -> KeyboardMapping {
+        KeyboardMapping {
+            keysyms_per_keycode: 2,
+            keysyms: symbols.to_vec(),
+            modifiers: vec![],
+        }
+    }
+    #[test]
+    fn azerty_digit_requires_shift() -> Result<(), BackendError> {
+        assert_eq!(
+            keycode_for_symbol(10, &mapping(&[b'&'.into(), b'1'.into()]), b'1'.into())?,
+            (10, true)
+        );
+        Ok(())
+    }
+    #[test]
+    fn prefers_unshifted_symbol_over_shifted_alias() -> Result<(), BackendError> {
+        assert_eq!(
+            keycode_for_symbol(
+                10,
+                &mapping(&[b'&'.into(), b'1'.into(), b'1'.into(), b'!'.into()]),
+                b'1'.into()
+            )?,
+            (11, false)
+        );
+        Ok(())
+    }
+    #[test]
+    fn rejects_ambiguous_base_level() {
+        assert!(keycode_for_symbol(10, &mapping(&[0x31, 0x21, 0x31, 0x21]), 0x31).is_err());
     }
 }
