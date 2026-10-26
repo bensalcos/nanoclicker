@@ -21,20 +21,31 @@ fn bounded<T>(
     timeout: Duration,
     cancel: Option<&Cancellation>,
 ) -> Result<T, BackendError> {
-    block_on(race(async { future.await.map_err(error) }, async {
-        let deadline = std::time::Instant::now() + timeout;
-        loop {
-            if cancel.is_some_and(Cancellation::is_cancelled) {
-                return Err(BackendError::new("Preparation cancelled."));
-            }
-            if std::time::Instant::now() >= deadline {
-                return Err(BackendError::new(
+    if cancel.is_some_and(Cancellation::is_cancelled) {
+        return Err(BackendError::new("Portal operation cancelled."));
+    }
+    block_on(race(
+        async { future.await.map_err(error) },
+        race(
+            async {
+                Timer::after(timeout).await;
+                Err(BackendError::new(
                     "The desktop portal did not respond in time.",
-                ));
-            }
-            Timer::after(Duration::from_millis(10)).await;
-        }
-    }))
+                ))
+            },
+            async {
+                let Some(cancel) = cancel else {
+                    return std::future::pending().await;
+                };
+                loop {
+                    if cancel.is_cancelled() {
+                        return Err(BackendError::new("Portal operation cancelled."));
+                    }
+                    Timer::after(Duration::from_millis(5)).await;
+                }
+            },
+        ),
+    ))
 }
 
 /// Read-only capability probe; it does not request permission.
@@ -55,6 +66,7 @@ pub fn probe() -> Result<(), BackendError> {
 }
 
 pub struct WaylandInput {
+    cancel: Cancellation,
     proxy: RemoteDesktop,
     session: Arc<Session<RemoteDesktop>>,
     pressed: Option<i32>,
@@ -126,6 +138,7 @@ impl WaylandInput {
         };
         let mut input = match subscribed.recv_timeout(Duration::from_secs(3)) {
             Ok(Ok(())) => Self {
+                cancel: cancel.clone(),
                 proxy,
                 session,
                 pressed: None,
@@ -176,7 +189,14 @@ impl WaylandInput {
         }
         Ok(input)
     }
-    fn release(&mut self) -> Result<(), BackendError> {
+    fn cleanup_timeout(&self) -> Duration {
+        if self.cancel.is_cancelled() {
+            Duration::from_millis(40)
+        } else {
+            Duration::from_secs(1)
+        }
+    }
+    fn release(&mut self, cancel: Option<&Cancellation>) -> Result<(), BackendError> {
         if let Some(button) = self.pressed {
             bounded(
                 self.proxy.notify_pointer_button(
@@ -185,8 +205,8 @@ impl WaylandInput {
                     KeyState::Released,
                     Default::default(),
                 ),
-                Duration::from_secs(1),
-                None,
+                self.cleanup_timeout(),
+                cancel,
             )?;
             self.pressed = None;
         }
@@ -195,6 +215,9 @@ impl WaylandInput {
 }
 impl InputSink for WaylandInput {
     fn click(&mut self, button: MouseButton) -> Result<(), BackendError> {
+        if self.cancel.is_cancelled() {
+            return Err(BackendError::new("Portal operation cancelled."));
+        }
         let button = match button {
             MouseButton::Left => 0x110,
             MouseButton::Right => 0x111,
@@ -209,9 +232,10 @@ impl InputSink for WaylandInput {
                 Default::default(),
             ),
             Duration::from_secs(1),
-            None,
+            Some(&self.cancel),
         )?;
-        self.release()
+        let cancel = self.cancel.clone();
+        self.release(Some(&cancel))
     }
     fn finish(&mut self) -> Result<(), BackendError> {
         if self.closed {
@@ -221,8 +245,8 @@ impl InputSink for WaylandInput {
         if let Some(monitor) = self.monitor.take() {
             let _ = monitor.join();
         }
-        let released = self.release();
-        let closed = bounded(self.session.close(), Duration::from_secs(1), None);
+        let released = self.release(None);
+        let closed = bounded(self.session.close(), self.cleanup_timeout(), None);
         self.closed = true;
         released.and(closed)
     }

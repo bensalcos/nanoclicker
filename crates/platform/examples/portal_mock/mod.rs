@@ -18,6 +18,8 @@ pub enum Mode {
     CloseDuringSelect,
     HoldStart,
     FailRelease,
+    HoldPress,
+    HoldRelease,
 }
 #[derive(Default)]
 pub struct State {
@@ -172,21 +174,29 @@ impl Portal {
         )
         .await
     }
-    fn notify_pointer_button(
+    async fn notify_pointer_button(
         &self,
         _session: ObjectPath<'_>,
         _options: Options,
         button: i32,
         state: u32,
     ) -> fdo::Result<()> {
-        let mut observed = lock(&self.state);
-        if observed.buttons.len() >= 8 {
-            return Err(error("Unexpected extra input"));
+        {
+            let mut observed = lock(&self.state);
+            if observed.buttons.len() >= 8 {
+                return Err(error("Unexpected extra input"));
+            }
+            observed.buttons.push((button, state));
+            if matches!(self.mode, Mode::FailRelease) && state == 0 && !observed.release_failed {
+                observed.release_failed = true;
+                return Err(error("Injected release failure"));
+            }
         }
-        observed.buttons.push((button, state));
-        if matches!(self.mode, Mode::FailRelease) && state == 0 && !observed.release_failed {
-            observed.release_failed = true;
-            return Err(error("Injected release failure"));
+        if matches!(
+            (self.mode, state),
+            (Mode::HoldPress, 1) | (Mode::HoldRelease, 0)
+        ) {
+            async_io::Timer::after(std::time::Duration::from_secs(5)).await;
         }
         Ok(())
     }

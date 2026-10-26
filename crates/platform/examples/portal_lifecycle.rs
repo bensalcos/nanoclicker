@@ -48,6 +48,33 @@ fn main() -> Result<()> {
         }
         Ok::<(), Box<dyn Error>>(())
     })?;
+    for (name, mode, count) in [
+        ("stalled-press", Mode::HoldPress, 1),
+        ("stalled-release", Mode::HoldRelease, 2),
+    ] {
+        let (service, state) = block_on(portal_mock::serve(mode))?;
+        let engine = Engine::new(WaylandInput::open, || {})?;
+        engine.start(ClickConfig::new(10, MouseButton::Left, None)?)?;
+        await_state(&engine, |_| lock(&state).buttons.len() >= count)?;
+        let began = Instant::now();
+        engine.stop();
+        let terminal = await_state(&engine, |snapshot| !snapshot.state.is_active())?;
+        if began.elapsed() > Duration::from_millis(250)
+            || terminal.metrics.sent != 0
+            || terminal.state != RunState::Faulted
+            || lock(&state).closes != 1
+        {
+            return Err(
+                format!("Stalled operation did not cancel safely: {name}: {terminal:?}").into(),
+            );
+        }
+        println!(
+            "portal_case,{name},stop_ms={:.3}",
+            began.elapsed().as_secs_f64() * 1000.0
+        );
+        drop(engine);
+        block_on(service.release_name(NAME))?;
+    }
     for scenario in [
         "normal-stop",
         "denied",
