@@ -51,3 +51,10 @@ The X11 artifact was downloaded to `artifacts/ci/linux-run-40139252678/`. Its GU
 ## Current-source Windows 11 artifact
 
 [Run 40281183415](https://github.com/bensalcos/nanoclicker/actions/runs/40281183415) at `68cd8950efebe0f3c4372377638f8606a15ab865` passes all four jobs, including Windows Server 2025. The Windows preview ZIP SHA-256 is `dae8f4f112ff0bd025075b8244ab169058a065381f042698f3dd8b7e5cc65765`; the packaged app SHA-256 is `8cc39180206b3b45328bf99c26b367c06b91446940618ffc02309a52f0c1ab30`, and the passive capture target SHA-256 is `5deaa24c2ad7b0c5bbfd8fd8603a3d541f8134fe9f053ac17316288d5d23cf9e`. `verify_windows_package.py` accepted the downloaded archive, and the exact app/target hashes were read back inside the isolated Windows 11 VM. A focused-target F6 Count=10 Left session recorded ten balanced pairs; see the [current-source Windows 11 receipt](windows-vm-functional.md#current-source-windows-11-receipt--2026-10-26). This is functional VM evidence only; hosted Windows CI does not replace native Windows 11 timing, accessibility, DPI, or lifecycle acceptance.
+
+
+## Renderer isolation and manual-start preview — run 40292975833
+
+[Run 40292975833](https://github.com/bensalcos/nanoclicker/actions/runs/40292975833) at `0a3380cb2d997031555eef31ec1bb45dd83b07df` passed the Windows desktop, Ubuntu desktop and alternative-renderer jobs. The Rust 1.95 job failed before crate compilation because the Linux runner lacked `wayland-client.pc`, required by `wayland-sys` during `pkg-config` discovery. This was a missing host development dependency, not an MSRV compiler diagnostic. The Windows artifact was downloaded, verified against the commit, and executed in the isolated Windows 11 VM; its current-source manual Start probe has producer sends but no receiver events (see [VM evidence](windows-vm-functional.md#current-source-0a3380c-manual-start-probe--2026-10-26)).
+
+The workflow was updated to install the Linux graphics and isolated-test packages in the Rust 1.95 job, matching the Ubuntu desktop job. The updated YAML still requires hosted CI confirmation. Do not report the MSRV job as passing until that rerun completes.
