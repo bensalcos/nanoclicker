@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Unsandboxed Wayland portal peers register the application identity before requesting input or global shortcuts.
 - Windows selects wgpu by default to support the inbox display driver that exposed OpenGL 1.1 in the VM; the replacement and passive QA target now open in the Windows 11 VM.
 
 - Windows builds select the static C runtime to avoid requiring a separately installed Visual C++ redistributable; the rebuilt preview now passes `--help` in the Windows 11 VM without the redistributable.

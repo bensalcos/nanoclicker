@@ -2,6 +2,8 @@
 use nanoclick_core::{BackendError, Cancellation, InputSink, MouseButton};
 
 #[cfg(target_os = "linux")]
+mod portal_connection;
+#[cfg(target_os = "linux")]
 pub mod portal_shortcut;
 #[cfg(target_os = "linux")]
 pub mod wayland;

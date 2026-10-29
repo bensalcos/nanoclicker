@@ -58,7 +58,8 @@ fn main() -> Result<()> {
                 snapshot.reason == Some(StopReason::Completed)
             })?;
         }
-        if lock(&state).persist_modes != [2, 2]
+        if lock(&state).registrations != 2
+            || lock(&state).persist_modes != [2, 2]
             || lock(&state).restore_tokens != [None, Some("mock-token-1".into())]
             || lock(&state).closes != 2
         {
@@ -69,6 +70,24 @@ fn main() -> Result<()> {
         drop(engine);
         block_on(service.release_name(NAME))?;
         println!("PASS portal lifecycle: restored-second-run");
+    }
+    {
+        let (service, state) = block_on(portal_mock::serve(Mode::DenyRegistration))?;
+        let engine = Engine::new(WaylandInput::open, || {})?;
+        engine.start(ClickConfig::new(10, MouseButton::Left, Some(1))?)?;
+        let terminal = await_state(&engine, |snapshot| snapshot.state == RunState::Faulted)?;
+        if !terminal
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("Host registration denied"))
+            || lock(&state).session.is_some()
+            || !lock(&state).buttons.is_empty()
+        {
+            return Err("Registration failure created a session or injected input".into());
+        }
+        drop(engine);
+        block_on(service.release_name(NAME))?;
+        println!("PASS portal lifecycle: host-registration-denied");
     }
     for (name, mode, count) in [
         ("stalled-press", Mode::HoldPress, 1),
@@ -236,6 +255,9 @@ fn shortcut_lifecycle() -> Result<()> {
                 update => {
                     return Err(format!("Unexpected shortcut registration: {update:?}").into());
                 }
+            }
+            if lock(&state).registrations != 1 {
+                return Err("Shortcut peer was not registered exactly once".into());
             }
         } else {
             let deadline = Instant::now() + Duration::from_secs(4);

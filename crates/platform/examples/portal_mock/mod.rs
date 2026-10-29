@@ -14,6 +14,7 @@ type Options = HashMap<String, OwnedValue>;
 #[derive(Clone, Copy)]
 pub enum Mode {
     Allow,
+    DenyRegistration,
     Deny,
     CloseDuringSelect,
     HoldStart,
@@ -23,6 +24,8 @@ pub enum Mode {
 }
 #[derive(Default)]
 pub struct State {
+    pub identities: HashMap<String, String>,
+    pub registrations: usize,
     pub session: Option<OwnedObjectPath>,
     pub buttons: Vec<(i32, u32)>,
     pub closes: usize,
@@ -123,6 +126,15 @@ impl Portal {
         #[zbus(header)] header: Header<'_>,
         #[zbus(connection)] connection: &Connection,
     ) -> fdo::Result<OwnedObjectPath> {
+        let sender = header.sender().ok_or_else(|| error("Missing sender"))?;
+        if lock(&self.state)
+            .identities
+            .get(sender.as_str())
+            .map(String::as_str)
+            != Some("io.github.bensalcos.NanoClick")
+        {
+            return Err(fdo::Error::AccessDenied("An app id is required".into()));
+        }
         let session = path(&header, &options, "session", "session_handle_token")?;
         connection
             .object_server()
@@ -286,9 +298,43 @@ impl Shortcuts {
     }
 }
 
+struct Registry(Shared, Mode);
+#[zbus::interface(name = "org.freedesktop.host.portal.Registry")]
+impl Registry {
+    #[zbus(property, name = "version")]
+    fn version(&self) -> u32 {
+        1
+    }
+    fn register(
+        &self,
+        app_id: &str,
+        _options: Options,
+        #[zbus(header)] header: Header<'_>,
+    ) -> fdo::Result<()> {
+        if matches!(self.1, Mode::DenyRegistration) {
+            return Err(fdo::Error::AccessDenied("Host registration denied".into()));
+        }
+        let sender = header.sender().ok_or_else(|| error("Missing sender"))?;
+        let mut state = lock(&self.0);
+        if state.identities.contains_key(sender.as_str()) {
+            return Err(fdo::Error::Failed("Peer already registered".into()));
+        }
+        state.identities.insert(sender.to_string(), app_id.into());
+        state.registrations += 1;
+        Ok(())
+    }
+}
+
 pub async fn serve(mode: Mode) -> zbus::Result<(Connection, Shared)> {
     let state = Shared::default();
     let connection = Connection::session().await?;
+    connection
+        .object_server()
+        .at(
+            "/org/freedesktop/portal/desktop",
+            Registry(state.clone(), mode),
+        )
+        .await?;
     connection
         .object_server()
         .at(

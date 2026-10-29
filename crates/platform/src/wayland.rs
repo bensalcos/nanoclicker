@@ -57,7 +57,8 @@ fn bounded<T>(
 pub fn probe() -> Result<(), BackendError> {
     bounded(
         async {
-            let proxy = RemoteDesktop::new().await?;
+            let proxy =
+                RemoteDesktop::with_connection(crate::portal_connection::connect().await?).await?;
             let devices = proxy.available_device_types().await?;
             if devices.contains(DeviceType::Pointer) {
                 Ok(())
@@ -124,7 +125,13 @@ impl WaylandInput {
         cancel: &Cancellation,
         context: &PortalContext,
     ) -> Result<Self, BackendError> {
-        let proxy = bounded(RemoteDesktop::new(), Duration::from_secs(3), Some(cancel))?;
+        let proxy = bounded(
+            async {
+                RemoteDesktop::with_connection(crate::portal_connection::connect().await?).await
+            },
+            Duration::from_secs(3),
+            Some(cancel),
+        )?;
         let session = Arc::new(bounded(
             proxy.create_session(Default::default()),
             Duration::from_secs(3),

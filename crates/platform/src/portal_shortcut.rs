@@ -89,7 +89,13 @@ async fn run(
     activated: impl Fn(),
     context: crate::wayland::PortalContext,
 ) -> Result<(), BackendError> {
-    let proxy = operation(GlobalShortcuts::new(), &stopped).await?;
+    let proxy = operation(
+        async {
+            GlobalShortcuts::with_connection(crate::portal_connection::connect().await?).await
+        },
+        &stopped,
+    )
+    .await?;
     let session = operation(proxy.create_session(Default::default()), &stopped).await?;
     let result = async {
         let mut pressed = operation(proxy.receive_activated(), &stopped).await?;
