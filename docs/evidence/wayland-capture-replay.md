@@ -25,11 +25,11 @@ Every raw press has a corresponding raw release; every receiver report is balanc
 
 The first corrected-receiver trial also received 36 balanced pairs, but its script timed out before the receiver log flushed; it is exploratory rather than one of the two complete receipts above. The pre-fix traced trial received 1339 raw and counted pairs, illustrating that replay is conditional rather than inevitable.
 
-## Native sharing-stop exploration remains unaccepted
+## Historical sharing-stop exploration — superseded by an independent controller
 
 At a requested 1000 ms period, moving toward GNOME's orange sharing-stop indicator allowed the next product click to activate it before the controller's intended click. GNOME emitted the real portal Session.Closed signal, removed both product and auxiliary control sessions, and the product ended failed with seven sent pairs. Six pairs reached the target before the pointer left it; receiver session 4 records six balanced pairs and no held state. The subsequent controller call failed because its Mutter session had been removed.
 
-This proves a real native session closure, but not the intended independently injected user action. The first new virtual keyboard also entered with its current key already held, so its initial Space did not produce a fresh key-down event. A replacement controller and subsequent attempted manual restart were not sufficient to complete a second, independently attributed revocation receipt. The zero-event recording is not acceptance. **User revocation, reliable control recovery and reauthorization after that action remain pending.** `closed.log`, `revoke-menu.png`, `revoke-app.png`, run 6 and receiver session 4 preserve the exploratory result. No further native pass is claimed.
+This proves a real native session closure, but not the intended independently injected user action. The first new virtual keyboard also entered with its current key already held, so its initial Space did not produce a fresh key-down event. A replacement controller and subsequent attempted manual restart were not sufficient to complete a second, independently attributed revocation receipt. The zero-event recording is not acceptance. **This exploratory attempt is not accepted; the later [independent-controller native trials](wayland-native-revocation.md) close active-session revocation and same-process recovery in private Fedora GNOME.** `closed.log`, `revoke-menu.png`, `revoke-app.png`, run 6 and receiver session 4 preserve the exploratory result. No further native pass is claimed.
 
 ## Verification and boundary
 
@@ -39,4 +39,4 @@ This proves a real native session closure, but not the intended independently in
 - The change adds no dependency, production input request or logging path. Review checks input ordering, hidden close, unchanged anomaly detection and private/no-clobber output behavior.
 - `cleanup.json` confirms no private-runtime processes remain. The user's compositor PID 4780 remains running. Only the private test lab was controlled.
 
-Private Fedora portal-owner-loss balance now has two matching traced receipts. Reference Ubuntu GNOME/KDE, deliberate native user revocation, readers, physical monitor transitions and full timing/resource budgets remain open. General software-RSS optimization remains paused; retain the C++ reference and preview label. No new hosted CI, Windows GUI validation, push, merge or release is implied.
+Private Fedora portal-owner-loss balance now has two matching traced receipts. Reference Ubuntu GNOME/KDE, persistent-permission reset, readers, physical monitor transitions and full timing/resource budgets remain open. Active-session revocation and the same-process retry now have separate [native evidence](wayland-native-revocation.md). General software-RSS optimization remains paused; retain the C++ reference and preview label. No new hosted CI, Windows GUI validation, push, merge or release is implied.
