@@ -42,11 +42,11 @@ The restarted fixed app used Count=1000 with the passive Wayland target focused/
 
 The duration includes preparation and diagnostic observation; it is not steady per-event receiver timing. These short single samples establish functional delivery at the requested settings in this private compositor, not a before/after speedup or the 60-second/reference-hardware budgets. The minimum interval does not guarantee sustained 1000 clicks/s.
 
-## Native owner-loss finding remains open
+## Historical owner-loss finding — superseded receiver counts
 
 While a 10 ms Until stopped run was active, the test sent SIGTERM only to the portal frontend whose process environment matched the private runtime. The producer reached terminal failure in an observed 43.292 ms, reporting nine attempted/sent pairs and no send failures. This is actual private service-owner loss, not user permission revocation or p99 Stop acceptance.
 
-Receiver session 6 records nine presses, eleven releases and nine complete pairs: no button remains held, but two surplus releases make the report unbalanced with two anomalies. **Balanced native failure acceptance remains open.** Attribution to the product, portal/compositor teardown or event translation is unresolved; the registration fix does not claim to fix this finding. Raw evidence is `ownerloss-terminal.png`, session 6 of `capture.jsonl`, producer run 5 of `runs-restart.jsonl` and corrected `owner-loss-result.json`.
+Receiver session 6 records nine presses, eleven releases and nine complete pairs: no button remains held, but two surplus releases make the report unbalanced with two anomalies. **This historical count is superseded by the [capture replay correction and two raw-traced native receipts](wayland-capture-replay.md).** Attribution to the product, portal/compositor teardown or event translation is unresolved; the registration fix does not claim to fix this finding. Raw evidence is `ownerloss-terminal.png`, session 6 of `capture.jsonl`, producer run 5 of `runs-restart.jsonl` and corrected `owner-loss-result.json`.
 
 The exploratory script's first immediate read incorrectly selected the previous saved receiver session 5 before session 6 had flushed. That stale result is explicitly rejected and retained only as `owner-loss-result.rejected-stale-receiver.json`. The script now waits for the expected next session ID; it must not substitute an older balanced receipt for the actual unbalanced failure session.
 
@@ -57,4 +57,4 @@ The exploratory script's first immediate read incorrectly selected the previous 
 - The full-feature release build passes, with the existing deprecated-linker-optimization warning. The private X11 fixture also passes all three buttons, held/conflicting shortcuts and mapping-change checks.
 - `graphify update .` completed with 1570 nodes/2914 edges; the explicit `.aws` corpus exclusion remains. No hosted CI run, Windows GUI rerun, merge or release is inferred from these local checks.
 
-Remaining: investigate the surplus releases on real owner loss; native user revocation, reference Ubuntu GNOME and KDE flows, broader buttons/layouts, readers, physical multi-monitor/DPI and complete timing/resource acceptance. Keep the C++ reference. The general software-RSS optimization remains paused.
+Remaining: deliberate native user revocation and post-revocation control recovery (see [follow-up](wayland-capture-replay.md)); reference Ubuntu GNOME and KDE flows, broader buttons/layouts, readers, physical multi-monitor/DPI and complete timing/resource acceptance. Keep the C++ reference. The general software-RSS optimization remains paused.

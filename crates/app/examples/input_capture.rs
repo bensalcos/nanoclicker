@@ -74,8 +74,8 @@ impl CaptureWindow {
         self.message = Some(message);
     }
 }
-impl eframe::App for CaptureWindow {
-    fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+impl CaptureWindow {
+    fn read_input(&mut self, ctx: &egui::Context) {
         let scale = ctx.pixels_per_point();
         let mut closing = false;
         ctx.input(|input| {
@@ -115,7 +115,18 @@ impl eframe::App for CaptureWindow {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
+}
+impl eframe::App for CaptureWindow {
+    fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        // Hidden-window logic retains the last visible frame's input events.
+        // Only viewport close requests are fresh here.
+        if ctx.input(|input| input.viewport().close_requested()) {
+            self.finish(ctx.pixels_per_point(), "closed");
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+    }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
+        self.read_input(ui.ctx());
         egui::Frame::new().fill(egui::Color32::from_rgb(22, 24, 29)).inner_margin(24.0).show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
             ui.heading("Input capture");
@@ -230,4 +241,88 @@ fn main() -> eframe::Result {
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod input_regressions {
+    use super::*;
+    fn window(output: File) -> CaptureWindow {
+        CaptureWindow {
+            capture: session::Capture::default(),
+            output: BufWriter::new(output),
+            backend: "test",
+            started: None,
+            message: None,
+            output_failed: Arc::new(AtomicBool::new(false)),
+            pointer_position: None,
+            pointer_move_events: 0,
+            pointer_button_events: 0,
+        }
+    }
+    #[test]
+    fn hidden_logic_does_not_replay_pointer_events() {
+        let file = tempfile::tempfile().unwrap();
+        let mut window = window(file);
+        window.toggle(1.0);
+        let ctx = egui::Context::default();
+        ctx.options_mut(|options| options.max_passes = 1.try_into().unwrap());
+        let mut frame = eframe::Frame::_new_kittest();
+        // Leave only Release in the last shown frame, matching the native finding.
+        for pressed in [true, false] {
+            let raw = egui::RawInput {
+                events: vec![egui::Event::PointerButton {
+                    pos: egui::pos2(20.0, 20.0),
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: Default::default(),
+                }],
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(raw, |ui| {
+                eframe::App::logic(&mut window, ui.ctx(), &mut frame);
+                eframe::App::ui(&mut window, ui, &mut frame);
+            });
+            output.textures_delta.clear();
+        }
+        for _ in 0..2 {
+            let _ = ctx.run_logic(&egui::RawInput::default(), |ctx| {
+                eframe::App::logic(&mut window, ctx, &mut frame);
+            });
+        }
+        assert_eq!(window.pointer_button_events, 2);
+        let report = window.capture.stop().unwrap();
+        assert!(report.balanced);
+    }
+    #[test]
+    fn hidden_logic_does_not_toggle_recording_again() {
+        let mut window = window(tempfile::tempfile().unwrap());
+        let ctx = egui::Context::default();
+        ctx.options_mut(|options| options.max_passes = 1.try_into().unwrap());
+        let raw = egui::RawInput {
+            events: vec![egui::Event::Key {
+                key: egui::Key::Space,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: Default::default(),
+            }],
+            ..Default::default()
+        };
+        let mut frame = eframe::Frame::_new_kittest();
+        let mut output = ctx.run_ui(raw, |ui| {
+            eframe::App::logic(&mut window, ui.ctx(), &mut frame);
+            eframe::App::ui(&mut window, ui, &mut frame);
+        });
+        output.textures_delta.clear();
+        assert!(window.capture.active());
+        for _ in 0..3 {
+            let _ = ctx.run_logic(&egui::RawInput::default(), |ctx| {
+                eframe::App::logic(&mut window, ctx, &mut frame);
+            });
+        }
+        assert!(window.capture.active());
+        let report = window.capture.stop().unwrap();
+        assert_eq!(report.session_id, 1);
+    }
 }

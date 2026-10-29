@@ -18,6 +18,8 @@
 
 ### Fixed
 
+- The passive QA receiver no longer replays mouse or recording-key events while its window is hidden.
+
 - Unsandboxed Wayland portal peers register the application identity before requesting input or global shortcuts.
 - Windows selects wgpu by default to support the inbox display driver that exposed OpenGL 1.1 in the VM; the replacement and passive QA target now open in the Windows 11 VM.
 
