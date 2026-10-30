@@ -53,4 +53,44 @@ Local review checked correctness against the native before/after receipt, Linux-
 
 `cleanup.json` confirms no private-runtime process remains. Private preferences stayed byte-for-byte equal to the original (SHA-256 `b79f252b85920a538447e5725e04b8a789ca297affe65c1db696ff12fcb40f65`), and host GNOME compositor PID 4780 remained active. No host reader/settings/audio or Windows VM state was changed.
 
-Remaining reader work includes human listening, changed-value and popup/reverse navigation, other lifecycle announcements and active-count behavior, reference Ubuntu GNOME/KDE and Windows NVDA. Physical monitors, native timing/resource budgets and the paused software-RSS optimization remain separate gates. These results do not accept a release or retire C++.
+Remaining reader work includes human listening, popup focus restoration, other lifecycle announcements and active-count behavior, reference Ubuntu GNOME/KDE and Windows NVDA. The continuation below supersedes the initial changed-value and reverse-navigation gaps. Physical monitors, native timing/resource budgets and the paused software-RSS optimization remain separate gates. These results do not accept a release or retire C++.
+
+## Changed selections, popup traversal and reverse navigation — continuation
+
+The unchanged application from `a68fe3fedf84fcd94b5c1e205385e1c1402e1224` was rechecked against SHA-256 `31b90cec3e2200ee6d0c9ddf321a034bc9fa033293f383ed318df0cec118c70e`. No application source changed, no rebuild or broad tests were repeated, and no hosted CI, Windows runtime or push occurred. Installed versions match the initial trial. New raw evidence is under ignored `artifacts/wayland-a11y-followup-20261030/`.
+
+The new private session initially lacked the copied desktop identity file. That registration-error startup is excluded; after copying the existing QA desktop file and restarting the application, the normal controls were available. A private speech module/null sink and explicitly addressed QA controller were reused. Orca logged AT-SPI cache-signature warnings; these do not invalidate the independently captured focus/description and generated-speech receipts, but they are not a clean full reader-compatibility acceptance.
+
+### Accepted results
+
+`accepted.json` asserts the native role and name at every reverse step. From Theme, nine separate Shift+Tab presses reached Start button, Configure in desktop… button, Count entry (text 2), Count radio, Until stopped radio, Mouse button combo box, Interval entry (text 100), Save button and Theme combo box. Count entry and Count mode were checked separately by role.
+
+Enter opened each selector. Arrow Down reached the options as native toggle buttons; Enter selected an option. Escape explicitly dismissed the popup. After Tab re-entry, the collapsed selector retained its stable name and exposed the new current description. The UI screenshots agree with those descriptions. No Save was used.
+
+| Changed selection | Asserted native description on re-entry | Orca generated speech |
+|---|---|---|
+| Theme: System → Light | Light | `13:47:46.676541`, Light. |
+| Theme: System → Dark (stabilized repeat) | Dark | `13:50:20.591468`, Dark. |
+| Mouse button: Left → Right | Right | `13:52:27.196040`, Right. |
+| Mouse button: Right → Middle | Middle | `13:53:11.196740`, Middle. |
+
+Orca also named individual popup options and generated pressed/not-pressed toggle state text. This accepts the observed default and changed-value output text, not human listening or all native selection semantics.
+
+### Rejected probes and retained limitation
+
+Early Dark probes observed focus/state one frame behind and selected System rather than Dark. They remain exploratory in `steps.jsonl` and do not accept Dark. The stabilized repeat places two harmless pointer-motion events within NanoClick's header, 300 ms apart after each key release, before taking a fresh screenshot and querying AT-SPI. It then asserts the resulting selection after dismissal and re-entry; the validated Dark receipt and speech line above come from that repeat. This is a fixture stabilization technique, not a proven root-cause diagnosis or performance result.
+
+The first script also incorrectly expected Enter to return focus immediately to the collapsed selector. In this native run the popup remained present after selection. Escape dismissed it but left AT-SPI focus on the frame; the next Tab returned to Theme, including when the dismissed selector was Mouse button. Re-entry can reach the correct value, but focus restoration to the originating selector remains an explicit usability follow-up. The accepted traversal does not close that issue.
+
+### Preservation and verification
+
+`cleanup.json` confirms zero diagnostic run rows, byte-exact original preferences with the same SHA-256 listed above, no remaining private-runtime process and the original host GNOME compositor still active. No click-engine session or host desktop injection was used. The changes were unsaved and the private application was terminated during cleanup.
+
+Local evidence checks asserted all nine reverse roles/names, all four changed descriptions and all four generated speech values after Orca's buffered log was flushed. These checks supplement the earlier 81-test/build/Clippy evidence for the unchanged application; they do not rerun or extend Windows acceptance.
+
+Raw receipt integrity:
+
+- `accepted.json`: `f566a692176aa1bc020ff90dcdbcffdd7eb5592f9fc680db2498358230d90b1c`.
+- `orca-debug.log`: `34c42086766914fda102e1d5107f31a340b4e82de0650115d11cdd8de2995e77`.
+- `steps.jsonl`: `e2a665658de0e2f68acd03a7d5317188732e4a9eb3ba141759d36dcee02871fe`.
+- `cleanup.json`: `6d378c7bd7be98fe225758da8f1d39675965cdc56ab4d7c22dc535365ab0854e`.

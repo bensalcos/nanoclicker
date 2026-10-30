@@ -1,6 +1,6 @@
 # UI accessibility implementation and evidence
 
-Native continuation (2026-10-30): [private Fedora GNOME/Orca evidence](native-orca.md) confirms default selector text, nine forward Tab transitions and two lifecycle announcements after fixing native name/description gaps. The historical implementation-only evidence below does not independently prove native reader behavior. Human listening and the wider reader matrix remain open.
+Native continuation (2026-10-30): [private Fedora GNOME/Orca evidence](native-orca.md) confirms default and changed selector speech, forward/reverse Tab traversal, popup option traversal and two lifecycle announcements after fixing native name/description gaps. The historical implementation-only evidence below does not independently prove native reader behavior. Human listening and the wider reader matrix remain open.
 
 The form now supplies semantic names for Interval, Count, Global shortcut, Mouse button and Theme. Visible labels are linked with `labelled_by`; the shortcut and theme controls use explicit accessible names where their role is otherwise unnamed. Current values remain exposed independently of those names.
 
