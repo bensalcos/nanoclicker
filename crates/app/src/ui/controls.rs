@@ -23,15 +23,15 @@ pub(super) fn plan(ui: &mut egui::Ui, draft: &mut Draft) {
         });
         ui.horizontal(|ui| {
             let label = ui.label("Mouse button");
-            let response = egui::ComboBox::from_id_salt("mouse-button")
+            let selector = egui::ComboBox::from_id_salt("mouse-button")
                 .selected_text(button_name(draft.button))
                 .show_ui(ui, |ui| {
                     for button in [MouseButton::Left, MouseButton::Right, MouseButton::Middle] {
                         ui.selectable_value(&mut draft.button, button, button_name(button));
                     }
-                })
-                .response
-                .labelled_by(label.id);
+                });
+            let response = selector.response.labelled_by(label.id);
+            restore_focus_on_escape(&response, selector.inner.is_some());
             describe_selected_text(&response, button_name(draft.button));
         });
     });
@@ -66,7 +66,7 @@ pub(super) fn shortcut(ui: &mut egui::Ui, requested: &mut String) -> bool {
 }
 
 pub(super) fn theme(ui: &mut egui::Ui, selected: &mut egui::ThemePreference) {
-    let response = egui::ComboBox::from_id_salt("theme")
+    let selector = egui::ComboBox::from_id_salt("theme")
         .selected_text(theme_name(*selected))
         .show_ui(ui, |ui| {
             for (value, label) in [
@@ -78,10 +78,22 @@ pub(super) fn theme(ui: &mut egui::Ui, selected: &mut egui::ThemePreference) {
                     ui.ctx().set_theme(*selected);
                 }
             }
-        })
-        .response
-        .accessible_name("Theme");
+        });
+    let response = selector.response.accessible_name("Theme");
+    restore_focus_on_escape(&response, selector.inner.is_some());
     describe_selected_text(&response, theme_name(*selected));
+}
+
+fn restore_focus_on_escape(response: &egui::Response, popup_was_visible: bool) {
+    // Escape dismisses the popup without choosing another control. Keep keyboard
+    // traversal at its trigger; pointer dismissal must retain the clicked target.
+    if popup_was_visible
+        && response
+            .ctx
+            .input(|input| input.key_pressed(egui::Key::Escape))
+    {
+        response.request_focus();
+    }
 }
 
 fn theme_name(selected: egui::ThemePreference) -> &'static str {

@@ -220,6 +220,102 @@ fn keyboard_follows_reading_order_in_both_directions() -> Result<(), Box<dyn std
 }
 
 #[test]
+fn escape_from_a_selector_returns_focus_to_its_trigger() -> Result<(), Box<dyn std::error::Error>> {
+    for (target, option, next) in [
+        ("Theme", "System", "Save"),
+        ("Mouse button", "Left", "Until stopped"),
+    ] {
+        let ctx = egui::Context::default();
+        theme::configure(&ctx);
+        ctx.enable_accesskit();
+        let mut app = fixture(&ctx)?;
+        frame(&mut app, &ctx, vec![]).drop_without_applying_deltas();
+        let mut reached = false;
+        for _ in 0..10 {
+            let output = frame(&mut app, &ctx, key(egui::Key::Tab, false));
+            if focused_name(&output)? == target {
+                reached = true;
+                break;
+            }
+        }
+        assert!(
+            reached,
+            "Selector is absent from keyboard traversal: {target}"
+        );
+        frame(&mut app, &ctx, key(egui::Key::Enter, false)).drop_without_applying_deltas();
+        frame(&mut app, &ctx, vec![]).drop_without_applying_deltas();
+        frame(&mut app, &ctx, key(egui::Key::ArrowDown, false)).drop_without_applying_deltas();
+        let output = frame(&mut app, &ctx, vec![]);
+        assert_eq!(focused_name(&output)?, option);
+        frame(&mut app, &ctx, key(egui::Key::Escape, false)).drop_without_applying_deltas();
+        let output = frame(&mut app, &ctx, vec![]);
+        assert_eq!(focused_name(&output)?, target);
+        let output = frame(&mut app, &ctx, key(egui::Key::Tab, false));
+        assert_eq!(focused_name(&output)?, next);
+    }
+    Ok(())
+}
+
+#[test]
+fn clicking_outside_a_selector_keeps_focus_on_the_clicked_field()
+-> Result<(), Box<dyn std::error::Error>> {
+    let ctx = egui::Context::default();
+    theme::configure(&ctx);
+    ctx.enable_accesskit();
+    let mut app = fixture(&ctx)?;
+    frame(&mut app, &ctx, vec![]).drop_without_applying_deltas();
+    frame(&mut app, &ctx, key(egui::Key::Tab, false)).drop_without_applying_deltas();
+    frame(&mut app, &ctx, key(egui::Key::Enter, false)).drop_without_applying_deltas();
+    let output = frame(&mut app, &ctx, vec![]);
+    let tree = output
+        .platform_output
+        .accesskit_update
+        .as_ref()
+        .ok_or("Missing accessibility tree")?;
+    let bounds = tree
+        .nodes
+        .iter()
+        .find(|(id, node)| {
+            node.role() == egui::Role::TextInput && node_name(*id, &tree.nodes) == "Interval"
+        })
+        .and_then(|(_, node)| node.bounds())
+        .ok_or("Interval field lacks bounds")?;
+    let pos = egui::pos2(
+        ((bounds.x0 + bounds.x1) / 2.0) as f32,
+        ((bounds.y0 + bounds.y1) / 2.0) as f32,
+    );
+    for pressed in [true, false] {
+        frame(
+            &mut app,
+            &ctx,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        )
+        .drop_without_applying_deltas();
+    }
+    let output = frame(&mut app, &ctx, vec![]);
+    assert_eq!(focused_name(&output)?, "Interval");
+    let tree = output
+        .platform_output
+        .accesskit_update
+        .as_ref()
+        .ok_or("Missing accessibility tree")?;
+    assert!(
+        tree.nodes
+            .iter()
+            .all(|(_, node)| node.role() != egui::Role::ListBox)
+    );
+    Ok(())
+}
+
+#[test]
 fn enter_in_an_edit_field_never_starts_the_engine() -> Result<(), Box<dyn std::error::Error>> {
     for target in ["Interval", "Global shortcut"] {
         let ctx = egui::Context::default();

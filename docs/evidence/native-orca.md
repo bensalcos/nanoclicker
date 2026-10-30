@@ -53,7 +53,7 @@ Local review checked correctness against the native before/after receipt, Linux-
 
 `cleanup.json` confirms no private-runtime process remains. Private preferences stayed byte-for-byte equal to the original (SHA-256 `b79f252b85920a538447e5725e04b8a789ca297affe65c1db696ff12fcb40f65`), and host GNOME compositor PID 4780 remained active. No host reader/settings/audio or Windows VM state was changed.
 
-Remaining reader work includes human listening, popup focus restoration, other lifecycle announcements and active-count behavior, reference Ubuntu GNOME/KDE and Windows NVDA. The continuation below supersedes the initial changed-value and reverse-navigation gaps. Physical monitors, native timing/resource budgets and the paused software-RSS optimization remain separate gates. These results do not accept a release or retire C++.
+Remaining reader work includes human listening, other lifecycle announcements and active-count behavior, reference Ubuntu GNOME/KDE and Windows NVDA. The later [selector focus correction](selector-focus.md) closes the reproduced Escape focus loss on private Fedora GNOME. The continuation below supersedes the initial changed-value and reverse-navigation gaps. Physical monitors, native timing/resource budgets and the paused software-RSS optimization remain separate gates. These results do not accept a release or retire C++.
 
 ## Changed selections, popup traversal and reverse navigation — continuation
 
@@ -80,7 +80,7 @@ Orca also named individual popup options and generated pressed/not-pressed toggl
 
 Early Dark probes observed focus/state one frame behind and selected System rather than Dark. They remain exploratory in `steps.jsonl` and do not accept Dark. The stabilized repeat places two harmless pointer-motion events within NanoClick's header, 300 ms apart after each key release, before taking a fresh screenshot and querying AT-SPI. It then asserts the resulting selection after dismissal and re-entry; the validated Dark receipt and speech line above come from that repeat. This is a fixture stabilization technique, not a proven root-cause diagnosis or performance result.
 
-The first script also incorrectly expected Enter to return focus immediately to the collapsed selector. In this native run the popup remained present after selection. Escape dismissed it but left AT-SPI focus on the frame; the next Tab returned to Theme, including when the dismissed selector was Mouse button. Re-entry can reach the correct value, but focus restoration to the originating selector remains an explicit usability follow-up. The accepted traversal does not close that issue.
+The first script also incorrectly expected Enter to return focus immediately to the collapsed selector. In this native run the popup remained present after selection. Escape dismissed it but left AT-SPI focus on the frame; the next Tab returned to Theme, including when the dismissed selector was Mouse button. Re-entry can reach the correct value, but focus restoration to the originating selector remained an explicit usability follow-up for this artifact. The accepted traversal did not close that issue; the subsequent [correction and native validation](selector-focus.md) does on private Fedora GNOME.
 
 ### Preservation and verification
 

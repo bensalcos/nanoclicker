@@ -1,6 +1,6 @@
 # Rust backlog
 
-Latest reader evidence (2026-10-30): [native Orca follow-up](../docs/evidence/native-orca.md) accepts scoped private Fedora default/changed-selector speech, forward/reverse navigation, popup option traversal and status cases after two fixes; popup focus restoration remains open. Full task checkboxes remain open for the remaining cross-platform matrix.
+Latest reader evidence (2026-10-30): [native Orca follow-up](../docs/evidence/native-orca.md) accepts scoped private Fedora default/changed-selector speech, forward/reverse navigation, popup option traversal and status cases after two fixes; the subsequently reproduced Escape focus loss is [fixed with native Fedora receipts](../docs/evidence/selector-focus.md). Full task checkboxes remain open for the remaining cross-platform matrix.
 
 Status: implementation in progress; see docs/STATUS.md and docs/evidence/implementation.md. Size S: 1–2 files; M: 3–5 files. Split tasks that exceed that scope before implementing them, preserving dependencies and acceptance criteria. Paths below are planned locations.
 
