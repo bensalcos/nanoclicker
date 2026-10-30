@@ -72,6 +72,36 @@ fn main() -> Result<()> {
         println!("PASS portal lifecycle: restored-second-run");
     }
     {
+        let (service, state) = block_on(portal_mock::serve(Mode::Legacy))?;
+        nanoclick_platform::wayland::probe()?;
+        let engine = Engine::new(WaylandInput::open, || {})?;
+        engine.start(ClickConfig::new(10, MouseButton::Left, Some(1))?)?;
+        await_state(&engine, |snapshot| {
+            snapshot.reason == Some(StopReason::Completed)
+        })?;
+        if lock(&state).registrations != 0 || lock(&state).buttons != [(0x110, 1), (0x110, 0)] {
+            return Err("Legacy portal did not receive one complete pair without Registry".into());
+        }
+        drop(engine);
+        let (updates, received) = std::sync::mpsc::channel();
+        let shortcut = PortalShortcut::configure(
+            move |update| {
+                let _ = updates.send(update);
+            },
+            || {},
+        )?;
+        match received.recv_timeout(Duration::from_secs(4))? {
+            ShortcutUpdate::Registered(trigger) if trigger == "F6" => {}
+            update => return Err(format!("Legacy shortcut failed: {update:?}").into()),
+        }
+        if lock(&state).registrations != 0 {
+            return Err("Legacy shortcut unexpectedly registered a peer".into());
+        }
+        drop(shortcut);
+        block_on(service.release_name(NAME))?;
+        println!("PASS portal lifecycle: legacy-without-registry");
+    }
+    {
         let (service, state) = block_on(portal_mock::serve(Mode::DenyRegistration))?;
         let engine = Engine::new(WaylandInput::open, || {})?;
         engine.start(ClickConfig::new(10, MouseButton::Left, Some(1))?)?;
@@ -86,6 +116,22 @@ fn main() -> Result<()> {
             return Err("Registration failure created a session or injected input".into());
         }
         drop(engine);
+        let (updates, received) = std::sync::mpsc::channel();
+        let shortcut = PortalShortcut::configure(
+            move |update| {
+                let _ = updates.send(update);
+            },
+            || {},
+        )?;
+        match received.recv_timeout(Duration::from_secs(4))? {
+            ShortcutUpdate::Unavailable(message)
+                if message.contains("Host registration denied") => {}
+            update => return Err(format!("Registration refusal was bypassed: {update:?}").into()),
+        }
+        if lock(&state).session.is_some() || !lock(&state).buttons.is_empty() {
+            return Err("Denied shortcut registration created a session or input".into());
+        }
+        drop(shortcut);
         block_on(service.release_name(NAME))?;
         println!("PASS portal lifecycle: host-registration-denied");
     }

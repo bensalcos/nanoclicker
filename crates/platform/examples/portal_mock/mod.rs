@@ -14,6 +14,7 @@ type Options = HashMap<String, OwnedValue>;
 #[derive(Clone, Copy)]
 pub enum Mode {
     Allow,
+    Legacy,
     DenyRegistration,
     Deny,
     CloseDuringSelect,
@@ -127,11 +128,12 @@ impl Portal {
         #[zbus(connection)] connection: &Connection,
     ) -> fdo::Result<OwnedObjectPath> {
         let sender = header.sender().ok_or_else(|| error("Missing sender"))?;
-        if lock(&self.state)
-            .identities
-            .get(sender.as_str())
-            .map(String::as_str)
-            != Some("io.github.bensalcos.NanoClick")
+        if !matches!(self.mode, Mode::Legacy)
+            && lock(&self.state)
+                .identities
+                .get(sender.as_str())
+                .map(String::as_str)
+                != Some("io.github.bensalcos.NanoClick")
         {
             return Err(fdo::Error::AccessDenied("An app id is required".into()));
         }
@@ -255,7 +257,7 @@ impl Shortcuts {
     ) -> fdo::Result<OwnedObjectPath> {
         Portal {
             state: self.0.clone(),
-            mode: Mode::Allow,
+            mode: self.1,
         }
         .create_session(options, header, connection)
         .await
@@ -328,13 +330,15 @@ impl Registry {
 pub async fn serve(mode: Mode) -> zbus::Result<(Connection, Shared)> {
     let state = Shared::default();
     let connection = Connection::session().await?;
-    connection
-        .object_server()
-        .at(
-            "/org/freedesktop/portal/desktop",
-            Registry(state.clone(), mode),
-        )
-        .await?;
+    if !matches!(mode, Mode::Legacy) {
+        connection
+            .object_server()
+            .at(
+                "/org/freedesktop/portal/desktop",
+                Registry(state.clone(), mode),
+            )
+            .await?;
+    }
     connection
         .object_server()
         .at(

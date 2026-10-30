@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Allow older portal frontends without host Registry to reach normal capability and consent checks, while preserving explicit registration denials.
 - Return keyboard focus to the selector after Escape, preserving focus on fields clicked outside the popup.
 - Supply native live-status names and Linux collapsed-selector descriptions so Orca can announce status changes and current selections.
 - The passive QA receiver no longer replays mouse or recording-key events while its window is hidden.
