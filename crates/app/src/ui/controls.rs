@@ -23,7 +23,7 @@ pub(super) fn plan(ui: &mut egui::Ui, draft: &mut Draft) {
         });
         ui.horizontal(|ui| {
             let label = ui.label("Mouse button");
-            egui::ComboBox::from_id_salt("mouse-button")
+            let response = egui::ComboBox::from_id_salt("mouse-button")
                 .selected_text(button_name(draft.button))
                 .show_ui(ui, |ui| {
                     for button in [MouseButton::Left, MouseButton::Right, MouseButton::Middle] {
@@ -32,6 +32,7 @@ pub(super) fn plan(ui: &mut egui::Ui, draft: &mut Draft) {
                 })
                 .response
                 .labelled_by(label.id);
+            describe_selected_text(&response, button_name(draft.button));
         });
     });
     section(ui, "02", "Repeat", |ui| {
@@ -65,12 +66,8 @@ pub(super) fn shortcut(ui: &mut egui::Ui, requested: &mut String) -> bool {
 }
 
 pub(super) fn theme(ui: &mut egui::Ui, selected: &mut egui::ThemePreference) {
-    egui::ComboBox::from_id_salt("theme")
-        .selected_text(match selected {
-            egui::ThemePreference::Dark => "Dark",
-            egui::ThemePreference::Light => "Light",
-            _ => "System",
-        })
+    let response = egui::ComboBox::from_id_salt("theme")
+        .selected_text(theme_name(*selected))
         .show_ui(ui, |ui| {
             for (value, label) in [
                 (egui::ThemePreference::System, "System"),
@@ -84,6 +81,25 @@ pub(super) fn theme(ui: &mut egui::Ui, selected: &mut egui::ThemePreference) {
         })
         .response
         .accessible_name("Theme");
+    describe_selected_text(&response, theme_name(*selected));
+}
+
+fn theme_name(selected: egui::ThemePreference) -> &'static str {
+    match selected {
+        egui::ThemePreference::Dark => "Dark",
+        egui::ThemePreference::Light => "Light",
+        egui::ThemePreference::System => "System",
+    }
+}
+
+fn describe_selected_text(response: &egui::Response, selected: &str) {
+    // AT-SPI exposes only numeric Value and these collapsed selectors have no
+    // selected child. Preserve the name/value and supply the text independently.
+    if cfg!(target_os = "linux") {
+        response.ctx.accesskit_node_builder(response.id, |node| {
+            node.set_description(selected);
+        });
+    }
 }
 
 #[cfg(test)]
@@ -148,6 +164,64 @@ mod tests {
                 Some(value),
                 "{label} must expose its current value"
             );
+        }
+        Ok(())
+    }
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn selectors_expose_current_text_to_native_atspi() -> Result<(), Box<dyn std::error::Error>> {
+        for (button, selected, button_text, theme_text) in [
+            (
+                MouseButton::Left,
+                egui::ThemePreference::System,
+                "Left",
+                "System",
+            ),
+            (
+                MouseButton::Right,
+                egui::ThemePreference::Light,
+                "Right",
+                "Light",
+            ),
+            (
+                MouseButton::Middle,
+                egui::ThemePreference::Dark,
+                "Middle",
+                "Dark",
+            ),
+        ] {
+            let ctx = egui::Context::default();
+            crate::theme::configure(&ctx);
+            ctx.enable_accesskit();
+            let mut draft = Draft {
+                button,
+                ..Default::default()
+            };
+            let mut selected = selected;
+            let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+                plan(ui, &mut draft);
+                theme(ui, &mut selected);
+            });
+            output.textures_delta.clear();
+            let nodes = &output
+                .platform_output
+                .accesskit_update
+                .as_ref()
+                .ok_or("Missing accessibility tree")?
+                .nodes;
+            for (label, value) in [("Mouse button", button_text), ("Theme", theme_text)] {
+                let node = nodes
+                    .iter()
+                    .map(|(_, node)| node)
+                    .find(|node| node.role() == egui::Role::ComboBox && name(node, nodes) == label)
+                    .ok_or("Selector is missing its stable name")?;
+                assert_eq!(node.value(), Some(value));
+                assert_eq!(
+                    node.description(),
+                    Some(value),
+                    "AT-SPI selectors need independently readable selected text"
+                );
+            }
         }
         Ok(())
     }

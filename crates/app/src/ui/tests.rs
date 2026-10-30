@@ -290,6 +290,25 @@ fn primary_action_stays_inside_minimum_window_with_long_status_and_errors()
             .ok_or("Session status lacks a live region")?;
         assert_eq!(status.live(), Some(egui::accesskit::Live::Polite));
         assert!(status.is_live_atomic());
+        let counter = tree
+            .nodes
+            .iter()
+            .map(|(_, node)| node)
+            .find(|node| {
+                node.value()
+                    .is_some_and(|value| value.contains("pairs sent"))
+            })
+            .ok_or("Progress counter is absent")?;
+        assert_eq!(
+            counter.live().unwrap_or(egui::accesskit::Live::Off),
+            egui::accesskit::Live::Off
+        );
+        let status_text = status.value().ok_or("Visible status lacks text")?;
+        assert_eq!(
+            status.label(),
+            Some(status_text),
+            "Live status needs a name, not only a string value, for native announcements"
+        );
         let action = tree
             .nodes
             .iter()

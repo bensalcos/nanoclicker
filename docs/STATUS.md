@@ -1,5 +1,7 @@
 # NanoClick status
 
+Native reader follow-up (2026-10-30): real private Fedora GNOME/AT-SPI/Orca testing reproduced two UI defects missed by internal value tests. The correction gives status text an explicit accessible label and supplies Linux collapsed-selector descriptions without changing stable names/values. Orca generated Left/System and both preparing/cancelled status announcements; nine individual Tab transitions passed. All 81 Linux tests, Linux/Windows MSVC Clippy and the full-feature Linux release build pass. Private preferences remain byte-exact and all private-runtime processes are stopped. See [native Orca evidence](evidence/native-orca.md). Human listening, changed-selection/popup/reverse navigation, other lifecycle/active-counter cases, reference Ubuntu/KDE and Windows NVDA remain open. No new Windows runtime, push or hosted CI is claimed. Earlier snapshots below are historical; software-RSS work remains paused.
+
 Updated: 2026-10-26.
 
 Windows DPI check (2026-10-26): the exact `c2f21a1` preview passes visual Start visibility at 100% and 125% on the user's 1280×800 Windows 11 VM. With NanoClick open, both 100%→125% and 125%→100% transitions kept Start visible; the VM is restored to 100%. Hosted run [40306920310](https://github.com/bensalcos/nanoclicker/actions/runs/40306920310) passes all four jobs. Multiple-monitor configurations, broader display/size combinations and native accessibility remain open. See [scaling evidence](evidence/ui-scaling.md).

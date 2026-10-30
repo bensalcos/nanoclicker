@@ -1,5 +1,7 @@
 # UI accessibility implementation and evidence
 
+Native continuation (2026-10-30): [private Fedora GNOME/Orca evidence](native-orca.md) confirms default selector text, nine forward Tab transitions and two lifecycle announcements after fixing native name/description gaps. The historical implementation-only evidence below does not independently prove native reader behavior. Human listening and the wider reader matrix remain open.
+
 The form now supplies semantic names for Interval, Count, Global shortcut, Mouse button and Theme. Visible labels are linked with `labelled_by`; the shortcut and theme controls use explicit accessible names where their role is otherwise unnamed. Current values remain exposed independently of those names.
 
 The footer is measured before reserving the form's scroll area, but its interactive control is created after the form. This keeps Start/Stop fixed at the bottom while Tab follows the visible reading order. Theme is created before Save even though their group is right-aligned. No custom keyboard event loop replaces egui's focus management.

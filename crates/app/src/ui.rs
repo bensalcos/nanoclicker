@@ -612,6 +612,7 @@ impl NanoClick {
                     ui.add(egui::Label::new(RichText::new(status).strong()).wrap());
                 ui.ctx().accesskit_node_builder(status_response.id, |node| {
                     node.set_role(egui::Role::Status);
+                    node.set_label(status);
                     node.set_live(egui::accesskit::Live::Polite);
                     node.set_live_atomic();
                 });

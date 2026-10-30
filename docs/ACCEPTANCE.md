@@ -1,5 +1,7 @@
 # Migration acceptance matrix
 
+The [native Orca follow-up](evidence/native-orca.md) verifies Linux selector value descriptions, nine forward Tab transitions and preparing/cancelled live announcements after two UI fixes. This is private Fedora GNOME generated-speech evidence, not human listening or full reader acceptance. All 81 Linux tests and Linux/Windows MSVC Clippy pass; no Windows runtime or new hosted result is claimed for the correction.
+
 Reviewed against the repository plan on 2026-10-26. The Rust implementation and preview packages are available. **The migration is not accepted as a release.** Task checkboxes in [the backlog](../tasks/todo.md) retain their full cross-platform scope.
 
 | Requirement | Evidence available | Evidence still required |

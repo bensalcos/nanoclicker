@@ -1,5 +1,7 @@
 # Rust backlog
 
+Latest reader evidence (2026-10-30): [native Orca follow-up](../docs/evidence/native-orca.md) accepts the scoped private Fedora default-selector/forward-navigation/status cases after two fixes. Full task checkboxes remain open for the remaining cross-platform matrix.
+
 Status: implementation in progress; see docs/STATUS.md and docs/evidence/implementation.md. Size S: 1–2 files; M: 3–5 files. Split tasks that exceed that scope before implementing them, preserving dependencies and acceptance criteria. Paths below are planned locations.
 
 ## P0 — Feasibility

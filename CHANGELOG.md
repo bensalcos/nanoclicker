@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- Supply native live-status names and Linux collapsed-selector descriptions so Orca can announce status changes and current selections.
 - The passive QA receiver no longer replays mouse or recording-key events while its window is hidden.
 
 - Unsandboxed Wayland portal peers register the application identity before requesting input or global shortcuts.

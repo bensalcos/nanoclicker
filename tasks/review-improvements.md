@@ -1,5 +1,7 @@
 # NanoClick review: fixes and improvements backlog
 
+Native reader follow-up (2026-10-30): two reproduced accessibility defects now have focused regressions and [private Fedora GNOME/Orca receipts](../docs/evidence/native-orca.md). Default selector speech, forward traversal and preparing/cancelled status announcements pass. Changed-value/popup/reverse navigation, other lifecycle/active-counter behavior, human listening, Ubuntu/KDE and NVDA remain pending; migration acceptance is unchanged.
+
 Source: code review of `feature/rust-migration-preview` against `master` (2026-10-26).
 Audience: implementation agent (Codex).
 
