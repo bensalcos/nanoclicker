@@ -47,4 +47,4 @@ Raw receipt integrity:
 
 Local review checked missing-interface-only fallback, continued propagation of registration denials, per-peer identity scope, unchanged consent/restoration/input paths and the positive/negative native receipts. No blocking finding remains for this scoped Linux compatibility fix.
 
-The environment is retained temporarily for the next KDE/reader cases. A final cleanup receipt must be recorded before calling the complete desktop session closed; this document does not claim cleanup yet.
+The [KDE/Ubuntu reader follow-up](reference-desktop-follow-up.md) now records completed native cases and final cleanup: all four profiles restore exact preferences, no private-runtime processes remain and the complete container is stopped. Its cleanup receipt supersedes the earlier temporary-retention state.
